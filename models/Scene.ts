@@ -1,4 +1,5 @@
- 
+import type { TimeSpan } from './TimeSpan';
+
 /**
  * Scene status progression.
  * Built-in statuses are the canonical six plus any user-defined custom ones.
@@ -184,6 +185,10 @@ export interface Scene {
     arcAnchor?: boolean;
     /** Marks this scene as parked/out of manuscript flow without archiving it */
     inactive?: boolean;
+    /** Phase 2: Structured temporal data (replaces storyDate/storyTime for new scenes) */
+    timeSpan?: TimeSpan;
+    /** Phase 2: References to Event UUIDs this scene depicts or relates to */
+    eventRefs?: string[];
 }
 
 /**

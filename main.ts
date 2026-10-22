@@ -63,6 +63,8 @@ import { CascadeRenameService } from './services/CascadeRenameService';
 import { FieldTemplateService } from './services/FieldTemplateService';
 import { SeriesManager } from './services/SeriesManager';
 import { UniverseManager } from './services/UniverseManager';
+import { TimeSpanService } from './services/TimeSpanService';
+import { EventManager } from './services/EventManager';
 import { buildFormattingToolbar } from './components/FormattingToolbar';
 import { setupMobileKeyboardHandling } from './components/MobileAdapter';
 import { EditorView } from '@codemirror/view';
@@ -93,6 +95,8 @@ export default class SceneCardsPlugin extends Plugin {
     fieldTemplates!: FieldTemplateService;
     seriesManager!: SeriesManager;
     universeManager!: UniverseManager;
+    timeSpanService!: TimeSpanService;
+    eventManager!: EventManager;
     researchManager!: ResearchManager;
     /** The leaf currently hosting a StoryLine view */
     storyLeaf: WorkspaceLeaf | null = null;
@@ -205,6 +209,8 @@ export default class SceneCardsPlugin extends Plugin {
         });
         this.seriesManager = new SeriesManager(this.app, this);
         this.universeManager = new UniverseManager(this.app, this);
+        this.timeSpanService = new TimeSpanService();
+        this.eventManager = new EventManager(this.app);
         this.researchManager = new ResearchManager(this.app, this);
 
         // Wire up undo/redo to refresh views + re-index

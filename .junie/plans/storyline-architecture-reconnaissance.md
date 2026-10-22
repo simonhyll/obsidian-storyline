@@ -1227,3 +1227,19 @@ Fix reloadEntities() losing inherited codex, add id parsing to CodexManager, and
 - ✓ Test verification — 110/110 tests pass (103 existing + 7 new)
 - ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
 - ✓ Committed to feat/rework branch
+
+### ✓ Step 7: Implement Phase 2 — TimeSpan and Events
+Implement the shared TimeSpan model, Event entities, and Scene-Event references.
+
+- ✓ Create services/TimeSpanService.ts (614 lines) — Full implementation: Gregorian calendar adapter, parsing all 6 TimeSpan kinds, comparison, overlap detection, contains, relative date resolution with chain accumulation, legacy storyDate/storyTime migration, display formatting
+- ✓ Create models/Event.ts (114 lines) — Event model with timeSpan, location, participants, ownerId, introducedIn, createEvent factory
+- ✓ Create services/EventManager.ts (371 lines) — Event CRUD, loadAll, loadInheritedFolders, frontmatter parsing, file creation
+- ✓ Update models/Scene.ts — Added optional timeSpan and eventRefs fields
+- ✓ Create components/TimeSpanPicker.ts (447 lines) — UI for selecting all 6 TimeSpan kinds with Obsidian Setting API
+- ✓ Create components/EventCard.ts (92 lines) — Event rendering component for views
+- ✓ Wire up in main.ts — Initialize TimeSpanService and EventManager as plugin properties
+- ✓ 46 tests for TimeSpanService: parsing (11), formatting (7), comparison (5), overlap (7), contains (4), relative resolution (5), legacy migration (4), calendar registration (3)
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 156/156 tests pass (110 existing + 46 new)
+- ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
+- ✓ Committed to feat/rework branch
