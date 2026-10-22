@@ -25,6 +25,7 @@ import {
     NOTES_VIEW_TYPE,
     SYNOPSIS_VIEW_TYPE,
     DETAILS_VIEW_TYPE,
+    UNIVERSE_VIEW_TYPE,
 } from './constants';
 import { PlotgridView } from './views/PlotgridView';
 import type { PlotGridData } from './models/PlotGridData';
@@ -44,6 +45,7 @@ import { SynopsisView } from './views/SynopsisView';
 import { DetailsView } from './views/DetailsView';
 import { ManuscriptView } from './views/ManuscriptView';
 import { ResearchView } from './views/ResearchView';
+import { UniverseView } from './views/UniverseView';
 import { ResearchManager } from './services/ResearchManager';
 import { LocationManager } from './services/LocationManager';
 import { CharacterManager } from './services/CharacterManager';
@@ -289,6 +291,9 @@ export default class SceneCardsPlugin extends Plugin {
         );
         this.registerView(RESEARCH_VIEW_TYPE, (leaf) =>
             new ResearchView(leaf, this, this.researchManager)
+        );
+        this.registerView(UNIVERSE_VIEW_TYPE, (leaf) =>
+            new UniverseView(leaf, this)
         );
 
 
@@ -664,6 +669,12 @@ export default class SceneCardsPlugin extends Plugin {
             id: 'delete-universe',
             name: 'Delete universe',
             callback: () => this.openDeleteUniverseModal(),
+        });
+
+        this.addCommand({
+            id: 'open-universe-view',
+            name: 'Open project library',
+            callback: () => this.activateView(UNIVERSE_VIEW_TYPE),
         });
 
         this.addCommand({
@@ -3603,7 +3614,7 @@ export default class SceneCardsPlugin extends Plugin {
 
     // ── Universe modals ──────────────────────────────
 
-    private async openCreateUniverseModal(): Promise<void> {
+    async openCreateUniverseModal(): Promise<void> {
         const modal = new Modal(this.app);
         modal.titleEl.setText('Create new universe');
         let universeName = '';
@@ -3637,7 +3648,7 @@ export default class SceneCardsPlugin extends Plugin {
         modal.open();
     }
 
-    private async openAddSeriesToUniverseModal(): Promise<void> {
+    async openAddSeriesToUniverseModal(): Promise<void> {
         const modal = new Modal(this.app);
         modal.titleEl.setText('Add series to universe');
 
@@ -3702,13 +3713,6 @@ export default class SceneCardsPlugin extends Plugin {
             return;
         }
 
-        let selectedUniverse = universes[0].id;
-        const seriesIds = await this.universeManager.getSeriesForUniverse(selectedUniverse);
-        if (seriesIds.length === 0) {
-            new Notice('This universe has no series.');
-            return;
-        }
-
         // Map series UUIDs to names
         const seriesList = await this.seriesManager.discoverSeries();
         const seriesNameMap = new Map<string, string>();
@@ -3718,7 +3722,28 @@ export default class SceneCardsPlugin extends Plugin {
             }
         }
 
-        let selectedSeries = seriesIds[0];
+        let selectedUniverse = universes[0].id;
+        let selectedSeries: string | null = null;
+
+        // Build series dropdown reference so we can refresh it
+        let seriesDrop: DropdownComponent | null = null;
+
+        const refreshSeriesDropdown = async (universeId: string) => {
+            const seriesIds = await this.universeManager.getSeriesForUniverse(universeId);
+            if (!seriesDrop) return;
+            seriesDrop.selectEl.empty();
+            if (seriesIds.length === 0) {
+                seriesDrop.addOption('', '(no series)');
+                selectedSeries = null;
+                return;
+            }
+            for (const sid of seriesIds) {
+                const name = seriesNameMap.get(sid) || sid.substring(0, 8) + '...';
+                seriesDrop.addOption(sid, name);
+            }
+            selectedSeries = seriesIds[0];
+            seriesDrop.setValue(selectedSeries);
+        };
 
         new Setting(modal.contentEl)
             .setName('Universe')
@@ -3729,24 +3754,27 @@ export default class SceneCardsPlugin extends Plugin {
                 drop.setValue(selectedUniverse)
                     .onChange(async (v: string) => {
                         selectedUniverse = v;
-                        // Refresh series list for the selected universe
+                        await refreshSeriesDropdown(v);
                     });
             });
 
         new Setting(modal.contentEl)
             .setName('Series to remove')
             .addDropdown((drop: DropdownComponent) => {
-                for (const sid of seriesIds) {
-                    const name = seriesNameMap.get(sid) || sid.substring(0, 8) + '...';
-                    drop.addOption(sid, name);
-                }
-                drop.setValue(selectedSeries)
-                    .onChange((v: string) => (selectedSeries = v));
+                seriesDrop = drop;
+                drop.onChange((v: string) => (selectedSeries = v || null));
             });
+
+        // Initial series population
+        await refreshSeriesDropdown(selectedUniverse);
 
         new Setting(modal.contentEl)
             .addButton((btn: ButtonComponent) => {
                 btn.setButtonText('Remove').setCta().onClick(async () => {
+                    if (!selectedSeries) {
+                        new Notice('No series selected.');
+                        return;
+                    }
                     try {
                         await this.universeManager.removeSeriesFromUniverse(selectedUniverse, selectedSeries);
                         modal.close();

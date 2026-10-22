@@ -332,16 +332,27 @@ export class UniverseManager {
     /**
      * Resolve the full hierarchy path for a book.
      * Returns Universe → Series → Book chain, with missing parts as undefined.
+     * Uses the supplied project, not the active project.
      */
     async resolveHierarchyPath(project: StoryLineProject): Promise<HierarchyPath> {
         let series: SeriesMetadata | null = null;
         let universe: UniverseMetadata | null = null;
 
-        // Resolve Series
+        // Resolve Series — find the series that contains this specific project
         if (project.seriesUuid || project.seriesId) {
-            const seriesFolder = this.plugin.sceneManager.getSeriesFolder();
-            if (seriesFolder) {
-                series = await this.plugin.seriesManager.loadSeriesMetadata(seriesFolder);
+            const allSeries = await this.plugin.seriesManager.discoverSeries();
+            for (const { folder, meta } of allSeries) {
+                if (meta.seriesUuid === project.seriesUuid || meta.name === project.seriesId) {
+                    series = meta;
+                    break;
+                }
+            }
+            // Fallback: if still not found, try loading from the project's parent folder
+            if (!series) {
+                const seriesFolder = this.plugin.sceneManager.getSeriesFolder();
+                if (seriesFolder) {
+                    series = await this.plugin.seriesManager.loadSeriesMetadata(seriesFolder);
+                }
             }
         }
 
@@ -395,6 +406,7 @@ export class UniverseManager {
     /**
      * Resolve inherited collections for a book.
      * Returns merged entity file paths from Universe ∪ Series ∪ Book scopes.
+     * Uses the supplied project's series, not the active project.
      */
     async resolveInheritedCollections(
         project: StoryLineProject,
@@ -416,9 +428,16 @@ export class UniverseManager {
             }
         }
 
-        // Series-level entities
-        if (hierarchy.series) {
-            const seriesFolder = this.plugin.sceneManager.getSeriesFolder();
+        // Series-level entities — find the series folder for this specific project
+        if (hierarchy.series && (hierarchy.series.seriesUuid || hierarchy.series.name)) {
+            let seriesFolder: string | null = null;
+            const allSeries = await this.plugin.seriesManager.discoverSeries();
+            for (const { folder, meta } of allSeries) {
+                if (meta.seriesUuid === hierarchy.series.seriesUuid || meta.name === hierarchy.series.name) {
+                    seriesFolder = folder;
+                    break;
+                }
+            }
             if (seriesFolder) {
                 const collectionFolder = normalizePath(`${seriesFolder}/${UNIVERSE_CODEX_FOLDER}/${collectionType}`);
                 seriesEntities.push(...await this.listMarkdownFiles(collectionFolder));
@@ -430,7 +449,7 @@ export class UniverseManager {
         const bookCollectionFolder = this.getCollectionFolder(bookFolders, collectionType);
         bookEntities.push(...await this.listMarkdownFiles(bookCollectionFolder));
 
-        // Merge and deduplicate
+        // Merge and deduplicate by file path
         const allEntities = Array.from(new Set([...universeEntities, ...seriesEntities, ...bookEntities]));
 
         return {

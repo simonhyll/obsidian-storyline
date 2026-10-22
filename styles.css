@@ -13803,3 +13803,189 @@ body.sl-focus-active-global.sl-focus-dim-text .markdown-source-view.mod-cm6 .cm-
 .sl-series-delete:hover {
     color: var(--text-error);
 }
+
+/* ─── Universe Selector / Project Library ──────────────────────── */
+.story-line-universe-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+}
+
+.universe-selector-cover {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 6px;
+    background-color: var(--background-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.universe-selector-cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.universe-selector-cover-placeholder {
+    color: var(--text-muted);
+    font-size: 24px;
+}
+
+.universe-selector-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+    max-height: 400px;
+}
+
+.universe-selector-loading {
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 8px;
+}
+
+.universe-selector-node {
+    border-radius: 4px;
+}
+
+.universe-selector-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    user-select: none;
+}
+
+.universe-selector-header:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.universe-selector-toggle {
+    font-size: 12px;
+    color: var(--text-muted);
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.universe-selector-icon {
+    font-size: 14px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.universe-selector-label {
+    flex: 1;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.universe-selector-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.universe-selector-children {
+    margin-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.universe-selector-children-collapsed {
+    display: none;
+}
+
+.universe-selector-book-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.universe-selector-book-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.universe-selector-book-active {
+    background-color: var(--background-modifier-active);
+    font-weight: 600;
+}
+
+.universe-selector-book-icon {
+    font-size: 14px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.universe-selector-book-label {
+    flex: 1;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.universe-selector-series-badge {
+    font-size: 11px;
+    color: var(--text-muted);
+    background-color: var(--background-modifier-border);
+    padding: 1px 6px;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.universe-selector-new {
+    align-self: flex-end;
+}
+
+.universe-selector-label {
+    padding: 8px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+/* ─── Universe View (Project Library) ──────────────────────── */
+.sl-universe-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.sl-universe-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.sl-universe-title {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.sl-universe-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.sl-universe-tree-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}

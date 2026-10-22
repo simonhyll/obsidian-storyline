@@ -1173,10 +1173,16 @@ Create the Universe model, UniverseManager service, hierarchy navigation, and in
 - ✓ Create models/Universe.ts — UniverseMetadata, ContainerEntity, HierarchyPath, InheritedCollectionResult, helper functions
 - ✓ Create services/UniverseManager.ts — Universe CRUD, series membership, hierarchy resolution, inherited collections, discovery
 - ✓ Update services/SeriesManager.ts — load/save universeId and ownerId in series.json
-- ✓ Create components/UniverseSelector.ts — Tree-based hierarchy selector with async refresh
-- ✓ Update main.ts — Register UniverseManager, add 4 commands (create/add/remove/delete universe), add modal methods
-- ✓ Create tests/universe.test.ts — 29 tests for model functions, hierarchy paths, backward compatibility
+- ✓ Create components/UniverseSelector.ts — Tree-based hierarchy selector with async refresh, no throwing functions
+- ✓ Create views/UniverseView.ts — Dedicated Project Library view with hierarchy tree and action buttons
+- ✓ Update constants.ts — Added UNIVERSE_VIEW_TYPE
+- ✓ Update main.ts — Register UniverseView, add "Open project library" command, make modal methods public, fix Remove Series modal
+- ✓ Update services/UniverseManager.ts — Fixed resolveHierarchyPath and resolveInheritedCollections to use supplied project
+- ✓ Update styles.css — Added UniverseSelector and UniverseView styling
+- ✓ Create tests/universe-integration.test.ts — 18 integration tests with mocked Obsidian vault
+- ✓ Create tests/__mocks__/obsidian.ts — Obsidian API mock for integration tests
+- ✓ Update vitest.config.ts — Added obsidian mock alias
 - ✓ Build verification — pnpm run build passes
-- ✓ Test verification — 78/78 tests pass (49 existing + 29 new)
-- ✓ Typecheck verification — No new errors; only pre-existing baseline errors
+- ✓ Test verification — 96/96 tests pass (78 existing + 18 new integration tests)
+- ✓ Typecheck verification — No new errors; 18 pre-existing baseline errors unchanged
 - ✓ Committed to feat/rework branch

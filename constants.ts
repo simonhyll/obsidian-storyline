@@ -21,4 +21,5 @@ export const RESEARCH_VIEW_TYPE = 'story-line-research';
 export const NOTES_VIEW_TYPE = 'story-line-notes';
 export const SYNOPSIS_VIEW_TYPE = 'story-line-synopsis';
 export const DETAILS_VIEW_TYPE = 'story-line-scene-details';
+export const UNIVERSE_VIEW_TYPE = 'story-line-universe';
  
