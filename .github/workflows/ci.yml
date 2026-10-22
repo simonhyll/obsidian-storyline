@@ -16,17 +16,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build plugin
-        run: npm run build
+        run: pnpm build
 
       - name: Validate vault sync script
         run: node --check scripts/sync-vault.mjs
@@ -38,13 +41,10 @@ jobs:
           const read = path => JSON.parse(fs.readFileSync(path, 'utf8'));
           const manifest = read('manifest.json');
           const pkg = read('package.json');
-          const lock = read('package-lock.json');
           const versions = read('versions.json');
           if (manifest.id !== 'storyline') throw new Error('Unexpected plugin ID');
-          if (manifest.version !== pkg.version ||
-              manifest.version !== lock.version ||
-              manifest.version !== lock.packages[''].version) {
-            throw new Error('Version mismatch: manifest, package or lockfile');
+          if (manifest.version !== pkg.version) {
+            throw new Error('Version mismatch: manifest vs package');
           }
           if (versions[manifest.version] !== manifest.minAppVersion) {
             throw new Error('versions.json lacks the current compatibility entry');

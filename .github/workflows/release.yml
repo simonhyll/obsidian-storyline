@@ -46,14 +46,14 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Releasing version $VERSION"
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: 20.19.1
-          cache: npm
-
-      - name: Pin npm
-        run: npm install --global npm@10.8.2
+          cache: pnpm
 
       - name: Verify release metadata
         env:
@@ -65,13 +65,9 @@ jobs:
           const read = file => JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
           const manifest = read('manifest.json');
           const packageJson = read('package.json');
-          const lock = read('package-lock.json');
-          const lockRoot = lock.packages && lock.packages[''];
           const actual = {
             manifest: manifest.version,
             package: packageJson.version,
-            lock: lock.version,
-            lockRoot: lockRoot && lockRoot.version,
           };
           if (Object.values(actual).some(value => value !== version)) {
             console.error(`Release ${version} does not match release metadata: ${JSON.stringify(actual)}`);
@@ -84,10 +80,10 @@ jobs:
           NODE
 
       - name: Install dependencies (exact lockfile)
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build plugin
-        run: npm run build
+        run: pnpm build
 
       - name: Verify build artifacts exist
         run: |
@@ -102,7 +98,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add manifest.json package.json package-lock.json versions.json main.js
+          git add manifest.json package.json pnpm-lock.yaml versions.json main.js
           if git diff --cached --quiet; then
             echo "No release file changes to commit."
           else
