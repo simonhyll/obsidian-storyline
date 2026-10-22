@@ -211,6 +211,7 @@ export default class SceneCardsPlugin extends Plugin {
         this.universeManager = new UniverseManager(this.app, this);
         this.timeSpanService = new TimeSpanService();
         this.eventManager = new EventManager(this.app);
+        this.eventManager.setTimeSpanService(this.timeSpanService);
         this.researchManager = new ResearchManager(this.app, this);
 
         // Wire up undo/redo to refresh views + re-index
@@ -361,6 +362,12 @@ export default class SceneCardsPlugin extends Plugin {
                     }
                 } catch (e) {
                     console.error('[StoryLine] Failed to load codex:', e);
+                }
+                // Load Events for the active project
+                try {
+                    await this.loadActiveProjectEvents();
+                } catch (e) {
+                    console.error('[StoryLine] Failed to load events:', e);
                 }
                 // Scan scene bodies for wikilinks after entities are fully loaded
                 // Issue #271 fix: explicitly re-scan to ensure link discovery works on reload
@@ -2415,6 +2422,32 @@ export default class SceneCardsPlugin extends Plugin {
             } catch { /* Universe inheritance is optional; ignore errors */ }
             await this.scanExtraFolders();
         }
+        // Restore inherited events from Universe and Series scopes
+        try {
+            await this.loadActiveProjectEvents();
+        } catch { /* project may not be set yet */ }
+    }
+
+    /**
+     * Load Events for the active project, including inherited Events from
+     * Universe and Series scopes.
+     */
+    async loadActiveProjectEvents(): Promise<void> {
+        const project = this.sceneManager.activeProject;
+        if (!project) return;
+
+        const eventsFolder = this.sceneManager.getEventsFolder();
+        if (eventsFolder) {
+            await this.eventManager.loadAll(eventsFolder);
+        }
+
+        // Load inherited events from Universe and Series scopes
+        try {
+            const inheritedFolders = await this.universeManager.getInheritedEventFolders(project);
+            if (inheritedFolders.length > 0) {
+                await this.eventManager.loadInheritedFolders(inheritedFolders);
+            }
+        } catch { /* Universe inheritance is optional; ignore errors */ }
     }
 
     /**
@@ -2718,6 +2751,10 @@ export default class SceneCardsPlugin extends Plugin {
                         }
                     } catch { /* Universe inheritance is optional; ignore errors */ }
                 }
+                // Restore inherited events from Universe and Series scopes
+                try {
+                    await this.loadActiveProjectEvents();
+                } catch { /* project may not be set yet */ }
             } catch { /* project may not be set yet */ }
         } else if (entityChanges) {
             try {

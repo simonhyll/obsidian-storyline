@@ -515,55 +515,298 @@ export class TimeSpanService {
 
     /**
      * Shift a timestamp by a given amount and unit.
+     * Handles month/year boundaries correctly, including leap years.
      */
     private shiftTimestamp(ts: Timestamp, amount: number, unit: TemporalOffset['unit']): Timestamp {
         const result: Timestamp = { ...ts };
 
         switch (unit) {
             case 'day':
-                if (result.day !== undefined) {
-                    result.day += amount;
+            case 'week': {
+                const days = unit === 'week' ? amount * 7 : amount;
+                if (result.day !== undefined && result.month !== undefined) {
+                    const shifted = this.addDays(result.year, result.month, result.day, days);
+                    result.year = shifted.year;
+                    result.month = shifted.month;
+                    result.day = shifted.day;
                 }
                 break;
-            case 'week':
-                if (result.day !== undefined) {
-                    result.day += amount * 7;
-                }
-                break;
+            }
             case 'month':
+            case 'season': {
+                const months = unit === 'season' ? amount * 3 : amount;
                 if (result.month !== undefined) {
-                    result.month += amount;
-                    // Handle month overflow
-                    while (result.month > 12) {
-                        result.month -= 12;
-                        result.year += 1;
-                    }
-                    while (result.month < 1) {
-                        result.month += 12;
-                        result.year -= 1;
-                    }
+                    const shifted = this.addMonths(result.year, result.month, result.day, months);
+                    result.year = shifted.year;
+                    result.month = shifted.month;
+                    if (shifted.day !== undefined) result.day = shifted.day;
                 }
                 break;
+            }
             case 'year':
                 result.year += amount;
-                break;
-            case 'season':
-                // Approximate: 1 season = 3 months
-                if (result.month !== undefined) {
-                    result.month += amount * 3;
-                    while (result.month > 12) {
-                        result.month -= 12;
-                        result.year += 1;
-                    }
-                    while (result.month < 1) {
-                        result.month += 12;
-                        result.year -= 1;
-                    }
-                }
                 break;
         }
 
         return result;
+    }
+
+    /**
+     * Add days to a date, handling month/year boundaries and leap years.
+     */
+    private addDays(year: number, month: number, day: number, days: number): { year: number; month: number; day: number } {
+        let y = year;
+        let m = month;
+        let d = day + days;
+
+        // Handle negative days by normalizing
+        while (d < 1) {
+            m -= 1;
+            if (m < 1) {
+                m = 12;
+                y -= 1;
+            }
+            d += this.getDaysInMonth(y, m);
+        }
+
+        // Handle overflow
+        while (true) {
+            const maxDay = this.getDaysInMonth(y, m);
+            if (d <= maxDay) break;
+            d -= maxDay;
+            m += 1;
+            if (m > 12) {
+                m = 1;
+                y += 1;
+            }
+        }
+
+        return { year: y, month: m, day: d };
+    }
+
+    /**
+     * Add months to a date, clamping the day to the target month's max.
+     * E.g., Jan 31 + 1 month = Feb 28 (or Feb 29 in leap year).
+     */
+    private addMonths(year: number, month: number, day: number | undefined, months: number): { year: number; month: number; day?: number } {
+        let y = year;
+        let m = month + months;
+
+        // Normalize month
+        while (m > 12) {
+            m -= 12;
+            y += 1;
+        }
+        while (m < 1) {
+            m += 12;
+            y -= 1;
+        }
+
+        // Clamp day to target month's max
+        let d = day;
+        if (d !== undefined) {
+            const maxDay = this.getDaysInMonth(y, m);
+            d = Math.min(d, maxDay);
+        }
+
+        return { year: y, month: m, day: d };
+    }
+
+    /**
+     * Get the number of days in a month, accounting for leap years.
+     */
+    private getDaysInMonth(year: number, month: number): number {
+        if (month === 2) {
+            return this.isLeapYear(year) ? 29 : 28;
+        }
+        const daysInMonth = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        return daysInMonth[month] || 30;
+    }
+
+    /**
+     * Check if a year is a leap year in the Gregorian calendar.
+     */
+    private isLeapYear(year: number): boolean {
+        return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+    }
+
+    // ── YAML Serialization/Deserialization ──
+
+    /**
+     * Serialize a TimeSpan to a plain object suitable for YAML serialization.
+     * The format is lossless and can be round-tripped back to a TimeSpan.
+     */
+    serializeToYaml(timeSpan: TimeSpan): Record<string, unknown> {
+        switch (timeSpan.kind) {
+            case 'instant':
+                return {
+                    kind: 'instant',
+                    instant: this.serializeTimestamp(timeSpan.instant),
+                    display: timeSpan.display,
+                };
+            case 'interval':
+                return {
+                    kind: 'interval',
+                    start: this.serializeTimestamp(timeSpan.start),
+                    end: this.serializeTimestamp(timeSpan.end),
+                    display: timeSpan.display,
+                };
+            case 'open-ended':
+                return {
+                    kind: 'open-ended',
+                    start: this.serializeTimestamp(timeSpan.start),
+                    display: timeSpan.display,
+                };
+            case 'uncertain':
+                return {
+                    kind: 'uncertain',
+                    range: {
+                        start: this.serializeTimestamp(timeSpan.range.start),
+                        end: this.serializeTimestamp(timeSpan.range.end),
+                    },
+                    confidence: timeSpan.confidence,
+                    display: timeSpan.display,
+                };
+            case 'unknown':
+                return {
+                    kind: 'unknown',
+                    display: timeSpan.display,
+                };
+            case 'relative':
+                return {
+                    kind: 'relative',
+                    relativeTo: timeSpan.relativeTo,
+                    offset: {
+                        amount: timeSpan.offset.amount,
+                        unit: timeSpan.offset.unit,
+                        direction: timeSpan.offset.direction,
+                    },
+                    display: timeSpan.display,
+                };
+        }
+    }
+
+    /**
+     * Serialize a Timestamp to a plain object for YAML.
+     */
+    private serializeTimestamp(ts: Timestamp): Record<string, unknown> {
+        const result: Record<string, unknown> = {
+            calendar: ts.calendar,
+            year: ts.year,
+        };
+        if (ts.month !== undefined) result.month = ts.month;
+        if (ts.day !== undefined) result.day = ts.day;
+        if (ts.hour !== undefined) result.hour = ts.hour;
+        if (ts.minute !== undefined) result.minute = ts.minute;
+        if (ts.precision !== undefined) result.precision = ts.precision;
+        return result;
+    }
+
+    /**
+     * Deserialize a TimeSpan from a plain object (parsed from YAML).
+     * Returns null if the object is not a valid TimeSpan.
+     */
+    deserializeFromYaml(obj: unknown): TimeSpan | null {
+        if (!obj || typeof obj !== 'object') return null;
+        const data = obj as Record<string, unknown>;
+        const kind = data.kind;
+
+        if (typeof kind !== 'string') return null;
+
+        switch (kind) {
+            case 'instant': {
+                const instant = this.deserializeTimestamp(data.instant);
+                if (!instant) return null;
+                return {
+                    kind: 'instant',
+                    instant,
+                    display: typeof data.display === 'string' ? data.display : undefined,
+                };
+            }
+            case 'interval': {
+                const start = this.deserializeTimestamp(data.start);
+                const end = this.deserializeTimestamp(data.end);
+                if (!start || !end) return null;
+                return {
+                    kind: 'interval',
+                    start,
+                    end,
+                    display: typeof data.display === 'string' ? data.display : undefined,
+                };
+            }
+            case 'open-ended': {
+                const start = this.deserializeTimestamp(data.start);
+                if (!start) return null;
+                return {
+                    kind: 'open-ended',
+                    start,
+                    display: typeof data.display === 'string' ? data.display : undefined,
+                };
+            }
+            case 'uncertain': {
+                const rangeData = data.range;
+                if (!rangeData || typeof rangeData !== 'object') return null;
+                const rangeStart = this.deserializeTimestamp((rangeData as any).start);
+                const rangeEnd = this.deserializeTimestamp((rangeData as any).end);
+                if (!rangeStart || !rangeEnd) return null;
+                return {
+                    kind: 'uncertain',
+                    range: { start: rangeStart, end: rangeEnd },
+                    confidence: typeof data.confidence === 'number' ? data.confidence : 0.5,
+                    display: typeof data.display === 'string' ? data.display : undefined,
+                };
+            }
+            case 'unknown':
+                return {
+                    kind: 'unknown',
+                    display: typeof data.display === 'string' ? data.display : undefined,
+                };
+            case 'relative': {
+                const offsetData = data.offset;
+                if (!offsetData || typeof offsetData !== 'object') return null;
+                const offset = offsetData as Record<string, unknown>;
+                return {
+                    kind: 'relative',
+                    relativeTo: typeof data.relativeTo === 'string' ? data.relativeTo : '',
+                    offset: {
+                        amount: typeof offset.amount === 'number' ? offset.amount : 0,
+                        unit: (typeof offset.unit === 'string' ? offset.unit : 'day') as TemporalOffset['unit'],
+                        direction: (typeof offset.direction === 'string' ? offset.direction : 'after') as 'before' | 'after',
+                    },
+                    display: typeof data.display === 'string' ? data.display : undefined,
+                };
+            }
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Deserialize a Timestamp from a plain object.
+     */
+    private deserializeTimestamp(obj: unknown): Timestamp | null {
+        if (!obj || typeof obj !== 'object') return null;
+        const data = obj as Record<string, unknown>;
+        if (typeof data.year !== 'number') return null;
+
+        const ts: Timestamp = {
+            calendar: typeof data.calendar === 'string' ? data.calendar : DEFAULT_CALENDAR,
+            year: data.year,
+        };
+        if (typeof data.month === 'number') ts.month = data.month;
+        if (typeof data.day === 'number') ts.day = data.day;
+        if (typeof data.hour === 'number') ts.hour = data.hour;
+        if (typeof data.minute === 'number') ts.minute = data.minute;
+        if (typeof data.precision === 'string') ts.precision = data.precision as DatePrecision;
+        else {
+            // Infer precision from available fields
+            if (ts.minute !== undefined) ts.precision = 'minute';
+            else if (ts.hour !== undefined) ts.precision = 'hour';
+            else if (ts.day !== undefined) ts.precision = 'day';
+            else if (ts.month !== undefined) ts.precision = 'month';
+            else ts.precision = 'year';
+        }
+        return ts;
     }
 
     // ── Legacy StoryDate/StoryTime Migration ──

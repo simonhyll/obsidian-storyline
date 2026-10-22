@@ -179,6 +179,19 @@ export class SceneManager implements ISceneStore {
         return `${root}/Codex`;
     }
 
+    /** Computed events folder for the active project (series-aware) */
+    getEventsFolder(): string | null {
+        if (this._activeProject?.seriesId || this._activeProject?.seriesUuid) {
+            const seriesFolder = this.getSeriesFolder();
+            if (seriesFolder) return normalizePath(`${seriesFolder}/Events`);
+        }
+        if (this._activeProject) {
+            const folders = deriveProjectFoldersFromFilePath(this._activeProject.filePath);
+            return normalizePath(`${folders.baseFolder}/Events`);
+        }
+        return null;
+    }
+
     /** Computed notes folder for the active project (corkboard sticky notes) */
     getNotesFolder(): string {
         if (this._activeProject) return this._activeProject.notesFolder;

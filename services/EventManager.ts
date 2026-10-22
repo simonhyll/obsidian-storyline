@@ -7,9 +7,12 @@
  */
 
 import type { App, Vault } from 'obsidian';
+import { TFile } from 'obsidian';
+import { parseYaml, stringifyYaml } from 'obsidian';
 import type { Event } from '../models/Event';
 import { createEvent, hasTemporalInfo } from '../models/Event';
 import type { TimeSpan } from '../models/TimeSpan';
+import type { TimeSpanService } from './TimeSpanService';
 import type { StoryLineProject } from '../models/StoryLineProject';
 
 /**
@@ -17,10 +20,18 @@ import type { StoryLineProject } from '../models/StoryLineProject';
  */
 export class EventManager {
     private app: App;
+    private timeSpanService: TimeSpanService | null = null;
     private events = new Map<string, Event>();
 
     constructor(app: App) {
         this.app = app;
+    }
+
+    /**
+     * Set the TimeSpanService for serialization/deserialization.
+     */
+    setTimeSpanService(service: TimeSpanService): void {
+        this.timeSpanService = service;
     }
 
     // ── CRUD ──
@@ -69,15 +80,19 @@ export class EventManager {
     }
 
     /**
-     * Get events within a TimeSpan range.
+     * Get events that overlap with the given time range.
+     * An event overlaps if any part of its time span falls within the range.
      */
-    getEventsInRange(rangeStart: TimeSpan, rangeEnd: TimeSpan, timeSpanService: any): Event[] {
+    getEventsInRange(rangeStart: TimeSpan, rangeEnd: TimeSpan): Event[] {
+        if (!this.timeSpanService) return [];
         return this.getAllEvents().filter(e => {
             if (!e.timeSpan) return false;
-            // Simple check: event's earliest point falls within the range
-            const cmpStart = timeSpanService.compare(e.timeSpan, rangeStart);
-            const cmpEnd = timeSpanService.compare(e.timeSpan, rangeEnd);
-            return cmpStart >= 0 && cmpEnd <= 0;
+            // Check if the event overlaps the range
+            return this.timeSpanService!.overlaps(e.timeSpan, {
+                kind: 'interval',
+                start: (rangeStart as any).instant || (rangeStart as any).start,
+                end: (rangeEnd as any).instant || (rangeEnd as any).start,
+            });
         });
     }
 
@@ -110,10 +125,9 @@ export class EventManager {
     async loadAll(eventsFolder: string): Promise<void> {
         this.clear();
         const vault = this.app.vault;
-        const adapter = vault.adapter;
 
         // Check if the folder exists
-        if (!(await adapter.exists(eventsFolder))) {
+        if (!(await vault.adapter.exists(eventsFolder))) {
             return;
         }
 
@@ -135,13 +149,13 @@ export class EventManager {
 
     /**
      * Load events from multiple folders (for inherited collections).
+     * Book-level events take precedence; duplicate UUIDs are reported as conflicts.
      */
     async loadInheritedFolders(folderPaths: string[]): Promise<void> {
         const vault = this.app.vault;
-        const adapter = vault.adapter;
 
         for (const folder of folderPaths) {
-            if (!(await adapter.exists(folder))) {
+            if (!(await vault.adapter.exists(folder))) {
                 continue;
             }
 
@@ -171,19 +185,33 @@ export class EventManager {
 
     /**
      * Parse an Event from Markdown content with YAML frontmatter.
+     * Uses Obsidian's parseYaml for proper nested object handling.
      */
     parseEvent(content: string, filePath: string): Event | null {
         // Extract frontmatter
-        const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+        const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
         if (!frontmatterMatch) return null;
 
         const frontmatterText = frontmatterMatch[1];
-        const frontmatter = this.parseYaml(frontmatterText);
+        let frontmatter: Record<string, unknown>;
+        try {
+            frontmatter = parseYaml(frontmatterText);
+            if (!frontmatter || typeof frontmatter !== 'object') return null;
+        } catch {
+            return null;
+        }
 
         // Body is everything after frontmatter
         const body = content.slice(frontmatterMatch[0].length).trim();
 
         const safeFm = frontmatter as Record<string, unknown>;
+
+        // Parse TimeSpan from YAML
+        let timeSpan: TimeSpan | undefined;
+        if (safeFm.timeSpan && this.timeSpanService) {
+            const parsed = this.timeSpanService.deserializeFromYaml(safeFm.timeSpan);
+            if (parsed) timeSpan = parsed;
+        }
 
         const event: Event = {
             filePath,
@@ -192,6 +220,7 @@ export class EventManager {
             name: String(safeFm.name || ''),
             ownerId: safeFm.ownerId ? String(safeFm.ownerId) : undefined,
             introducedIn: safeFm.introducedIn ? String(safeFm.introducedIn) : undefined,
+            timeSpan,
             location: safeFm.location ? String(safeFm.location) : undefined,
             participants: this.parseStringArray(safeFm.participants),
             description: safeFm.description ? String(safeFm.description) : undefined,
@@ -200,6 +229,9 @@ export class EventManager {
             created: safeFm.created ? String(safeFm.created) : undefined,
             modified: safeFm.modified ? String(safeFm.modified) : undefined,
             body,
+            universalFields: safeFm.universalFields && typeof safeFm.universalFields === 'object'
+                ? safeFm.universalFields as Record<string, string | string[] | boolean | number>
+                : undefined,
         };
 
         return event;
@@ -222,11 +254,10 @@ export class EventManager {
         }
     ): Promise<Event> {
         const vault = this.app.vault;
-        const adapter = vault.adapter;
 
         // Ensure the folder exists
-        if (!(await adapter.exists(eventsFolder))) {
-            await adapter.mkdir(eventsFolder);
+        if (!(await vault.adapter.exists(eventsFolder))) {
+            await vault.adapter.mkdir(eventsFolder);
         }
 
         // Generate file name from event name
@@ -237,9 +268,7 @@ export class EventManager {
         const event = createEvent(name, filePath, options);
 
         // Write the file
-        const frontmatter = this.buildFrontmatter(event);
-        const content = `---\n${frontmatter}---\n`;
-
+        const content = this.buildEventContent(event);
         await vault.create(filePath, content);
         this.addEvent(event);
 
@@ -255,92 +284,74 @@ export class EventManager {
         // Read existing content to preserve body
         let body = event.body || '';
         if (await vault.adapter.exists(event.filePath)) {
-            const existing = await vault.read(vault.getAbstractFileByPath(event.filePath) as any);
-            const bodyMatch = existing.match(/---\n[\s\S]*?\n---\n([\s\S]*)/);
-            if (bodyMatch) {
-                body = bodyMatch[1];
+            const file = vault.getAbstractFileByPath(event.filePath);
+            if (file instanceof TFile) {
+                const existing = await vault.read(file);
+                const bodyMatch = existing.match(/---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)([\s\S]*)$/);
+                if (bodyMatch) {
+                    body = bodyMatch[1];
+                }
             }
         }
 
         event.body = body;
         event.modified = new Date().toISOString();
 
-        const frontmatter = this.buildFrontmatter(event);
-        const content = `---\n${frontmatter}---\n${body}`;
-
-        await vault.modify(vault.getAbstractFileByPath(event.filePath) as any, content);
+        const content = this.buildEventContent(event, body);
+        const file = vault.getAbstractFileByPath(event.filePath);
+        if (file instanceof TFile) {
+            await vault.modify(file, content);
+        }
         this.addEvent(event);
     }
 
+    /**
+     * Delete an event file.
+     */
+    async deleteEvent(event: Event): Promise<void> {
+        const vault = this.app.vault;
+        if (await vault.adapter.exists(event.filePath)) {
+            await vault.adapter.remove(event.filePath);
+        }
+        this.removeEvent(event.id);
+    }
+
+    // ── Content Building ──
+
+    /**
+     * Build complete file content for an Event.
+     * Uses Obsidian's stringifyYaml for proper nested object handling.
+     */
+    buildEventContent(event: Event, body?: string): string {
+        const fm: Record<string, unknown> = {
+            type: 'event',
+            id: event.id,
+            name: event.name,
+        };
+
+        if (event.ownerId) fm.ownerId = event.ownerId;
+        if (event.introducedIn) fm.introducedIn = event.introducedIn;
+        if (event.location) fm.location = event.location;
+        if (event.participants && event.participants.length > 0) fm.participants = event.participants;
+        if (event.description) fm.description = event.description;
+        if (event.tags && event.tags.length > 0) fm.tags = event.tags;
+        if (event.booksById && event.booksById.length > 0) fm.booksById = event.booksById;
+        if (event.universalFields && Object.keys(event.universalFields).length > 0) {
+            fm.universalFields = event.universalFields;
+        }
+        if (event.created) fm.created = event.created;
+        if (event.modified) fm.modified = event.modified;
+
+        // Serialize TimeSpan using TimeSpanService
+        if (event.timeSpan && this.timeSpanService) {
+            fm.timeSpan = this.timeSpanService.serializeToYaml(event.timeSpan);
+        }
+
+        const finalBody = body ?? event.body ?? '';
+        return `---\n${stringifyYaml(fm)}---\n${finalBody}`;
+    }
+
     // ── Helpers ──
-
-    /**
-     * Build YAML frontmatter string from an Event.
-     */
-    buildFrontmatter(event: Event): string {
-        const lines: string[] = [];
-        lines.push(`type: event`);
-        if (event.id) lines.push(`id: ${event.id}`);
-        lines.push(`name: ${this.escapeYaml(event.name)}`);
-        if (event.ownerId) lines.push(`ownerId: ${event.ownerId}`);
-        if (event.introducedIn) lines.push(`introducedIn: ${event.introducedIn}`);
-        if (event.location) lines.push(`location: ${event.location}`);
-        if (event.participants && event.participants.length > 0) {
-            lines.push(`participants: [${event.participants.join(', ')}]`);
-        }
-        if (event.description) lines.push(`description: ${this.escapeYaml(event.description)}`);
-        if (event.tags && event.tags.length > 0) {
-            lines.push(`tags: [${event.tags.join(', ')}]`);
-        }
-        if (event.booksById && event.booksById.length > 0) {
-            lines.push(`booksById: [${event.booksById.join(', ')}]`);
-        }
-        if (event.created) lines.push(`created: ${event.created}`);
-        if (event.modified) lines.push(`modified: ${event.modified}`);
-        return lines.join('\n');
-    }
-
-    /**
-     * Escape a string for YAML.
-     */
-    escapeYaml(value: string): string {
-        // Simple escaping: quote if contains special chars
-        if (value.includes(':') || value.includes('#') || value.includes("'") || value.includes('"')) {
-            return `"${value.replace(/"/g, '\\"')}"`;
-        }
-        return value;
-    }
-
-    /**
-     * Parse a YAML string into a Record.
-     */
-    parseYaml(text: string): Record<string, unknown> {
-        const result: Record<string, unknown> = {};
-        for (const line of text.split('\n')) {
-            const match = line.match(/^(\w+):\s*(.+)$/);
-            if (match) {
-                const [, key, value] = match;
-                const cleaned = value.trim();
-
-                // Handle arrays: [item1, item2]
-                if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
-                    const inner = cleaned.slice(1, -1);
-                    result[key] = inner
-                        .split(',')
-                        .map(s => s.trim().replace(/^["']|["']$/g, ''))
-                        .filter(Boolean);
-                }
-                // Handle booleans
-                else if (cleaned === 'true') result[key] = true;
-                else if (cleaned === 'false') result[key] = false;
-                // Handle numbers
-                else if (!isNaN(Number(cleaned))) result[key] = Number(cleaned);
-                // Handle strings
-                else result[key] = cleaned.replace(/^["']|["']$/g, '');
-            }
-        }
-        return result;
-    }
 
     /**
      * Parse a string array from frontmatter.

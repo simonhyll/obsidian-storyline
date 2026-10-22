@@ -525,6 +525,42 @@ export class UniverseManager {
     }
 
     /**
+     * Get the parent Events folder paths from Universe and Series scopes.
+     * Returns an ordered array: [universeEventsFolder?, seriesEventsFolder?].
+     */
+    async getInheritedEventFolders(project: StoryLineProject): Promise<string[]> {
+        const hierarchy = await this.resolveHierarchyPath(project);
+        const folders: string[] = [];
+
+        // Universe-level Events folder
+        if (hierarchy.universe) {
+            const universeFolder = this.findUniverseFolder(hierarchy.universe.id);
+            if (universeFolder) {
+                const universeEvents = normalizePath(`${universeFolder}/Events`);
+                folders.push(universeEvents);
+            }
+        }
+
+        // Series-level Events folder
+        if (hierarchy.series && (hierarchy.series.seriesUuid || hierarchy.series.name)) {
+            let seriesFolder: string | null = null;
+            const allSeries = await this.plugin.seriesManager.discoverSeries();
+            for (const { folder, meta } of allSeries) {
+                if (meta.seriesUuid === hierarchy.series.seriesUuid || meta.name === hierarchy.series.name) {
+                    seriesFolder = folder;
+                    break;
+                }
+            }
+            if (seriesFolder) {
+                const seriesEvents = normalizePath(`${seriesFolder}/Events`);
+                folders.push(seriesEvents);
+            }
+        }
+
+        return folders;
+    }
+
+    /**
      * Get the owner ID for an entity based on its file path.
      * Determines which Universe, Series, or Book owns the entity.
      */
