@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
-    "lint:obsidian": "eslint \"**/*.ts\""
+    "lint:obsidian": "eslint \"**/*.ts\"",
+    "vault:install": "node scripts/sync-vault.mjs",
+    "vault:watch": "node scripts/sync-vault.mjs --watch"
   },
   "keywords": [
     "obsidian",
