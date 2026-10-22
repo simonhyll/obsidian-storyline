@@ -1231,15 +1231,21 @@ Fix reloadEntities() losing inherited codex, add id parsing to CodexManager, and
 ### ✓ Step 7: Implement Phase 2 — TimeSpan and Events
 Implement the shared TimeSpan model, Event entities, and Scene-Event references.
 
-- ✓ Create services/TimeSpanService.ts (614 lines) — Full implementation: Gregorian calendar adapter, parsing all 6 TimeSpan kinds, comparison, overlap detection, contains, relative date resolution with chain accumulation, legacy storyDate/storyTime migration, display formatting
+- ✓ Create services/TimeSpanService.ts — Full implementation: Gregorian calendar adapter, parsing all 6 TimeSpan kinds, comparison, overlap detection, contains, relative date resolution with chain accumulation, legacy storyDate/storyTime migration, display formatting
+- ✓ Fix TimeSpanService date arithmetic — proper month/year boundary handling, leap year support, day clamping for month overflow
+- ✓ Add TimeSpanService serializeToYaml/deserializeFromYaml — lossless TimeSpan round-trips through YAML
 - ✓ Create models/Event.ts (114 lines) — Event model with timeSpan, location, participants, ownerId, introducedIn, createEvent factory
-- ✓ Create services/EventManager.ts (371 lines) — Event CRUD, loadAll, loadInheritedFolders, frontmatter parsing, file creation
+- ✓ Rewrite services/EventManager.ts — Uses Obsidian parseYaml/stringifyYaml, TimeSpan serialization in frontmatter, body preservation, setTimeSpanService, deleteEvent, buildEventContent
 - ✓ Update models/Scene.ts — Added optional timeSpan and eventRefs fields
 - ✓ Create components/TimeSpanPicker.ts (447 lines) — UI for selecting all 6 TimeSpan kinds with Obsidian Setting API
 - ✓ Create components/EventCard.ts (92 lines) — Event rendering component for views
-- ✓ Wire up in main.ts — Initialize TimeSpanService and EventManager as plugin properties
+- ✓ Add SceneManager.getEventsFolder() — Book/series event folder resolution
+- ✓ Add UniverseManager.getInheritedEventFolders() — Universe/Series event inheritance
+- ✓ Wire up in main.ts — TimeSpanService + EventManager initialization, loadActiveProjectEvents on startup/reload/refresh
+- ✓ Fix obsidian mock — Recursive YAML parser supporting arbitrary nesting depth and arrays
 - ✓ 46 tests for TimeSpanService: parsing (11), formatting (7), comparison (5), overlap (7), contains (4), relative resolution (5), legacy migration (4), calendar registration (3)
+- ✓ 24 tests for EventManager: TimeSpan round-trips (6), persistence (4), CRUD (6), duplicate UUID detection (1), date arithmetic (6), overlap queries (1)
 - ✓ Build verification — pnpm run build passes
-- ✓ Test verification — 156/156 tests pass (110 existing + 46 new)
+- ✓ Test verification — 180/180 tests pass (156 existing + 24 new)
 - ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
 - ✓ Committed to feat/rework branch
