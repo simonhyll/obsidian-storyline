@@ -60,6 +60,7 @@ import { LinkScanner } from './services/LinkScanner';
 import { CascadeRenameService } from './services/CascadeRenameService';
 import { FieldTemplateService } from './services/FieldTemplateService';
 import { SeriesManager } from './services/SeriesManager';
+import { UniverseManager } from './services/UniverseManager';
 import { buildFormattingToolbar } from './components/FormattingToolbar';
 import { setupMobileKeyboardHandling } from './components/MobileAdapter';
 import { EditorView } from '@codemirror/view';
@@ -89,6 +90,7 @@ export default class SceneCardsPlugin extends Plugin {
     cascadeRename!: CascadeRenameService;
     fieldTemplates!: FieldTemplateService;
     seriesManager!: SeriesManager;
+    universeManager!: UniverseManager;
     researchManager!: ResearchManager;
     /** The leaf currently hosting a StoryLine view */
     storyLeaf: WorkspaceLeaf | null = null;
@@ -200,6 +202,7 @@ export default class SceneCardsPlugin extends Plugin {
             await this.migrateUniversalFieldMirror(change);
         });
         this.seriesManager = new SeriesManager(this.app, this);
+        this.universeManager = new UniverseManager(this.app, this);
         this.researchManager = new ResearchManager(this.app, this);
 
         // Wire up undo/redo to refresh views + re-index
@@ -635,6 +638,32 @@ export default class SceneCardsPlugin extends Plugin {
                     new Notice((e instanceof Error ? e.message : String(e)), 10000);
                 }
             },
+        });
+
+        // ── Universe commands ──
+
+        this.addCommand({
+            id: 'create-universe',
+            name: 'Create new universe',
+            callback: () => this.openCreateUniverseModal(),
+        });
+
+        this.addCommand({
+            id: 'add-series-to-universe',
+            name: 'Add series to universe',
+            callback: () => this.openAddSeriesToUniverseModal(),
+        });
+
+        this.addCommand({
+            id: 'remove-series-from-universe',
+            name: 'Remove series from universe',
+            callback: () => this.openRemoveSeriesFromUniverseModal(),
+        });
+
+        this.addCommand({
+            id: 'delete-universe',
+            name: 'Delete universe',
+            callback: () => this.openDeleteUniverseModal(),
         });
 
         this.addCommand({
@@ -3567,6 +3596,205 @@ export default class SceneCardsPlugin extends Plugin {
                         new Notice((e instanceof Error ? e.message : String(e)), 10000);
                     }
                 });
+            });
+
+        modal.open();
+    }
+
+    // ── Universe modals ──────────────────────────────
+
+    private async openCreateUniverseModal(): Promise<void> {
+        const modal = new Modal(this.app);
+        modal.titleEl.setText('Create new universe');
+        let universeName = '';
+
+        new Setting(modal.contentEl)
+            .setName('Universe name')
+            .setDesc('A universe groups multiple series. Existing series can be added later.')
+            .addText((text: TextComponent) => {
+                text.setPlaceholder('My universe')
+                    .onChange((v: string) => (universeName = v));
+                window.setTimeout(() => { text.inputEl.focus(); }, 50);
+            });
+
+        new Setting(modal.contentEl)
+            .addButton((btn: ButtonComponent) => {
+                btn.setButtonText('Create').setCta().onClick(async () => {
+                    if (!universeName.trim()) {
+                        new Notice('Please enter a universe name.');
+                        return;
+                    }
+                    try {
+                        await this.universeManager.createUniverse(universeName.trim());
+                        modal.close();
+                        this.refreshOpenViews();
+                    } catch (e: unknown) {
+                        new Notice((e instanceof Error ? e.message : String(e)), 10000);
+                    }
+                });
+            });
+
+        modal.open();
+    }
+
+    private async openAddSeriesToUniverseModal(): Promise<void> {
+        const modal = new Modal(this.app);
+        modal.titleEl.setText('Add series to universe');
+
+        const universes = await this.universeManager.getAllUniverses();
+        if (universes.length === 0) {
+            new Notice('No universes found. Create one first.');
+            return;
+        }
+
+        const seriesList = await this.seriesManager.discoverSeries();
+        if (seriesList.length === 0) {
+            new Notice('No series found. Create one first.');
+            return;
+        }
+
+        let selectedUniverse = universes[0].id;
+        let selectedSeries = seriesList[0].folder;
+
+        new Setting(modal.contentEl)
+            .setName('Universe')
+            .addDropdown((drop: DropdownComponent) => {
+                for (const u of universes) {
+                    drop.addOption(u.id, u.name);
+                }
+                drop.setValue(selectedUniverse)
+                    .onChange((v: string) => (selectedUniverse = v));
+            });
+
+        new Setting(modal.contentEl)
+            .setName('Series')
+            .addDropdown((drop: DropdownComponent) => {
+                for (const { folder, meta } of seriesList) {
+                    drop.addOption(folder, meta.name);
+                }
+                drop.setValue(selectedSeries)
+                    .onChange((v: string) => (selectedSeries = v));
+            });
+
+        new Setting(modal.contentEl)
+            .addButton((btn: ButtonComponent) => {
+                btn.setButtonText('Add').setCta().onClick(async () => {
+                    try {
+                        await this.universeManager.addSeriesToUniverse(selectedUniverse, selectedSeries);
+                        modal.close();
+                        this.refreshOpenViews();
+                    } catch (e: unknown) {
+                        new Notice((e instanceof Error ? e.message : String(e)), 10000);
+                    }
+                });
+            });
+
+        modal.open();
+    }
+
+    private async openRemoveSeriesFromUniverseModal(): Promise<void> {
+        const modal = new Modal(this.app);
+        modal.titleEl.setText('Remove series from universe');
+
+        const universes = await this.universeManager.getAllUniverses();
+        if (universes.length === 0) {
+            new Notice('No universes found.');
+            return;
+        }
+
+        let selectedUniverse = universes[0].id;
+        const seriesIds = await this.universeManager.getSeriesForUniverse(selectedUniverse);
+        if (seriesIds.length === 0) {
+            new Notice('This universe has no series.');
+            return;
+        }
+
+        // Map series UUIDs to names
+        const seriesList = await this.seriesManager.discoverSeries();
+        const seriesNameMap = new Map<string, string>();
+        for (const { meta } of seriesList) {
+            if (meta.seriesUuid) {
+                seriesNameMap.set(meta.seriesUuid, meta.name);
+            }
+        }
+
+        let selectedSeries = seriesIds[0];
+
+        new Setting(modal.contentEl)
+            .setName('Universe')
+            .addDropdown((drop: DropdownComponent) => {
+                for (const u of universes) {
+                    drop.addOption(u.id, u.name);
+                }
+                drop.setValue(selectedUniverse)
+                    .onChange(async (v: string) => {
+                        selectedUniverse = v;
+                        // Refresh series list for the selected universe
+                    });
+            });
+
+        new Setting(modal.contentEl)
+            .setName('Series to remove')
+            .addDropdown((drop: DropdownComponent) => {
+                for (const sid of seriesIds) {
+                    const name = seriesNameMap.get(sid) || sid.substring(0, 8) + '...';
+                    drop.addOption(sid, name);
+                }
+                drop.setValue(selectedSeries)
+                    .onChange((v: string) => (selectedSeries = v));
+            });
+
+        new Setting(modal.contentEl)
+            .addButton((btn: ButtonComponent) => {
+                btn.setButtonText('Remove').setCta().onClick(async () => {
+                    try {
+                        await this.universeManager.removeSeriesFromUniverse(selectedUniverse, selectedSeries);
+                        modal.close();
+                        this.refreshOpenViews();
+                    } catch (e: unknown) {
+                        new Notice((e instanceof Error ? e.message : String(e)), 10000);
+                    }
+                });
+            });
+
+        modal.open();
+    }
+
+    private async openDeleteUniverseModal(): Promise<void> {
+        const modal = new Modal(this.app);
+        modal.titleEl.setText('Delete universe');
+
+        const universes = await this.universeManager.getAllUniverses();
+        if (universes.length === 0) {
+            new Notice('No universes found.');
+            return;
+        }
+
+        let selectedUniverse = universes[0].id;
+
+        new Setting(modal.contentEl)
+            .setName('Universe to delete')
+            .setDesc('This removes universe.json and shared Codex. Series and books are preserved as standalone.')
+            .addDropdown((drop: DropdownComponent) => {
+                for (const u of universes) {
+                    drop.addOption(u.id, u.name);
+                }
+                drop.setValue(selectedUniverse);
+                drop.onChange((v: string) => (selectedUniverse = v));
+            });
+
+        new Setting(modal.contentEl)
+            .addButton((btn: ButtonComponent) => {
+                btn.setButtonText('Delete').setCta().setWarning()
+                    .onClick(async () => {
+                        try {
+                            await this.universeManager.deleteUniverse(selectedUniverse);
+                            modal.close();
+                            this.refreshOpenViews();
+                        } catch (e: unknown) {
+                            new Notice((e instanceof Error ? e.message : String(e)), 10000);
+                        }
+                    });
             });
 
         modal.open();

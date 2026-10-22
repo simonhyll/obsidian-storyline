@@ -42,6 +42,8 @@ export class SeriesManager {
             return {
                 name: data.name,
                 seriesUuid: typeof data.seriesUuid === 'string' ? data.seriesUuid : undefined,
+                universeId: typeof data.universeId === 'string' ? data.universeId : undefined,
+                ownerId: typeof data.ownerId === 'string' ? data.ownerId : undefined,
                 bookOrder: data.bookOrder,
                 bookIds: Array.isArray(data.bookIds) ? data.bookIds : undefined,
                 created: data.created || '',

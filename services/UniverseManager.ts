@@ -1,0 +1,625 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
+import { App, Notice, normalizePath } from 'obsidian';
+import type SceneCardsPlugin from '../main';
+import type { SeriesMetadata, StoryLineProject } from '../models/StoryLineProject';
+import {
+    UniverseMetadata,
+    ContainerEntity,
+    HierarchyPath,
+    InheritedCollectionResult,
+    UNIVERSE_JSON,
+    UNIVERSE_CODEX_FOLDER,
+    buildHierarchyPath,
+} from '../models/Universe';
+
+/**
+ * Manages the Universe → Series → Book hierarchy.
+ *
+ * Responsibilities:
+ * - Create, load, save, and delete Universes (universe.json)
+ * - Add/remove Series from Universes
+ * - Resolve inherited collections (Characters, Locations, Codex, Events)
+ * - Navigate the hierarchy (parent/child lookups)
+ * - Discover existing universes in the vault
+ *
+ * Backward compatibility:
+ * - All new fields are optional
+ * - Existing series continue to work without a Universe
+ * - Standalone books (no series, no universe) remain fully supported
+ * - Creating a Universe does NOT automatically reorganize or move existing directories
+ */
+export class UniverseManager {
+    private app: App;
+    private plugin: SceneCardsPlugin;
+
+    // Cache: folder path → UniverseMetadata
+    private universeCache = new Map<string, UniverseMetadata>();
+
+    constructor(app: App, plugin: SceneCardsPlugin) {
+        this.app = app;
+        this.plugin = plugin;
+    }
+
+    // ── Universe CRUD ──────────────────────────────────
+
+    /**
+     * Create a new Universe. This creates the folder structure and universe.json.
+     * Does NOT move existing series or books — the hierarchy is a logical overlay.
+     */
+    async createUniverse(name: string): Promise<UniverseMetadata> {
+        const root = this.plugin.settings.storyLineRoot;
+        const safeName = name.replace(/[\\/:*?"<>|]/g, '-');
+        const universeFolder = normalizePath(`${root}/${safeName}`);
+        const adapter = this.app.vault.adapter;
+
+        // Check for name collision
+        if (await adapter.exists(universeFolder)) {
+            throw new Error(`A folder named "${safeName}" already exists.`);
+        }
+
+        // Create the Universe folder
+        await this.ensureFolder(universeFolder);
+
+        // Create shared Codex folder structure
+        const codexFolder = normalizePath(`${universeFolder}/${UNIVERSE_CODEX_FOLDER}`);
+        await this.ensureFolder(codexFolder);
+        await this.ensureFolder(normalizePath(`${codexFolder}/Characters`));
+        await this.ensureFolder(normalizePath(`${codexFolder}/Locations`));
+
+        // Create and save universe.json
+        const now = new Date().toISOString().split('T')[0];
+        const universe: UniverseMetadata = {
+            id: crypto.randomUUID(),
+            name: safeName,
+            seriesIds: [],
+            created: now,
+            modified: now,
+        };
+        await this.saveUniverseMetadata(universeFolder, universe);
+
+        // Cache it
+        this.universeCache.set(universeFolder, universe);
+
+        new Notice(`Universe "${safeName}" created`);
+        return universe;
+    }
+
+    /**
+     * Load universe.json from a universe folder.
+     * Returns null if the file doesn't exist or is invalid.
+     */
+    async loadUniverseMetadata(universeFolder: string): Promise<UniverseMetadata | null> {
+        // Check cache first
+        const cached = this.universeCache.get(universeFolder);
+        if (cached) return cached;
+
+        const adapter = this.app.vault.adapter;
+        const metaPath = normalizePath(`${universeFolder}/${UNIVERSE_JSON}`);
+        if (!await adapter.exists(metaPath)) return null;
+
+        try {
+            const raw = await adapter.read(metaPath);
+            const data = JSON.parse(raw);
+            if (!data.id || !data.name) return null;
+            const universe: UniverseMetadata = {
+                id: data.id,
+                name: data.name,
+                description: data.description || undefined,
+                seriesIds: Array.isArray(data.seriesIds) ? data.seriesIds : [],
+                created: data.created || '',
+                modified: data.modified || undefined,
+                coverImage: data.coverImage || undefined,
+            };
+            this.universeCache.set(universeFolder, universe);
+            return universe;
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * Save universe.json to the universe folder.
+     */
+    async saveUniverseMetadata(universeFolder: string, meta: UniverseMetadata): Promise<void> {
+        const adapter = this.app.vault.adapter;
+        const metaPath = normalizePath(`${universeFolder}/${UNIVERSE_JSON}`);
+        meta.modified = new Date().toISOString().split('T')[0];
+        await adapter.write(metaPath, JSON.stringify(meta, null, 2));
+        this.universeCache.set(universeFolder, meta);
+    }
+
+    /**
+     * Get a universe by ID. Searches all known universes.
+     */
+    async getUniverse(id: string): Promise<UniverseMetadata | null> {
+        const universes = await this.getAllUniverses();
+        return universes.find(u => u.id === id) || null;
+    }
+
+    /**
+     * Get all universes by scanning the StoryLine root.
+     */
+    async getAllUniverses(): Promise<UniverseMetadata[]> {
+        const root = this.plugin.settings.storyLineRoot;
+        const adapter = this.app.vault.adapter;
+        if (!await adapter.exists(root)) return [];
+
+        // Clear stale cache entries
+        this.universeCache.clear();
+
+        const listing = await adapter.list(root);
+        const results: UniverseMetadata[] = [];
+
+        for (const folder of listing.folders) {
+            const meta = await this.loadUniverseMetadata(folder);
+            if (meta) {
+                results.push(meta);
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * Delete a universe. Removes universe.json and shared Codex folder.
+     * Does NOT delete series or books — they become standalone.
+     */
+    async deleteUniverse(id: string): Promise<void> {
+        const universe = await this.getUniverse(id);
+        if (!universe) throw new Error('Universe not found');
+
+        // Find the universe folder
+        const root = this.plugin.settings.storyLineRoot;
+        const adapter = this.app.vault.adapter;
+        const listing = await adapter.list(root);
+        let universeFolder: string | null = null;
+
+        for (const folder of listing.folders) {
+            const meta = await this.loadUniverseMetadata(folder);
+            if (meta && meta.id === id) {
+                universeFolder = folder;
+                break;
+            }
+        }
+
+        if (!universeFolder) throw new Error('Universe folder not found');
+
+        // Remove universe.json
+        const metaPath = normalizePath(`${universeFolder}/${UNIVERSE_JSON}`);
+        if (await adapter.exists(metaPath)) {
+            await adapter.remove(metaPath);
+        }
+
+        // Remove shared Codex folder if empty
+        const codexFolder = normalizePath(`${universeFolder}/${UNIVERSE_CODEX_FOLDER}`);
+        await this.removeFolderIfEmpty(codexFolder);
+
+        // Clear series universeId references
+        for (const seriesId of universe.seriesIds || []) {
+            await this.removeSeriesFromUniverseInternal(seriesId);
+        }
+
+        // Clear cache
+        this.universeCache.delete(universeFolder);
+
+        new Notice(`Universe "${universe.name}" deleted`);
+    }
+
+    // ── Series ↔ Universe membership ──────────────────
+
+    /**
+     * Add an existing series to a universe.
+     * The series folder must be inside the universe folder.
+     */
+    async addSeriesToUniverse(universeId: string, seriesFolder: string): Promise<void> {
+        const universe = await this.getUniverse(universeId);
+        if (!universe) throw new Error('Universe not found');
+
+        const seriesMeta = await this.plugin.seriesManager.loadSeriesMetadata(seriesFolder);
+        if (!seriesMeta) throw new Error('Invalid series folder — no series.json found');
+
+        const seriesUuid = seriesMeta.seriesUuid;
+        if (!seriesUuid) {
+            throw new Error('Series must have a UUID. Ensure the series was created via StoryLine.');
+        }
+
+        // Add series to universe
+        if (!universe.seriesIds) universe.seriesIds = [];
+        if (!universe.seriesIds.includes(seriesUuid)) {
+            universe.seriesIds.push(seriesUuid);
+        }
+        await this.saveUniverseMetadata(
+            this.findUniverseFolder(universeId)!,
+            universe
+        );
+
+        // Update series metadata with universe reference
+        seriesMeta.universeId = universeId;
+        seriesMeta.ownerId = universeId;
+        await this.plugin.seriesManager.saveSeriesMetadata(seriesFolder, seriesMeta);
+
+        new Notice(`Series "${seriesMeta.name}" added to universe "${universe.name}"`);
+    }
+
+    /**
+     * Remove a series from its universe.
+     * The series becomes standalone but retains its data.
+     */
+    async removeSeriesFromUniverse(universeId: string, seriesUuid: string): Promise<void> {
+        const universe = await this.getUniverse(universeId);
+        if (!universe) throw new Error('Universe not found');
+
+        const universeFolder = this.findUniverseFolder(universeId)!;
+
+        // Remove series from universe
+        universe.seriesIds = (universe.seriesIds || []).filter(id => id !== seriesUuid);
+        await this.saveUniverseMetadata(universeFolder, universe);
+
+        // Clear series universe reference
+        await this.removeSeriesFromUniverseInternal(seriesUuid);
+
+        new Notice(`Series removed from universe "${universe.name}"`);
+    }
+
+    /**
+     * Internal: clear universe reference from a series by UUID.
+     */
+    private async removeSeriesFromUniverseInternal(seriesUuid: string): Promise<void> {
+        // Find the series folder by UUID
+        const seriesList = await this.plugin.seriesManager.discoverSeries();
+        for (const { folder, meta } of seriesList) {
+            if (meta.seriesUuid === seriesUuid) {
+                meta.universeId = undefined;
+                meta.ownerId = undefined;
+                await this.plugin.seriesManager.saveSeriesMetadata(folder, meta);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Get series IDs for a universe.
+     */
+    async getSeriesForUniverse(universeId: string): Promise<string[]> {
+        const universe = await this.getUniverse(universeId);
+        return universe?.seriesIds || [];
+    }
+
+    /**
+     * Get the universe ID for a series.
+     */
+    async getUniverseForSeries(seriesId: string): Promise<string | null> {
+        const seriesList = await this.plugin.seriesManager.discoverSeries();
+        for (const { meta } of seriesList) {
+            if (meta.seriesUuid === seriesId || meta.name === seriesId) {
+                return meta.universeId || null;
+            }
+        }
+        return null;
+    }
+
+    // ── Hierarchy navigation ───────────────────────────
+
+    /**
+     * Build a ContainerEntity from a Universe.
+     */
+    universeToContainer(universe: UniverseMetadata, folderPath: string): ContainerEntity {
+        return {
+            id: universe.id,
+            type: 'universe' as const,
+            name: universe.name,
+            childIds: universe.seriesIds,
+            folderPath,
+            created: universe.created,
+        };
+    }
+
+    /**
+     * Build a ContainerEntity from a Series.
+     */
+    seriesToContainer(series: SeriesMetadata, folderPath: string): ContainerEntity {
+        return {
+            id: series.seriesUuid || series.name,
+            type: 'series' as const,
+            name: series.name,
+            parentId: series.universeId,
+            childIds: series.bookIds,
+            folderPath,
+            created: series.created,
+        };
+    }
+
+    /**
+     * Resolve the full hierarchy path for a book.
+     * Returns Universe → Series → Book chain, with missing parts as undefined.
+     */
+    async resolveHierarchyPath(project: StoryLineProject): Promise<HierarchyPath> {
+        let series: SeriesMetadata | null = null;
+        let universe: UniverseMetadata | null = null;
+
+        // Resolve Series
+        if (project.seriesUuid || project.seriesId) {
+            const seriesFolder = this.plugin.sceneManager.getSeriesFolder();
+            if (seriesFolder) {
+                series = await this.plugin.seriesManager.loadSeriesMetadata(seriesFolder);
+            }
+        }
+
+        // Resolve Universe
+        if (project.universeId) {
+            universe = await this.getUniverse(project.universeId);
+        } else if (series?.universeId) {
+            universe = await this.getUniverse(series.universeId);
+        }
+
+        return buildHierarchyPath(project, series, universe);
+    }
+
+    /**
+     * Get all books (projects) belonging to a universe, directly or via series.
+     */
+    async getBooksInUniverse(universeId: string): Promise<StoryLineProject[]> {
+        const universe = await this.getUniverse(universeId);
+        if (!universe) return [];
+
+        const projects = this.plugin.sceneManager.getProjects();
+        const result: StoryLineProject[] = [];
+
+        for (const project of projects) {
+            // Direct universe membership
+            if (project.universeId === universeId) {
+                result.push(project);
+                continue;
+            }
+
+            // Via series
+            if (project.seriesUuid && universe.seriesIds?.includes(project.seriesUuid)) {
+                result.push(project);
+                continue;
+            }
+
+            // Via series universeId
+            if (project.seriesUuid) {
+                const seriesUniverse = await this.getUniverseForSeries(project.seriesUuid);
+                if (seriesUniverse === universeId) {
+                    result.push(project);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    // ── Inherited collection resolution ────────────────
+
+    /**
+     * Resolve inherited collections for a book.
+     * Returns merged entity file paths from Universe ∪ Series ∪ Book scopes.
+     */
+    async resolveInheritedCollections(
+        project: StoryLineProject,
+        collectionType: string
+    ): Promise<InheritedCollectionResult> {
+        const hierarchy = await this.resolveHierarchyPath(project);
+        const bookId = project.bookId || project.filePath;
+
+        const universeEntities: string[] = [];
+        const seriesEntities: string[] = [];
+        const bookEntities: string[] = [];
+
+        // Universe-level entities
+        if (hierarchy.universe) {
+            const universeFolder = this.findUniverseFolder(hierarchy.universe.id);
+            if (universeFolder) {
+                const collectionFolder = normalizePath(`${universeFolder}/${UNIVERSE_CODEX_FOLDER}/${collectionType}`);
+                universeEntities.push(...await this.listMarkdownFiles(collectionFolder));
+            }
+        }
+
+        // Series-level entities
+        if (hierarchy.series) {
+            const seriesFolder = this.plugin.sceneManager.getSeriesFolder();
+            if (seriesFolder) {
+                const collectionFolder = normalizePath(`${seriesFolder}/${UNIVERSE_CODEX_FOLDER}/${collectionType}`);
+                seriesEntities.push(...await this.listMarkdownFiles(collectionFolder));
+            }
+        }
+
+        // Book-level entities
+        const bookFolders = this.deriveProjectFolders(project.filePath);
+        const bookCollectionFolder = this.getCollectionFolder(bookFolders, collectionType);
+        bookEntities.push(...await this.listMarkdownFiles(bookCollectionFolder));
+
+        // Merge and deduplicate
+        const allEntities = Array.from(new Set([...universeEntities, ...seriesEntities, ...bookEntities]));
+
+        return {
+            collectionType,
+            bookId,
+            universeEntities,
+            seriesEntities,
+            bookEntities,
+            allEntities,
+        };
+    }
+
+    /**
+     * Get the owner ID for an entity based on its file path.
+     * Determines which Universe, Series, or Book owns the entity.
+     */
+    async getOwnerId(entityFilePath: string): Promise<string | null> {
+        const projects = this.plugin.sceneManager.getProjects();
+
+        // Check if it's in a book's codex
+        for (const project of projects) {
+            const bookFolders = this.deriveProjectFolders(project.filePath);
+            const bookCodex = bookFolders.codexFolder;
+            if (entityFilePath.startsWith(bookCodex)) {
+                return project.bookId || project.filePath;
+            }
+        }
+
+        // Check if it's in a series' codex
+        const seriesList = await this.plugin.seriesManager.discoverSeries();
+        for (const { folder, meta } of seriesList) {
+            const seriesCodex = normalizePath(`${folder}/${UNIVERSE_CODEX_FOLDER}`);
+            if (entityFilePath.startsWith(seriesCodex)) {
+                return meta.seriesUuid || meta.name;
+            }
+        }
+
+        // Check if it's in a universe's codex
+        const universes = await this.getAllUniverses();
+        for (const universe of universes) {
+            const universeFolder = this.findUniverseFolder(universe.id);
+            if (universeFolder) {
+                const universeCodex = normalizePath(`${universeFolder}/${UNIVERSE_CODEX_FOLDER}`);
+                if (entityFilePath.startsWith(universeCodex)) {
+                    return universe.id;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    // ── Discovery ──────────────────────────────────────
+
+    /**
+     * Discover all universes and their series/books in the vault.
+     * Returns a tree structure for navigation.
+     */
+    async discoverHierarchy(): Promise<Array<{
+        universe: UniverseMetadata;
+        folder: string;
+        series: Array<{
+            meta: SeriesMetadata;
+            folder: string;
+            books: StoryLineProject[];
+        }>;
+    }>> {
+        const universes = await this.getAllUniverses();
+        const result: Array<{
+            universe: UniverseMetadata;
+            folder: string;
+            series: Array<{
+                meta: SeriesMetadata;
+                folder: string;
+                books: StoryLineProject[];
+            }>;
+        }> = [];
+
+        for (const universe of universes) {
+            const universeFolder = this.findUniverseFolder(universe.id);
+            if (!universeFolder) continue;
+
+            const seriesList: Array<{
+                meta: SeriesMetadata;
+                folder: string;
+                books: StoryLineProject[];
+            }> = [];
+
+            // Find series in this universe
+            const allSeries = await this.plugin.seriesManager.discoverSeries();
+            for (const { folder, meta } of allSeries) {
+                if (meta.universeId === universe.id || universe.seriesIds?.includes(meta.seriesUuid || '')) {
+                    // Find books in this series
+                    const projects = this.plugin.sceneManager.getProjects();
+                    const books = projects.filter(p =>
+                        p.seriesUuid === meta.seriesUuid || p.seriesId === meta.name
+                    );
+                    seriesList.push({ meta, folder, books });
+                }
+            }
+
+            result.push({ universe, folder: universeFolder, series: seriesList });
+        }
+
+        return result;
+    }
+
+    // ── Helpers ────────────────────────────────────────
+
+    /** Find the folder path for a universe by ID. */
+    private findUniverseFolder(universeId: string): string | null {
+        for (const [folder, meta] of this.universeCache) {
+            if (meta.id === universeId) return folder;
+        }
+        return null;
+    }
+
+    /** Derive project folder paths from a file path (mirrors StoryLineProject.ts). */
+    private deriveProjectFolders(
+        filePath: string
+    ): { baseFolder: string; codexFolder: string } {
+        const lastSlash = filePath.lastIndexOf('/');
+        const parentDir = lastSlash >= 0 ? filePath.substring(0, lastSlash) : '';
+        const basename = (filePath.split('/').pop() ?? '').replace(/\.md$/i, '');
+        const parentName = parentDir.split('/').pop() ?? '';
+        const baseFolder = (parentName === basename) ? parentDir : `${parentDir}/${basename}`;
+        return {
+            baseFolder,
+            codexFolder: `${baseFolder}/Codex`,
+        };
+    }
+
+    /** Get the collection folder path for a given type. */
+    private getCollectionFolder(
+        folders: { baseFolder: string; codexFolder: string },
+        collectionType: string
+    ): string {
+        // Map collection types to folder paths
+        if (collectionType === 'Characters') {
+            return `${folders.codexFolder}/Characters`;
+        }
+        if (collectionType === 'Locations') {
+            return `${folders.codexFolder}/Locations`;
+        }
+        // Generic codex category
+        return `${folders.codexFolder}/${collectionType}`;
+    }
+
+    /** List all .md files in a folder recursively. */
+    private async listMarkdownFiles(folder: string): Promise<string[]> {
+        const adapter = this.app.vault.adapter;
+        if (!await adapter.exists(folder)) return [];
+
+        const results: string[] = [];
+        await this.listMarkdownFilesRecursive(folder, results);
+        return results;
+    }
+
+    private async listMarkdownFilesRecursive(folder: string, results: string[]): Promise<void> {
+        const adapter = this.app.vault.adapter;
+        const listing = await adapter.list(folder);
+
+        for (const file of listing.files) {
+            if (file.toLowerCase().endsWith('.md')) {
+                results.push(file);
+            }
+        }
+
+        for (const subfolder of listing.folders) {
+            await this.listMarkdownFilesRecursive(subfolder, results);
+        }
+    }
+
+    /** Ensure a folder exists, creating it if necessary. */
+    private async ensureFolder(folder: string): Promise<void> {
+        const adapter = this.app.vault.adapter;
+        if (!await adapter.exists(folder)) {
+            await adapter.mkdir(folder);
+        }
+    }
+
+    /** Remove a folder only if it's empty. */
+    private async removeFolderIfEmpty(folder: string): Promise<void> {
+        const adapter = this.app.vault.adapter;
+        if (!await adapter.exists(folder)) return;
+
+        const listing = await adapter.list(folder);
+        if (listing.files.length === 0 && listing.folders.length === 0) {
+            await adapter.rmdir(folder, false);
+        }
+    }
+}

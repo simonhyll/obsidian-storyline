@@ -1166,3 +1166,17 @@ Create type definitions, interfaces, and update existing models with optional ne
 - ✓ Typecheck verification — Phase 0 files pass; 18 pre-existing baseline errors documented
 - ✓ Lint verification — Phase 0 files pass; 8 pre-existing baseline errors documented
 - ✓ Committed to feat/rework branch
+
+### ✓ Step 3: Implement Phase 1 — Universe, Series, Book Hierarchy
+Create the Universe model, UniverseManager service, hierarchy navigation, and integrate with existing SeriesManager.
+
+- ✓ Create models/Universe.ts — UniverseMetadata, ContainerEntity, HierarchyPath, InheritedCollectionResult, helper functions
+- ✓ Create services/UniverseManager.ts — Universe CRUD, series membership, hierarchy resolution, inherited collections, discovery
+- ✓ Update services/SeriesManager.ts — load/save universeId and ownerId in series.json
+- ✓ Create components/UniverseSelector.ts — Tree-based hierarchy selector with async refresh
+- ✓ Update main.ts — Register UniverseManager, add 4 commands (create/add/remove/delete universe), add modal methods
+- ✓ Create tests/universe.test.ts — 29 tests for model functions, hierarchy paths, backward compatibility
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 78/78 tests pass (49 existing + 29 new)
+- ✓ Typecheck verification — No new errors; only pre-existing baseline errors
+- ✓ Committed to feat/rework branch
