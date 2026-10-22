@@ -1214,3 +1214,16 @@ Fix two functional bugs in Codex inheritance: resolveInheritedCollections('all')
 - ✓ Test verification — 108/108 tests pass (100 existing + 8 new)
 - ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
 - ✓ Committed to feat/rework branch
+
+### ✓ Step 6: Fix Codex Lifecycle Bug and Replace Tests
+Fix reloadEntities() losing inherited codex, add id parsing to CodexManager, and replace fake end-to-end tests with real CodexManager tests.
+
+- ✓ Fix reloadEntities() in main.ts — restores inherited codex after loadAll() clears entries
+- ✓ Add id field parsing to CodexManager.parseEntry — extracts id from frontmatter
+- ✓ Add parseYaml/stringifyYaml to obsidian mock — enables real frontmatter parsing in tests
+- ✓ Replace 5 fake end-to-end tests with 7 real CodexManager tests that instantiate the manager
+- ✓ Tests cover: inherited entries from universe+series, empty parent folders, duplicate UUID conflicts, book-level precedence, project switching, reload cycles, same-name different-ID entities
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 110/110 tests pass (103 existing + 7 new)
+- ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
+- ✓ Committed to feat/rework branch

@@ -117,6 +117,31 @@ export class Menu {
 }
 
 // Utilities
+/** Minimal YAML parser for frontmatter — handles simple key: value pairs */
+export function parseYaml(text: string): Record<string, unknown> {
+    const result: Record<string, unknown> = {};
+    for (const line of text.split('\n')) {
+        const match = line.match(/^(\w+):\s*(.+)$/);
+        if (match) {
+            const [, key, value] = match;
+            // Handle simple string values
+            const cleaned = value.trim();
+            if (cleaned === 'true') result[key] = true;
+            else if (cleaned === 'false') result[key] = false;
+            else if (!isNaN(Number(cleaned))) result[key] = Number(cleaned);
+            else result[key] = cleaned.replace(/^["']|["']$/g, '');
+        }
+    }
+    return result;
+}
+
+/** Minimal YAML stringifier */
+export function stringifyYaml(obj: Record<string, unknown>): string {
+    return Object.entries(obj)
+        .map(([key, value]) => `${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`)
+        .join('\n');
+}
+
 export function normalizePath(path: string): string {
     if (!path) return '';
     let result = path.replace(/\\/g, '/');

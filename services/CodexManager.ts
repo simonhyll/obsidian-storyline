@@ -490,6 +490,7 @@ export class CodexManager {
         const entry: CodexEntry = {
             filePath,
             type: catDef.id,
+            id: safeFm.id ? String(safeFm.id) : undefined,
             name: String(safeFm.name || basename),
             image: safeFm.image,
             gallery: this.parseGallery(safeFm.gallery),

@@ -4,6 +4,7 @@ import type SceneCardsPlugin from '../main';
 import type { SceneManager } from '../services/SceneManager';
 import type { SeriesManager } from '../services/SeriesManager';
 import { UniverseManager } from '../services/UniverseManager';
+import { CodexManager } from '../services/CodexManager';
 import type { StoryLineProject, SeriesMetadata } from '../models/StoryLineProject';
 import type { UniverseMetadata } from '../models/Universe';
 
@@ -802,9 +803,14 @@ describe('UniverseManager Integration', () => {
         });
     });
 
-    describe('Codex inheritance end-to-end', () => {
-        // These tests verify that CodexManager.loadInheritedFolders correctly
-        // merges entries from Universe and Series Codex folders.
+    describe('CodexManager inheritance with real vault', () => {
+        // These tests instantiate CodexManager with a mocked Obsidian vault,
+        // load entries from Universe/Series/Book Codex folders, and assert
+        // the results via getEntries() and getAllEntries().
+
+        function createCodexManager(app: App) {
+            return new CodexManager(app);
+        }
 
         it('loads inherited entries from universe and series codex', async () => {
             const project: StoryLineProject = {
@@ -833,7 +839,7 @@ describe('UniverseManager Integration', () => {
             await adapter.mkdir(`${ROOT}/My Universe`);
             await adapter.write(`${ROOT}/My Universe/universe.json`, JSON.stringify(universe));
 
-            // Universe-level Items (non-Characters category)
+            // Universe-level Items
             await adapter.mkdir(`${ROOT}/My Universe/Codex/Items`);
             await adapter.write(
                 `${ROOT}/My Universe/Codex/Items/Magic Sword.md`,
@@ -848,23 +854,29 @@ describe('UniverseManager Integration', () => {
             );
 
             // Book-level Items
-            await adapter.mkdir(`${ROOT}/My Universe/My Series/Book1/Codex/Items`);
+            const bookCodexFolder = `${ROOT}/My Universe/My Series/Book1/Codex`;
+            await adapter.mkdir(`${bookCodexFolder}/Items`);
             await adapter.write(
-                `${ROOT}/My Universe/My Series/Book1/Codex/Items/Potion.md`,
+                `${bookCodexFolder}/Items/Potion.md`,
                 '---\ntype: items\nname: Potion\n---\n'
             );
 
-            // Get inherited folders
+            // Instantiate CodexManager and load
+            const codexManager = createCodexManager(app);
+            codexManager.initCategories(['items'], []);
+            await codexManager.loadAll(bookCodexFolder);
+
+            // Load inherited folders
             const inheritedFolders = await universeManager.getInheritedCodexFolders(project);
-            expect(inheritedFolders.length).toBe(2);
+            await codexManager.loadInheritedFolders(inheritedFolders);
 
-            // Simulate CodexManager.loadInheritedFolders behavior
-            // by checking that the folders contain the expected category subfolders
-            const universeCodex = inheritedFolders[0];
-            const seriesCodex = inheritedFolders[1];
-
-            expect(await adapter.exists(`${universeCodex}/Items/Magic Sword.md`)).toBe(true);
-            expect(await adapter.exists(`${seriesCodex}/Items/Dagger.md`)).toBe(true);
+            // Assert all entries are present
+            const items = codexManager.getEntries('items');
+            expect(items.length).toBe(3);
+            const names = items.map(e => e.name).sort();
+            expect(names).toContain('Magic Sword');
+            expect(names).toContain('Dagger');
+            expect(names).toContain('Potion');
         });
 
         it('handles empty parent codex folders gracefully', async () => {
@@ -894,16 +906,29 @@ describe('UniverseManager Integration', () => {
             await adapter.mkdir(`${ROOT}/My Universe`);
             await adapter.write(`${ROOT}/My Universe/universe.json`, JSON.stringify(universe));
 
-            // Create empty Codex folders (no entries)
+            // Create empty Codex folders
             await adapter.mkdir(`${ROOT}/My Universe/Codex`);
             await adapter.mkdir(`${ROOT}/My Universe/My Series/Codex`);
 
-            const inheritedFolders = await universeManager.getInheritedCodexFolders(project);
-            expect(inheritedFolders.length).toBe(2);
+            // Book-level Codex with one entry
+            const bookCodexFolder = `${ROOT}/My Universe/My Series/Book1/Codex`;
+            await adapter.mkdir(`${bookCodexFolder}/Items`);
+            await adapter.write(
+                `${bookCodexFolder}/Items/Potion.md`,
+                '---\ntype: items\nname: Potion\n---\n'
+            );
 
-            // The folders exist but contain no entries — this should not throw
-            const universeCodex = inheritedFolders[0];
-            expect(await adapter.exists(universeCodex)).toBe(true);
+            const codexManager = createCodexManager(app);
+            codexManager.initCategories(['items'], []);
+            await codexManager.loadAll(bookCodexFolder);
+
+            // Loading inherited from empty folders should not throw
+            const inheritedFolders = await universeManager.getInheritedCodexFolders(project);
+            await codexManager.loadInheritedFolders(inheritedFolders);
+
+            const items = codexManager.getEntries('items');
+            expect(items.length).toBe(1);
+            expect(items[0].name).toBe('Potion');
         });
 
         it('detects duplicate UUID conflicts across scopes', async () => {
@@ -935,32 +960,42 @@ describe('UniverseManager Integration', () => {
 
             const duplicateUuid = 'conflict-uuid-123';
 
-            // Universe-level Item with UUID
-            await adapter.mkdir(`${ROOT}/My Universe/Codex/Items`);
+            // Book-level Item with UUID
+            const bookCodexFolder = `${ROOT}/My Universe/My Series/Book1/Codex`;
+            await adapter.mkdir(`${bookCodexFolder}/Items`);
             await adapter.write(
-                `${ROOT}/My Universe/Codex/Items/Shared Item.md`,
-                `---\ntype: items\nname: Shared Item\nid: ${duplicateUuid}\n---\n`
+                `${bookCodexFolder}/Items/Book Item.md`,
+                `---\ntype: items\nname: Book Item\nid: ${duplicateUuid}\n---\n`
             );
 
-            // Series-level Item with the SAME UUID (conflict)
+            // Series-level Item with the SAME UUID (conflict) but different path
             await adapter.mkdir(`${ROOT}/My Universe/My Series/Codex/Items`);
             await adapter.write(
-                `${ROOT}/My Universe/My Series/Codex/Items/Shared Item.md`,
+                `${ROOT}/My Universe/My Series/Codex/Items/Shared Item Series.md`,
                 `---\ntype: items\nname: Shared Item Series\nid: ${duplicateUuid}\n---\n`
             );
 
-            const inheritedFolders = await universeManager.getInheritedCodexFolders(project);
-            expect(inheritedFolders.length).toBe(2);
+            const codexManager = createCodexManager(app);
+            codexManager.initCategories(['items'], []);
+            await codexManager.loadAll(bookCodexFolder);
 
-            // Both files exist with the same UUID — a real CodexManager would
-            // detect this as a conflict. Verify both files are present.
-            const universeItem = await adapter.read(`${ROOT}/My Universe/Codex/Items/Shared Item.md`);
-            const seriesItem = await adapter.read(`${ROOT}/My Universe/My Series/Codex/Items/Shared Item.md`);
-            expect(universeItem).toContain(duplicateUuid);
-            expect(seriesItem).toContain(duplicateUuid);
+            // Capture console.warn to verify conflict detection
+            const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+            const inheritedFolders = await universeManager.getInheritedCodexFolders(project);
+            await codexManager.loadInheritedFolders(inheritedFolders);
+
+            // Both entries should be loaded (different file paths)
+            const items = codexManager.getEntries('items');
+            expect(items.length).toBe(2);
+
+            // A warning should have been logged for the duplicate UUID
+            expect(warnSpy).toHaveBeenCalledWith(
+                expect.stringContaining('Duplicate UUID conflict')
+            );
+            warnSpy.mockRestore();
         });
 
-        it('book-level entries take precedence over inherited entries', async () => {
+        it('book-level entries take precedence over inherited entries by file path', async () => {
             const project: StoryLineProject = {
                 filePath: `${ROOT}/My Universe/My Series/Book1/Book1.md`,
                 title: 'Book 1',
@@ -990,25 +1025,51 @@ describe('UniverseManager Integration', () => {
             // Universe-level Item
             await adapter.mkdir(`${ROOT}/My Universe/Codex/Items`);
             await adapter.write(
-                `${ROOT}/My Universe/Codex/Items/Sword.md`,
-                '---\ntype: items\nname: Universe Sword\n---\n'
+                `${ROOT}/My Universe/Codex/Items/Universe Item.md`,
+                '---\ntype: items\nname: Universe Item\n---\n'
             );
 
-            // Book-level Item with the same name (different path)
-            await adapter.mkdir(`${ROOT}/My Universe/My Series/Book1/Codex/Items`);
+            // Book-level Item at a different path
+            const bookCodexFolder = `${ROOT}/My Universe/My Series/Book1/Codex`;
+            await adapter.mkdir(`${bookCodexFolder}/Items`);
             await adapter.write(
-                `${ROOT}/My Universe/My Series/Book1/Codex/Items/Sword.md`,
-                '---\ntype: items\nname: Book Sword\n---\n'
+                `${bookCodexFolder}/Items/Book Item.md`,
+                '---\ntype: items\nname: Book Item\n---\n'
             );
 
-            // The book-level entry should take precedence in CodexManager
-            // because loadInheritedFolders skips entries that already exist in the map
-            const bookSword = await adapter.read(`${ROOT}/My Universe/My Series/Book1/Codex/Items/Sword.md`);
-            expect(bookSword).toContain('Book Sword');
+            const codexManager = createCodexManager(app);
+            codexManager.initCategories(['items'], []);
+            await codexManager.loadAll(bookCodexFolder);
+
+            const inheritedFolders = await universeManager.getInheritedCodexFolders(project);
+            await codexManager.loadInheritedFolders(inheritedFolders);
+
+            const items = codexManager.getEntries('items');
+            // Both entries loaded — different file paths
+            expect(items.length).toBe(2);
+            const names = items.map(e => e.name).sort();
+            expect(names).toEqual(['Book Item', 'Universe Item']);
+
+            // Now verify that if the same file path exists at both levels,
+            // book-level wins because loadAll runs first
+            await adapter.write(
+                `${ROOT}/My Universe/Codex/Items/Book Item.md`,
+                '---\ntype: items\nname: Universe Override\n---\n'
+            );
+
+            // Reload to simulate a refresh
+            await codexManager.loadAll(bookCodexFolder);
+            await codexManager.loadInheritedFolders(inheritedFolders);
+
+            const itemsAfter = codexManager.getEntries('items');
+            // Book Item.md was loaded by loadAll first; inherited skip it
+            const bookItem = itemsAfter.find(e => e.filePath.includes('Book Item'));
+            expect(bookItem).toBeDefined();
+            expect(bookItem!.name).toBe('Book Item');
         });
 
-        it('project switching reloads inherited codex for the new project', async () => {
-            // Simulate two projects in different universes
+        it('project switching clears old universe entries and loads new ones', async () => {
+            // Two projects in different universes
             const project1: StoryLineProject = {
                 filePath: `${ROOT}/Universe A/Series A/Book1/Book1.md`,
                 title: 'Book 1',
@@ -1072,15 +1133,160 @@ describe('UniverseManager Integration', () => {
                 '---\ntype: items\nname: Item B\n---\n'
             );
 
-            // Get inherited folders for project 1 (Universe A)
-            const folders1 = await universeManager.getInheritedCodexFolders(project1);
-            expect(folders1.some(f => f.includes('Universe A'))).toBe(true);
-            expect(folders1.some(f => f.includes('Universe B'))).toBe(false);
+            // Book codex folders (empty)
+            const book1Codex = `${ROOT}/Universe A/Series A/Book1/Codex`;
+            const book2Codex = `${ROOT}/Universe B/Series B/Book2/Codex`;
+            await adapter.mkdir(`${book1Codex}/Items`);
+            await adapter.mkdir(`${book2Codex}/Items`);
 
-            // Get inherited folders for project 2 (Universe B)
-            const folders2 = await universeManager.getInheritedCodexFolders(project2);
-            expect(folders2.some(f => f.includes('Universe B'))).toBe(true);
-            expect(folders2.some(f => f.includes('Universe A'))).toBe(false);
+            const codexManager = createCodexManager(app);
+            codexManager.initCategories(['items'], []);
+
+            // Simulate loading for Project 1 (Universe A)
+            await codexManager.loadAll(book1Codex);
+            const inherited1 = await universeManager.getInheritedCodexFolders(project1);
+            await codexManager.loadInheritedFolders(inherited1);
+
+            const items1 = codexManager.getEntries('items');
+            expect(items1.length).toBe(1);
+            expect(items1[0].name).toBe('Item A');
+
+            // Simulate switching to Project 2 (Universe B) — loadAll clears entries
+            await codexManager.loadAll(book2Codex);
+            const inherited2 = await universeManager.getInheritedCodexFolders(project2);
+            await codexManager.loadInheritedFolders(inherited2);
+
+            const items2 = codexManager.getEntries('items');
+            expect(items2.length).toBe(1);
+            expect(items2[0].name).toBe('Item B');
+            // Item A from Universe A should NOT be present
+            expect(items2.some(e => e.name === 'Item A')).toBe(false);
+        });
+
+        it('reload preserves inherited entries across multiple loadAll calls', async () => {
+            const project: StoryLineProject = {
+                filePath: `${ROOT}/My Universe/My Series/Book1/Book1.md`,
+                title: 'Book 1',
+                bookId: 'book-1',
+                seriesUuid: 'series-123',
+                universeId: 'universe-123',
+            };
+
+            const seriesMeta: SeriesMetadata = {
+                name: 'My Series',
+                seriesUuid: 'series-123',
+                universeId: 'universe-123',
+                created: '2024-01-01',
+            };
+
+            setup([project], project, [{ folder: `${ROOT}/My Universe/My Series`, meta: seriesMeta }]);
+
+            const universe: UniverseMetadata = {
+                id: 'universe-123',
+                name: 'My Universe',
+                seriesIds: ['series-123'],
+                created: '2024-01-01',
+            };
+            await adapter.mkdir(`${ROOT}/My Universe`);
+            await adapter.write(`${ROOT}/My Universe/universe.json`, JSON.stringify(universe));
+
+            // Universe-level Item
+            await adapter.mkdir(`${ROOT}/My Universe/Codex/Items`);
+            await adapter.write(
+                `${ROOT}/My Universe/Codex/Items/Universe Item.md`,
+                '---\ntype: items\nname: Universe Item\n---\n'
+            );
+
+            // Book-level Codex
+            const bookCodexFolder = `${ROOT}/My Universe/My Series/Book1/Codex`;
+            await adapter.mkdir(`${bookCodexFolder}/Items`);
+            await adapter.write(
+                `${bookCodexFolder}/Items/Book Item.md`,
+                '---\ntype: items\nname: Book Item\n---\n'
+            );
+
+            const codexManager = createCodexManager(app);
+            codexManager.initCategories(['items'], []);
+
+            // First load cycle
+            await codexManager.loadAll(bookCodexFolder);
+            const inheritedFolders = await universeManager.getInheritedCodexFolders(project);
+            await codexManager.loadInheritedFolders(inheritedFolders);
+
+            expect(codexManager.getEntries('items').length).toBe(2);
+
+            // Simulate reloadEntities() — loadAll clears, then inherited is restored
+            await codexManager.loadAll(bookCodexFolder);
+            await codexManager.loadInheritedFolders(inheritedFolders);
+
+            expect(codexManager.getEntries('items').length).toBe(2);
+            const names = codexManager.getEntries('items').map(e => e.name).sort();
+            expect(names).toEqual(['Book Item', 'Universe Item']);
+
+            // Third reload cycle
+            await codexManager.loadAll(bookCodexFolder);
+            await codexManager.loadInheritedFolders(inheritedFolders);
+
+            expect(codexManager.getEntries('items').length).toBe(2);
+        });
+
+        it('same-name entries with different IDs are distinct entities', async () => {
+            const project: StoryLineProject = {
+                filePath: `${ROOT}/My Universe/My Series/Book1/Book1.md`,
+                title: 'Book 1',
+                bookId: 'book-1',
+                seriesUuid: 'series-123',
+                universeId: 'universe-123',
+            };
+
+            const seriesMeta: SeriesMetadata = {
+                name: 'My Series',
+                seriesUuid: 'series-123',
+                universeId: 'universe-123',
+                created: '2024-01-01',
+            };
+
+            setup([project], project, [{ folder: `${ROOT}/My Universe/My Series`, meta: seriesMeta }]);
+
+            const universe: UniverseMetadata = {
+                id: 'universe-123',
+                name: 'My Universe',
+                seriesIds: ['series-123'],
+                created: '2024-01-01',
+            };
+            await adapter.mkdir(`${ROOT}/My Universe`);
+            await adapter.write(`${ROOT}/My Universe/universe.json`, JSON.stringify(universe));
+
+            // Universe-level entry named "Dragon" with ID "dragon-universe"
+            await adapter.mkdir(`${ROOT}/My Universe/Codex/Items`);
+            await adapter.write(
+                `${ROOT}/My Universe/Codex/Items/Dragon.md`,
+                '---\ntype: items\nname: Dragon\nid: dragon-universe\n---\n'
+            );
+
+            // Series-level entry also named "Dragon" with ID "dragon-series" — different file path
+            await adapter.mkdir(`${ROOT}/My Universe/My Series/Codex/Items`);
+            await adapter.write(
+                `${ROOT}/My Universe/My Series/Codex/Items/Dragon Series.md`,
+                '---\ntype: items\nname: Dragon\nid: dragon-series\n---\n'
+            );
+
+            // Book-level Codex (empty)
+            const bookCodexFolder = `${ROOT}/My Universe/My Series/Book1/Codex`;
+            await adapter.mkdir(`${bookCodexFolder}/Items`);
+
+            const codexManager = createCodexManager(app);
+            codexManager.initCategories(['items'], []);
+            await codexManager.loadAll(bookCodexFolder);
+
+            const inheritedFolders = await universeManager.getInheritedCodexFolders(project);
+            await codexManager.loadInheritedFolders(inheritedFolders);
+
+            const items = codexManager.getEntries('items');
+            // Both entries are present — same name, different IDs, different paths
+            expect(items.length).toBe(2);
+            const ids = items.map(e => e.id).sort();
+            expect(ids).toEqual(['dragon-series', 'dragon-universe']);
         });
     });
 });

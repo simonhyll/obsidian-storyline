@@ -2379,7 +2379,9 @@ export default class SceneCardsPlugin extends Plugin {
      *
      * `loadActiveProjectEntities()` clears each manager and reloads from
      * the project folders; `scanExtraFolders()` then re-adds entries from
-     * user-configured external folders. Calling both keeps the two in sync.
+     * user-configured external folders. Inherited Codex from Universe and
+     * Series scopes is restored after `loadAll()` clears the manager.
+     * Calling both keeps the two in sync.
      */
     async reloadEntities(): Promise<void> {
         await this.loadActiveProjectEntities();
@@ -2393,6 +2395,18 @@ export default class SceneCardsPlugin extends Plugin {
             );
             this.codexManager.initCategories(this.settings.codexEnabledCategories || [], customDefs);
             await this.codexManager.loadAll(codexFolder);
+            // Restore inherited codex from Universe and Series scopes after
+            // loadAll() cleared the manager. This ensures CodexView.onOpen(),
+            // CharacterView.onOpen(), LocationView.onOpen(), and file-change
+            // listeners all get the full inherited codex.
+            try {
+                const inheritedFolders = await this.universeManager.getInheritedCodexFolders(
+                    this.sceneManager.activeProject!
+                );
+                if (inheritedFolders.length > 0) {
+                    await this.codexManager.loadInheritedFolders(inheritedFolders);
+                }
+            } catch { /* Universe inheritance is optional; ignore errors */ }
             await this.scanExtraFolders();
         }
     }
