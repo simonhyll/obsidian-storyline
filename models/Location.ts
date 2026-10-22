@@ -21,6 +21,12 @@
 interface LocationBase {
     /** Vault-relative path of the .md file */
     filePath: string;
+    /** Stable UUID (Phase 0) — generated on first scan, persisted on explicit save */
+    id?: string;
+    /** Owner ID (Phase 0) — which Universe, Series, or Book owns this location */
+    ownerId?: string;
+    /** Introduced in (Phase 0) — which Book first introduces this location */
+    introducedIn?: string;
     /** Vault-relative path to an image */
     image?: string;
     /** Image gallery (max 10 images with captions) */

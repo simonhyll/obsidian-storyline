@@ -91,6 +91,12 @@ export interface Scene {
     filePath: string;
     /** type: scene identifier */
     type: 'scene';
+    /** Stable UUID (Phase 0) — generated on first scan, persisted on explicit save */
+    id?: string;
+    /** Owner ID (Phase 0) — which Universe, Series, or Book owns this scene */
+    ownerId?: string;
+    /** Introduced in (Phase 0) — which Book first introduces this scene */
+    introducedIn?: string;
     /** Scene title */
     title: string;
     /** Act number or name */

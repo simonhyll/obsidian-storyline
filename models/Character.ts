@@ -7,6 +7,12 @@ export interface Character {
     filePath: string;
     /** type identifier */
     type: 'character';
+    /** Stable UUID (Phase 0) — generated on first scan, persisted on explicit save */
+    id?: string;
+    /** Owner ID (Phase 0) — which Universe, Series, or Book owns this character */
+    ownerId?: string;
+    /** Introduced in (Phase 0) — which Book first introduces this character */
+    introducedIn?: string;
 
     // ── Basic Information ──────────────────────────────
     /** Character name */

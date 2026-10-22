@@ -76,6 +76,10 @@ export interface StoryLineProject {
     bookId?: string;
     /** Stable UUID identity for the series; seriesId remains for legacy compatibility. */
     seriesUuid?: string;
+    /** Optional Universe ID — links this project to a Universe hierarchy (Phase 0) */
+    universeId?: string;
+    /** Optional owner ID — which Universe, Series, or Book owns this project (Phase 0) */
+    ownerId?: string;
     /** Vault-relative path to a cover image for the project */
     coverImage?: string;
     /** Name of the last applied beat sheet template */
@@ -93,6 +97,10 @@ export interface SeriesMetadata {
     name: string;
     /** Stable UUID identity for the series. */
     seriesUuid?: string;
+    /** Optional Universe ID — links this series to a Universe hierarchy (Phase 0) */
+    universeId?: string;
+    /** Optional owner ID — which Universe owns this series (Phase 0) */
+    ownerId?: string;
     /** Ordered list of book folder names within the series folder */
     bookOrder: string[];
     /** Ordered list of stable book UUIDs parallel to bookOrder. */

@@ -16,6 +16,12 @@ export interface CodexEntry {
     filePath: string;
     /** Frontmatter type — matches the category id, e.g. 'item', 'creature' */
     type: string;
+    /** Stable UUID (Phase 0) — generated on first scan, persisted on explicit save */
+    id?: string;
+    /** Owner ID (Phase 0) — which Universe, Series, or Book owns this entry */
+    ownerId?: string;
+    /** Introduced in (Phase 0) — which Book first introduces this entry */
+    introducedIn?: string;
     /** Display name */
     name: string;
     /** Vault-relative path to an image */
