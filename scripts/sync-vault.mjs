@@ -1,0 +1,76 @@
+#!/usr/bin/env node
+// Sync build artifacts from the StoryLine source repository into an Obsidian vault.
+// Never overwrite StoryLine settings (data.json) or alter the plugin ID.
+import { watch } from 'node:fs';
+import { copyFile, mkdir, readFile, stat } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const sourceDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const assets = ['main.js', 'manifest.json', 'styles.css'];
+const args = process.argv.slice(2);
+const watchMode = args.includes('--watch');
+const vaultPaths = args.filter((arg) => arg !== '--watch');
+if (vaultPaths.length !== 1 || vaultPaths[0] === '--help') {
+  console.error('Usage: npm run vault:install -- /absolute/path/to/vault');
+  console.error('   or: npm run vault:watch -- /absolute/path/to/development-vault');
+  process.exit(1);
+}
+const vaultDir = resolve(vaultPaths[0]);
+if (vaultDir === sourceDir) {
+  throw new Error('The vault must be separate from the plugin source repository.');
+}
+const obsidianDir = join(vaultDir, '.obsidian');
+const vaultMarker = await stat(obsidianDir).catch(() => null);
+if (!vaultMarker?.isDirectory()) {
+  throw new Error('No .obsidian directory at ' + vaultDir + '. Open/create the vault in Obsidian first.');
+}
+const manifest = JSON.parse(await readFile(join(sourceDir, 'manifest.json'), 'utf8'));
+if (manifest.id !== 'storyline') {
+  throw new Error('Refusing to install: the plugin manifest ID must be storyline.');
+}
+const targetDir = join(obsidianDir, 'plugins', 'storyline');
+await mkdir(targetDir, { recursive: true });
+
+async function sync() {
+  // Read all assets first; missing builds should not partially update a vault.
+  const sources = await Promise.all(assets.map(async (name) => ({
+    name, contents: await readFile(join(sourceDir, name)),
+  })));
+  let changed = 0;
+  for (const { name, contents } of sources) {
+    const target = join(targetDir, name);
+    const existing = await readFile(target).catch((error) => {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    });
+    if (!existing?.equals(contents)) {
+      await copyFile(join(sourceDir, name), target);
+      console.log('[StoryLine] Updated ' + name + ' in ' + targetDir);
+      changed++;
+    }
+  }
+  if (!changed) console.log('[StoryLine] Vault already up to date.');
+}
+
+await sync();
+if (watchMode) {
+  console.log('[StoryLine] Watching build files; run npm run dev in another terminal.');
+  console.log('[StoryLine] Use a separate test vault for development.');
+  let timer;
+  let pending = Promise.resolve();
+  const watcher = watch(sourceDir, (_event, filename) => {
+    if (filename && !assets.includes(filename.toString())) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      pending = pending.then(sync).catch((error) => {
+        console.error('[StoryLine] Sync failed:', error);
+      });
+    }, 300);
+  });
+  process.on('SIGINT', () => {
+    watcher.close();
+    clearTimeout(timer);
+    process.exit(0);
+  });
+}
