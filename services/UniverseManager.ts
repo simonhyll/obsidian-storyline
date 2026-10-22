@@ -196,7 +196,7 @@ export class UniverseManager {
 
         // Clear series universeId references
         for (const seriesId of universe.seriesIds || []) {
-            await this.removeSeriesFromUniverseInternal(seriesId);
+            await this.removeSeriesFromUniverseInternal(universe.id, seriesId);
         }
 
         // Clear cache
@@ -209,7 +209,8 @@ export class UniverseManager {
 
     /**
      * Add an existing series to a universe.
-     * The series folder must be inside the universe folder.
+     * If the series already belongs to another universe, it is removed from that universe first.
+     * A series can belong to at most one universe (exclusive membership).
      */
     async addSeriesToUniverse(universeId: string, seriesFolder: string): Promise<void> {
         const universe = await this.getUniverse(universeId);
@@ -223,7 +224,16 @@ export class UniverseManager {
             throw new Error('Series must have a UUID. Ensure the series was created via StoryLine.');
         }
 
-        // Add series to universe
+        // If the series already belongs to this universe, nothing to do
+        if (seriesMeta.universeId === universeId) return;
+
+        // Remove from old universe if it belongs to one
+        if (seriesMeta.universeId && seriesMeta.universeId !== universeId) {
+            const oldUniverseId = seriesMeta.universeId;
+            await this.removeSeriesFromUniverseInternal(oldUniverseId, seriesUuid);
+        }
+
+        // Add series to new universe
         if (!universe.seriesIds) universe.seriesIds = [];
         if (!universe.seriesIds.includes(seriesUuid)) {
             universe.seriesIds.push(seriesUuid);
@@ -244,10 +254,16 @@ export class UniverseManager {
     /**
      * Remove a series from its universe.
      * The series becomes standalone but retains its data.
+     * Rejects if the series does not belong to the specified universe.
      */
     async removeSeriesFromUniverse(universeId: string, seriesUuid: string): Promise<void> {
         const universe = await this.getUniverse(universeId);
         if (!universe) throw new Error('Universe not found');
+
+        // Validate that the series actually belongs to this universe
+        if (!(universe.seriesIds || []).includes(seriesUuid)) {
+            throw new Error(`Series "${seriesUuid}" does not belong to universe "${universe.name}"`);
+        }
 
         const universeFolder = this.findUniverseFolder(universeId)!;
 
@@ -256,16 +272,28 @@ export class UniverseManager {
         await this.saveUniverseMetadata(universeFolder, universe);
 
         // Clear series universe reference
-        await this.removeSeriesFromUniverseInternal(seriesUuid);
+        await this.removeSeriesFromUniverseInternal(universeId, seriesUuid);
 
         new Notice(`Series removed from universe "${universe.name}"`);
     }
 
     /**
-     * Internal: clear universe reference from a series by UUID.
+     * Internal: remove a series from a specific universe and clear its metadata.
+     * @param universeId The universe to remove from (must match the series' current universeId).
+     * @param seriesUuid The series UUID to remove.
      */
-    private async removeSeriesFromUniverseInternal(seriesUuid: string): Promise<void> {
-        // Find the series folder by UUID
+    private async removeSeriesFromUniverseInternal(universeId: string, seriesUuid: string): Promise<void> {
+        // Remove the series UUID from the universe's seriesIds
+        const oldUniverse = await this.getUniverse(universeId);
+        if (oldUniverse) {
+            oldUniverse.seriesIds = (oldUniverse.seriesIds || []).filter(id => id !== seriesUuid);
+            const oldUniverseFolder = this.findUniverseFolder(universeId);
+            if (oldUniverseFolder) {
+                await this.saveUniverseMetadata(oldUniverseFolder, oldUniverse);
+            }
+        }
+
+        // Find the series folder by UUID and clear its universe reference
         const seriesList = await this.plugin.seriesManager.discoverSeries();
         for (const { folder, meta } of seriesList) {
             if (meta.seriesUuid === seriesUuid) {
@@ -345,13 +373,6 @@ export class UniverseManager {
                 if (meta.seriesUuid === project.seriesUuid || meta.name === project.seriesId) {
                     series = meta;
                     break;
-                }
-            }
-            // Fallback: if still not found, try loading from the project's parent folder
-            if (!series) {
-                const seriesFolder = this.plugin.sceneManager.getSeriesFolder();
-                if (seriesFolder) {
-                    series = await this.plugin.seriesManager.loadSeriesMetadata(seriesFolder);
                 }
             }
         }

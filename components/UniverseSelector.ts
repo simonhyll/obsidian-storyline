@@ -82,6 +82,7 @@ export function renderUniverseSelector(
 
 /**
  * Create an expandable header with toggle functionality.
+ * The header is inserted BEFORE the childrenEl in the DOM.
  */
 function createExpandableHeader(
     parent: HTMLElement,
@@ -89,7 +90,9 @@ function createExpandableHeader(
     icon: string,
     childrenEl: HTMLElement
 ): HTMLElement {
+    // Insert the header BEFORE the children element in the DOM
     const header = parent.createDiv({ cls: 'universe-selector-header' });
+    header.insertAdjacentElement('afterend', childrenEl);
     const toggle = header.createSpan({ cls: 'universe-selector-toggle' });
     obsidian.setIcon(toggle, 'chevron-right');
 
@@ -135,14 +138,7 @@ export async function refreshUniverseSelector(
     const active = plugin.sceneManager.activeProject;
     const projects = plugin.sceneManager.getProjects();
 
-    // Handle single-project case
-    if (projects.length <= 1 && active) {
-        treeEl.createSpan({
-            cls: 'universe-selector-label',
-            text: active.title,
-        });
-        return;
-    }
+    // Always show the full hierarchy, even with a single project.
 
     // Discover hierarchy
     const hierarchy = await plugin.universeManager.discoverHierarchy();

@@ -364,6 +364,97 @@ describe('UniverseManager Integration', () => {
             const updatedSeries = await seriesManager.loadSeriesMetadata(seriesFolder);
             expect(updatedSeries?.universeId).toBe(newUniverse.id);
         });
+
+        it('removes series from old universe when adding to new universe', async () => {
+            // Verify both sides of membership: old universe loses the series UUID
+            const seriesMeta: SeriesMetadata = {
+                name: 'Moving Series',
+                seriesUuid: 'series-move',
+                universeId: 'old-universe',
+                created: '2024-01-01',
+            };
+            const seriesFolder = `${ROOT}/Old Universe/Moving Series`;
+
+            setup([], null, [{ folder: seriesFolder, meta: seriesMeta }]);
+
+            // Create old universe with the series
+            const oldUniverse: UniverseMetadata = {
+                id: 'old-universe',
+                name: 'Old Universe',
+                seriesIds: ['series-move'],
+                created: '2024-01-01',
+            };
+            await adapter.mkdir(`${ROOT}/Old Universe`);
+            await adapter.write(`${ROOT}/Old Universe/universe.json`, JSON.stringify(oldUniverse));
+            await adapter.write(`${seriesFolder}/series.json`, JSON.stringify(seriesMeta));
+
+            // Create new universe and add the series
+            const newUniverse = await universeManager.createUniverse('New Universe');
+            await universeManager.addSeriesToUniverse(newUniverse.id, seriesFolder);
+
+            // Old universe should no longer contain the series UUID
+            const oldUpdated = await universeManager.getUniverse('old-universe');
+            expect(oldUpdated?.seriesIds).not.toContain('series-move');
+
+            // New universe should contain the series UUID
+            const newUpdated = await universeManager.getUniverse(newUniverse.id);
+            expect(newUpdated?.seriesIds).toContain('series-move');
+        });
+
+        it('rejects removing a series that does not belong to the universe', async () => {
+            const seriesMeta: SeriesMetadata = {
+                name: 'Other Series',
+                seriesUuid: 'series-other',
+                created: '2024-01-01',
+            };
+            const seriesFolder = `${ROOT}/Other Series`;
+
+            setup([], null, [{ folder: seriesFolder, meta: seriesMeta }]);
+
+            const universe: UniverseMetadata = {
+                id: 'universe-abc',
+                name: 'My Universe',
+                seriesIds: [],
+                created: '2024-01-01',
+            };
+            await adapter.mkdir(`${ROOT}/My Universe`);
+            await adapter.write(`${ROOT}/My Universe/universe.json`, JSON.stringify(universe));
+
+            // Try to remove a series that doesn't belong to this universe
+            await expect(
+                universeManager.removeSeriesFromUniverse('universe-abc', 'series-other')
+            ).rejects.toThrow('does not belong to universe');
+        });
+
+        it('is idempotent when adding a series to its current universe', async () => {
+            const seriesMeta: SeriesMetadata = {
+                name: 'Existing Series',
+                seriesUuid: 'series-existing',
+                universeId: 'universe-abc',
+                created: '2024-01-01',
+            };
+            const seriesFolder = `${ROOT}/My Universe/Existing Series`;
+
+            setup([], null, [{ folder: seriesFolder, meta: seriesMeta }]);
+
+            const universe: UniverseMetadata = {
+                id: 'universe-abc',
+                name: 'My Universe',
+                seriesIds: ['series-existing'],
+                created: '2024-01-01',
+            };
+            await adapter.mkdir(`${ROOT}/My Universe`);
+            await adapter.write(`${ROOT}/My Universe/universe.json`, JSON.stringify(universe));
+            await adapter.write(`${seriesFolder}/series.json`, JSON.stringify(seriesMeta));
+
+            // Adding to the same universe should be a no-op
+            await universeManager.addSeriesToUniverse('universe-abc', seriesFolder);
+
+            // Series UUID should appear only once
+            const updated = await universeManager.getUniverse('universe-abc');
+            const count = (updated?.seriesIds || []).filter(id => id === 'series-existing').length;
+            expect(count).toBe(1);
+        });
     });
 
     describe('Hierarchy resolution', () => {
@@ -416,6 +507,49 @@ describe('UniverseManager Integration', () => {
             expect(path.book).toBe(project);
             expect(path.series).toBeUndefined();
             expect(path.universe).toBeUndefined();
+        });
+
+        it('resolves hierarchy using the supplied project, not the active project', async () => {
+            // Regression test: resolveHierarchyPath must not fall back to
+            // getSeriesFolder() which refers to the active project's series.
+            const activeProject: StoryLineProject = {
+                filePath: `${ROOT}/Active Series/ActiveBook/ActiveBook.md`,
+                title: 'Active Book',
+                bookId: 'book-active',
+                seriesUuid: 'active-series',
+            };
+            const targetProject: StoryLineProject = {
+                filePath: `${ROOT}/Target Series/TargetBook/TargetBook.md`,
+                title: 'Target Book',
+                bookId: 'book-target',
+                seriesUuid: 'target-series',
+            };
+
+            const activeSeriesMeta: SeriesMetadata = {
+                name: 'Active Series',
+                seriesUuid: 'active-series',
+                created: '2024-01-01',
+            };
+            const targetSeriesMeta: SeriesMetadata = {
+                name: 'Target Series',
+                seriesUuid: 'target-series',
+                created: '2024-01-01',
+            };
+
+            // Active project is different from the target project
+            setup([activeProject, targetProject], activeProject, [
+                { folder: `${ROOT}/Active Series`, meta: activeSeriesMeta },
+                { folder: `${ROOT}/Target Series`, meta: targetSeriesMeta },
+            ]);
+
+            // Resolve hierarchy for the target project (not the active one)
+            const path = await universeManager.resolveHierarchyPath(targetProject);
+
+            expect(path.book).toBe(targetProject);
+            expect(path.series).toBeDefined();
+            expect(path.series!.seriesUuid).toBe('target-series');
+            // Should NOT resolve to the active project's series
+            expect(path.series!.seriesUuid).not.toBe('active-series');
         });
 
         it('resolves hierarchy for a project in a series without a universe', async () => {

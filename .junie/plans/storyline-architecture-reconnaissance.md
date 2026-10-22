@@ -1186,3 +1186,18 @@ Create the Universe model, UniverseManager service, hierarchy navigation, and in
 - ✓ Test verification — 96/96 tests pass (78 existing + 18 new integration tests)
 - ✓ Typecheck verification — No new errors; 18 pre-existing baseline errors unchanged
 - ✓ Committed to feat/rework branch
+
+### ✓ Step 4: Finish Phase 1 Integration
+Complete remaining Phase 1 integration: Codex inheritance, exclusive universe membership, active-project dependency removal, and Project Library UI fixes.
+
+- ✓ Fix exclusive Universe membership in addSeriesToUniverse — removes series from old universe first
+- ✓ Validate removeSeriesFromUniverse ownership — rejects if series doesn't belong to specified universe
+- ✓ Remove active-project fallback in resolveHierarchyPath — no getSeriesFolder() fallback
+- ✓ Wire Codex inheritance — added loadInheritedFolders to CodexManager, called from main.ts
+- ✓ Fix UniverseSelector DOM ordering — headers inserted before children via insertAdjacentElement
+- ✓ Show hierarchy even with single project — removed single-project early return
+- ✓ Add 4 integration tests: exclusive membership both sides, ownership validation, idempotent add, active-project fallback
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 100/100 tests pass (96 existing + 4 new)
+- ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
+- ✓ Committed to feat/rework branch

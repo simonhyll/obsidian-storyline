@@ -90,6 +90,75 @@ export class CodexManager {
     }
 
     /**
+     * Load inherited entries from parent scopes (Universe, Series).
+     * Entries are merged into the existing category maps, deduplicated by file path.
+     * If a file path already exists (book-level), the book-level entry takes precedence.
+     * If two entries share the same persisted UUID, a conflict notice is shown.
+     *
+     * @param inheritedFolders Array of codex folder paths to scan (e.g., universe Codex, series Codex).
+     *   These are scanned in order: universe first, then series. Later folders can override earlier ones.
+     */
+    async loadInheritedFolders(inheritedFolders: string[]): Promise<void> {
+        const adapter = this.app.vault.adapter;
+
+        // Build a map of filePath → entry id for duplicate UUID detection
+        const existingIds = new Map<string, string>();
+        for (const catMap of this.entriesByCategory.values()) {
+            for (const [fp, entry] of catMap) {
+                if (entry.id) existingIds.set(fp, entry.id);
+            }
+        }
+
+        // Scan inherited folders in reverse order so that higher-priority
+        // (series) entries are processed before lower-priority (universe) entries.
+        // Since we skip entries that already exist in the map, book-level entries
+        // take precedence over series-level, which take precedence over universe-level.
+        for (let i = inheritedFolders.length - 1; i >= 0; i--) {
+            const inheritedFolder = inheritedFolders[i];
+            if (!await adapter.exists(inheritedFolder)) continue;
+
+            for (const [catId, catDef] of this.categoryDefs) {
+                const catMap = this.entriesByCategory.get(catId);
+                if (!catMap) continue;
+
+                const catFolder = normalizePath(`${inheritedFolder}/${catDef.folder}`);
+                if (!await adapter.exists(catFolder)) continue;
+
+                const inheritedMap = new Map<string, CodexEntry>();
+                await this.scanFolder(catFolder, catDef, inheritedMap);
+
+                for (const [fp, entry] of inheritedMap) {
+                    // Skip if book-level entry already exists
+                    if (catMap.has(fp)) continue;
+
+                    // Check for duplicate UUID conflicts
+                    if (entry.id) {
+                        const conflictFp = this.findFilePathById(entry.id, catMap);
+                        if (conflictFp) {
+                            console.warn(
+                                `[CodexManager] Duplicate UUID conflict: "${entry.id}" appears in both ` +
+                                `"${conflictFp}" and "${fp}". Both entries will be visible with a conflict warning.`
+                            );
+                        }
+                    }
+
+                    catMap.set(fp, entry);
+                }
+            }
+        }
+    }
+
+    /**
+     * Find the file path of an entry with the given ID in a category map.
+     */
+    private findFilePathById(id: string, catMap: Map<string, CodexEntry>): string | null {
+        for (const [fp, entry] of catMap) {
+            if (entry.id === id) return fp;
+        }
+        return null;
+    }
+
+    /**
      * Load entries for a single category.
      */
     async loadCategory(codexFolder: string, categoryId: string): Promise<void> {
