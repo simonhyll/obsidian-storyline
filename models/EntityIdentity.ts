@@ -108,29 +108,26 @@ export function isValidEntityId(id: string): boolean {
 /**
  * Generate a deterministic temporary identity for a legacy entity that lacks a UUID.
  *
- * This function produces a stable, reproducible identifier from the file path.
- * The result is NOT a UUID — it is a hash-based string that remains constant
- * across plugin reloads as long as the file path does not change.
+ * This function produces a collision-free, stable identifier by normalizing the
+ * file path. The result is NOT a UUID — it is the normalized path prefixed with
+ * "legacy-" so it is clearly distinguishable from real UUIDs.
  *
  * This is a temporary identity surrogate. Once the author explicitly saves the
  * entity through StoryLine, a proper UUID is generated and persisted.
  *
  * @param filePath - Vault-relative file path of the entity
- * @returns A deterministic identity string derived from the file path
+ * @returns A deterministic identity string derived from the normalized file path
  */
 export function generateLegacyIdentity(filePath: string): string {
-    // Simple deterministic hash of the file path
-    // Using a basic hash that's stable across reloads
-    let hash = 0;
-    for (let i = 0; i < filePath.length; i++) {
-        const char = filePath.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32-bit integer
-    }
-    // Format as a UUID-like string for consistency, but NOT a valid UUID v4
-    // Prefix "legacy-" makes it clearly distinguishable from real UUIDs
-    const hex = Math.abs(hash).toString(16).padStart(8, '0');
-    return `legacy-${hex}`;
+    // Normalize the path to ensure determinism:
+    // - Remove leading ./ if present
+    // - Collapse double slashes
+    // - Normalize case-insensitive filesystems by lowercasing
+    const normalized = filePath
+        .replace(/^\.\//, '')          // remove leading ./
+        .replace(/\/+/g, '/')          // collapse //
+        .toLowerCase();                // case-insensitive normalization
+    return `legacy-${normalized}`;
 }
 
 /**

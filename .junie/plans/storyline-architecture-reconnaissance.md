@@ -117,10 +117,12 @@ If a Book needs scope-specific information about an inherited entity (e.g., a lo
 
 ### Duplicate ID Behavior
 
-If two files have the same UUID:
-1. The entity in the higher scope (Universe > Series > Book) is the canonical record.
-2. The lower-scope file is treated as a supplementary metadata file, not a separate entity.
-3. On detection, the user is notified and can resolve the conflict (merge, re-UUID, or delete).
+Two different files sharing a persisted UUID constitute an identity conflict, regardless of hierarchy scope. The system never silently selects a canonical winner based on scope precedence.
+
+On detection:
+1. The conflict is reported to the user immediately.
+2. The user must explicitly resolve the conflict by merging, re-UUIDing, or deleting one of the files.
+3. Until resolved, both entities remain visible with a conflict warning.
 
 ### Conflicting Metadata
 

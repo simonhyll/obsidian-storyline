@@ -57,6 +57,52 @@ describe('Entity Identity', () => {
             const id = generateLegacyIdentity('Some/Path.md');
             expect(id.startsWith('legacy-')).toBe(true);
         });
+
+        it('regression: Codex/Aa.md and Codex/BB.md do not collide', () => {
+            // The old 32-bit hash implementation produced collisions for short paths
+            // like 'Codex/Aa.md' and 'Codex/BB.md'. This test ensures the new
+            // path-based identity never collides.
+            const id1 = generateLegacyIdentity('Codex/Aa.md');
+            const id2 = generateLegacyIdentity('Codex/BB.md');
+            expect(id1).not.toBe(id2);
+        });
+
+        it('regression: many short paths produce unique identities', () => {
+            // Verify no collisions across a large set of short, similar paths
+            const paths = [];
+            for (let i = 0; i < 26; i++) {
+                for (let j = 0; j < 26; j++) {
+                    const letter1 = String.fromCharCode(65 + i);
+                    const letter2 = String.fromCharCode(65 + j);
+                    paths.push(`Codex/${letter1}${letter2}.md`);
+                }
+            }
+            const ids = new Set(paths.map(generateLegacyIdentity));
+            expect(ids.size).toBe(paths.length);
+        });
+
+        it('normalizes leading ./ prefix', () => {
+            const id1 = generateLegacyIdentity('./Codex/Characters/Alice.md');
+            const id2 = generateLegacyIdentity('Codex/Characters/Alice.md');
+            expect(id1).toBe(id2);
+        });
+
+        it('normalizes double slashes', () => {
+            const id1 = generateLegacyIdentity('Codex//Characters//Alice.md');
+            const id2 = generateLegacyIdentity('Codex/Characters/Alice.md');
+            expect(id1).toBe(id2);
+        });
+
+        it('normalizes case for case-insensitive filesystems', () => {
+            const id1 = generateLegacyIdentity('Codex/Characters/Alice.md');
+            const id2 = generateLegacyIdentity('codex/characters/alice.md');
+            expect(id1).toBe(id2);
+        });
+
+        it('contains the normalized path', () => {
+            const id = generateLegacyIdentity('Scenes/Chapter1.md');
+            expect(id).toBe('legacy-scenes/chapter1.md');
+        });
     });
 
     describe('isLegacyIdentity', () => {

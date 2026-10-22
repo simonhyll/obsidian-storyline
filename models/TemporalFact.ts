@@ -46,7 +46,7 @@ export interface TemporalFactCollection {
 
 /**
  * Index of all temporal facts across entities.
- * Stored in System/temporal-facts.json (derived index).
+ * Stored in .storyline/system/temporal-facts.json (derived index).
  */
 export interface TemporalFactIndex {
     /** Version of the index format */
@@ -59,8 +59,9 @@ export interface TemporalFactIndex {
 
 /**
  * Default path for the derived temporal facts index.
+ * Stored under .storyline/system/ to avoid Git churn in author repositories.
  */
-export const TEMPORAL_FACTS_PATH = 'System/temporal-facts.json';
+export const TEMPORAL_FACTS_PATH = '.storyline/system/temporal-facts.json';
 
 /**
  * Current temporal fact index format version.

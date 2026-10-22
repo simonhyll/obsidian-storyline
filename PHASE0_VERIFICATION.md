@@ -105,7 +105,7 @@ These lint errors existed before Phase 0 changes and are NOT caused by Phase 0:
 | TemporalFact type is defined for property-level temporal assertions | ✅ `models/TemporalFact.ts` |
 | Shared service interfaces are defined (signatures only) | ✅ `services/ServiceInterfaces.ts` |
 | Persistence conventions are documented | ✅ Inline docs in EntityGraph, TemporalFact |
-| Compatibility tests verify existing projects open without errors | ✅ 15 backward compat tests |
+| Compatibility tests verify TypeScript model compatibility | ✅ 15 backward compat tests (type-level only) |
 | All new fields are optional — no migration required | ✅ Verified by tests |
 | No functional graph engine is required | ✅ Types only |
 | No TimeSpan parsing or comparison is required | ✅ Types + factories only |

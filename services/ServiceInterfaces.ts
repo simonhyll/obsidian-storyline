@@ -40,6 +40,12 @@ export interface TimeSpanService {
 
 /**
  * Service for graph storage, derivation, queries, and temporal filtering.
+ *
+ * The derived graph index is stored in .storyline/system/entity-graph.json
+ * to avoid Git churn. Temporal facts are persisted canonically in source file
+ * frontmatter (YAML lists); the derived index at
+ * .storyline/system/temporal-facts.json is reconstructible from source files
+ * and is never the exclusive source of truth.
  */
 export interface EntityGraphService {
     /** Rebuild the graph index from frontmatter */
