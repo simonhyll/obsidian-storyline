@@ -699,6 +699,29 @@ export default class SceneCardsPlugin extends Plugin {
             callback: () => this.activateView(UNIVERSE_VIEW_TYPE),
         });
 
+        // Event management commands
+        this.addCommand({
+            id: 'create-event',
+            name: 'Create new event',
+            checkCallback: (checking: boolean) => {
+                if (!this.sceneManager.activeProject) return false;
+                if (checking) return true;
+                this.openCreateEventModal();
+                return true;
+            },
+        });
+
+        this.addCommand({
+            id: 'browse-events',
+            name: 'Browse events',
+            checkCallback: (checking: boolean) => {
+                if (!this.sceneManager.activeProject) return false;
+                if (checking) return true;
+                this.openEventBrowser();
+                return true;
+            },
+        });
+
         this.addCommand({
             id: 'rename-project',
             name: 'Rename current project',
@@ -2431,14 +2454,20 @@ export default class SceneCardsPlugin extends Plugin {
     /**
      * Load Events for the active project, including inherited Events from
      * Universe and Series scopes.
+     *
+     * Loads each scope independently to avoid scanning the same folder twice:
+     * 1. Book-level Events (via loadAll — clears and loads)
+     * 2. Series-level Events (via loadInheritedFolders)
+     * 3. Universe-level Events (via loadInheritedFolders)
      */
     async loadActiveProjectEvents(): Promise<void> {
         const project = this.sceneManager.activeProject;
         if (!project) return;
 
-        const eventsFolder = this.sceneManager.getEventsFolder();
-        if (eventsFolder) {
-            await this.eventManager.loadAll(eventsFolder);
+        // Load book-level events first (takes precedence)
+        const bookEventsFolder = this.sceneManager.getBookEventsFolder();
+        if (bookEventsFolder) {
+            await this.eventManager.loadAll(bookEventsFolder);
         }
 
         // Load inherited events from Universe and Series scopes
@@ -3906,6 +3935,110 @@ export default class SceneCardsPlugin extends Plugin {
     openSeriesManagementModal(): void {
         const modal = new SeriesManagementModal(this.app, this);
         modal.open();
+    }
+
+    // ── Event modals ──────────────────────────────────
+
+    async openCreateEventModal(): Promise<void> {
+        const { EventModal } = await import('./components/EventModal');
+        const project = this.sceneManager.activeProject;
+        if (!project) return;
+
+        const bookEventsFolder = this.sceneManager.getBookEventsFolder();
+        if (!bookEventsFolder) {
+            new Notice('No events folder found for the active project.');
+            return;
+        }
+
+        const modal = new EventModal(
+            this.app,
+            this,
+            this.eventManager,
+            this.timeSpanService,
+            bookEventsFolder ?? ''
+        );
+        const result = await modal.openAsync();
+        if (result) {
+            new Notice(`Event "${result.name}" created`);
+            await this.loadActiveProjectEvents();
+        }
+    }
+
+    async openEditEventModal(event: import('./models/Event').Event): Promise<void> {
+        const { EventModal } = await import('./components/EventModal');
+        const modal = new EventModal(
+            this.app,
+            this,
+            this.eventManager,
+            this.timeSpanService,
+            '', // folder not needed for edit
+            event
+        );
+        const result = await modal.openAsync();
+        if (result) {
+            new Notice(`Event "${result.name}" updated`);
+            await this.loadActiveProjectEvents();
+        }
+    }
+
+    async openEventBrowser(): Promise<void> {
+        const events = this.eventManager.getAllEvents();
+        if (events.length === 0) {
+            new Notice('No events found. Create one first.');
+            return;
+        }
+
+        const modal = new Modal(this.app);
+        modal.titleEl.setText('Events');
+
+        const list = modal.contentEl.createDiv('event-browser-list');
+
+        for (const event of events) {
+            const row = list.createDiv('event-browser-row');
+            const nameEl = row.createEl('strong', { text: event.name });
+            if (event.timeSpan) {
+                nameEl.appendText(` — ${this.timeSpanService.format(event.timeSpan)}`);
+            }
+            if (event.description) {
+                const desc = row.createDiv('event-browser-desc');
+                const preview = event.description.length > 100
+                    ? event.description.substring(0, 100) + '...'
+                    : event.description;
+                desc.setText(preview);
+            }
+
+            // Determine ownership scope
+            const scope = this.getEventScope(event);
+            if (scope) {
+                const badge = row.createSpan('event-scope-badge');
+                badge.setText(scope);
+            }
+
+            row.onClickEvent(async () => {
+                await this.openEditEventModal(event);
+            });
+        }
+
+        modal.open();
+    }
+
+    /** Determine the scope (Book/Series/Universe) of an event for display. */
+    private getEventScope(event: import('./models/Event').Event): string | undefined {
+        const project = this.sceneManager.activeProject;
+        if (!project) return undefined;
+
+        const bookEventsFolder = this.sceneManager.getBookEventsFolder();
+        if (bookEventsFolder && event.filePath.startsWith(bookEventsFolder + '/')) {
+            return 'Book';
+        }
+
+        // Check series/universe scope via owner ID
+        if (event.ownerId) {
+            if (event.ownerId === project.seriesUuid) return 'Series';
+            if (event.ownerId === project.universeId) return 'Universe';
+        }
+
+        return undefined;
     }
 }
 

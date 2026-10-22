@@ -277,19 +277,41 @@ export class EventManager {
 
     /**
      * Save an event back to its file.
+     * Preserves unknown frontmatter fields and the Markdown body.
      */
     async saveEvent(event: Event): Promise<void> {
         const vault = this.app.vault;
 
-        // Read existing content to preserve body
+        // Read existing content to preserve body and unknown frontmatter fields
         let body = event.body || '';
+        let unknownFields: Record<string, unknown> = {};
         if (await vault.adapter.exists(event.filePath)) {
             const file = vault.getAbstractFileByPath(event.filePath);
             if (file instanceof TFile) {
                 const existing = await vault.read(file);
+                // Extract body
                 const bodyMatch = existing.match(/---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)([\s\S]*)$/);
                 if (bodyMatch) {
                     body = bodyMatch[1];
+                }
+                // Extract unknown frontmatter fields
+                const fmMatch = existing.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+                if (fmMatch) {
+                    try {
+                        const existingFm = parseYaml(fmMatch[1]) as Record<string, unknown>;
+                        // Known fields that EventManager manages
+                        const knownFields = new Set([
+                            'type', 'id', 'name', 'ownerId', 'introducedIn',
+                            'timeSpan', 'location', 'participants', 'description',
+                            'tags', 'booksById', 'created', 'modified',
+                            'universalFields',
+                        ]);
+                        for (const [key, value] of Object.entries(existingFm)) {
+                            if (!knownFields.has(key)) {
+                                unknownFields[key] = value;
+                            }
+                        }
+                    } catch { /* ignore parse errors */ }
                 }
             }
         }
@@ -297,7 +319,7 @@ export class EventManager {
         event.body = body;
         event.modified = new Date().toISOString();
 
-        const content = this.buildEventContent(event, body);
+        const content = this.buildEventContent(event, body, unknownFields);
         const file = vault.getAbstractFileByPath(event.filePath);
         if (file instanceof TFile) {
             await vault.modify(file, content);
@@ -321,8 +343,9 @@ export class EventManager {
     /**
      * Build complete file content for an Event.
      * Uses Obsidian's stringifyYaml for proper nested object handling.
+     * Preserves unknown frontmatter fields passed in `extraFields`.
      */
-    buildEventContent(event: Event, body?: string): string {
+    buildEventContent(event: Event, body?: string, extraFields?: Record<string, unknown>): string {
         const fm: Record<string, unknown> = {
             type: 'event',
             id: event.id,
@@ -347,8 +370,19 @@ export class EventManager {
             fm.timeSpan = this.timeSpanService.serializeToYaml(event.timeSpan);
         }
 
+        // Preserve unknown frontmatter fields
+        if (extraFields) {
+            for (const [key, value] of Object.entries(extraFields)) {
+                if (!(key in fm)) {
+                    fm[key] = value;
+                }
+            }
+        }
+
         const finalBody = body ?? event.body ?? '';
-        return `---\n${stringifyYaml(fm)}---\n${finalBody}`;
+        // Ensure frontmatter YAML ends with a newline before closing ---
+        const yaml = stringifyYaml(fm).replace(/\n+$/, '');
+        return `---\n${yaml}\n---\n${finalBody}`;
     }
 
     // ── Helpers ──

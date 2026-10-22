@@ -2,6 +2,7 @@
 import { hydrateUniversalFieldsFromTopLevel, mirrorUniversalFieldsToTopLevel } from './FieldTemplateService';
 import { App, TFile, parseYaml, stringifyYaml } from 'obsidian';
 import { Scene, SceneStatus, TIMELINE_MODES, TimelineMode } from '../models/Scene';
+import type { TimeSpan } from '../models/TimeSpan';
 import { coerceString } from '../utils/narrow';
 import { tokenizeWords, DEFAULT_STORYLINE_LOCALE, resolveLocale, type StoryLineLocale } from '../utils/locale';
 
@@ -149,6 +150,8 @@ export class MetadataParser {
             timeline: frontmatter.timeline,
             storyDate: this.normalizeFrontmatterString(frontmatter.storyDate ?? frontmatter.story_date),
             storyTime: this.normalizeFrontmatterString(frontmatter.storyTime ?? frontmatter.story_time),
+            timeSpan: this.parseTimeSpan(frontmatter.timeSpan),
+            eventRefs: this.parseStringArray(frontmatter.eventRefs),
             status: this.parseStatus(frontmatter.status),
             conflict: frontmatter.conflict,
             emotion: frontmatter.emotion,
@@ -424,6 +427,8 @@ export class MetadataParser {
         if (scene.timeline) fm.timeline = scene.timeline;
         if (scene.storyDate) fm.storyDate = scene.storyDate;
         if (scene.storyTime) fm.storyTime = scene.storyTime;
+        if (scene.timeSpan) fm.timeSpan = scene.timeSpan;
+        if (scene.eventRefs && scene.eventRefs.length > 0) fm.eventRefs = scene.eventRefs;
         fm.status = scene.status || 'idea';
         if (scene.conflict) fm.conflict = scene.conflict;
         if (scene.emotion) fm.emotion = scene.emotion;
@@ -482,6 +487,20 @@ export class MetadataParser {
             return mode as TimelineMode;
         }
         return undefined;
+    }
+
+    /**
+     * Parse TimeSpan from YAML frontmatter.
+     * TimeSpan is stored as a nested YAML object; we pass it through as-is
+     * so that TimeSpanService can deserialize it later.
+     */
+    private static parseTimeSpan(value: unknown): TimeSpan | undefined {
+        if (!value || typeof value !== 'object') return undefined;
+        // The object is a serialized TimeSpan (from TimeSpanService.serializeToYaml).
+        // Return it as a TimeSpan — the 'kind' discriminator field validates it.
+        const obj = value as Record<string, unknown>;
+        if (typeof obj.kind !== 'string') return undefined;
+        return obj as unknown as TimeSpan;
     }
 
     private static parseBooleanFlag(value: unknown): boolean | undefined {

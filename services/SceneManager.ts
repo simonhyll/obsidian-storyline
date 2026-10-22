@@ -179,17 +179,16 @@ export class SceneManager implements ISceneStore {
         return `${root}/Codex`;
     }
 
-    /** Computed events folder for the active project (series-aware) */
-    getEventsFolder(): string | null {
-        if (this._activeProject?.seriesId || this._activeProject?.seriesUuid) {
-            const seriesFolder = this.getSeriesFolder();
-            if (seriesFolder) return normalizePath(`${seriesFolder}/Events`);
-        }
-        if (this._activeProject) {
-            const folders = deriveProjectFoldersFromFilePath(this._activeProject.filePath);
-            return normalizePath(`${folders.baseFolder}/Events`);
-        }
-        return null;
+    /**
+     * Return the **book-level** Events folder for the active project.
+     * This is the Events/ folder inside the book's own directory, not the
+     * series or universe folder.  Used by `loadActiveProjectEvents` so that
+     * each hierarchy scope loads independently without duplication.
+     */
+    getBookEventsFolder(): string | null {
+        if (!this._activeProject) return null;
+        const folders = deriveProjectFoldersFromFilePath(this._activeProject.filePath);
+        return normalizePath(`${folders.baseFolder}/Events`);
     }
 
     /** Computed notes folder for the active project (corkboard sticky notes) */

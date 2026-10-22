@@ -156,6 +156,90 @@ export class TimeSpanService {
         return this.calendars.get(ts.calendar) ?? null;
     }
 
+    // ── Validation ──
+
+    /**
+     * Validate a Gregorian timestamp. Returns an error message or null if valid.
+     * Checks month range, day range (including leap years), and time values.
+     */
+    validateTimestamp(ts: Timestamp): string | null {
+        if (ts.calendar !== DEFAULT_CALENDAR) {
+            const adapter = this.getAdapterForTimestamp(ts);
+            if (!adapter) return `Unknown calendar: ${ts.calendar}`;
+            // Delegate to calendar adapter if it supports validation
+            if ('validate' in adapter && typeof adapter.validate === 'function') {
+                return (adapter as any).validate(ts);
+            }
+            return null;
+        }
+
+        // Gregorian validation
+        if (ts.month !== undefined) {
+            if (ts.month < 1 || ts.month > 12) {
+                return `Invalid month: ${ts.month} (must be 1-12)`;
+            }
+            if (ts.day !== undefined) {
+                const maxDay = this.getDaysInMonth(ts.year, ts.month);
+                if (ts.day < 1 || ts.day > maxDay) {
+                    return `Invalid day: ${ts.day} for ${ts.month}/${ts.year} (max ${maxDay})`;
+                }
+            }
+        }
+        if (ts.hour !== undefined) {
+            if (ts.hour < 0 || ts.hour > 23) {
+                return `Invalid hour: ${ts.hour} (must be 0-23)`;
+            }
+        }
+        if (ts.minute !== undefined) {
+            if (ts.minute < 0 || ts.minute > 59) {
+                return `Invalid minute: ${ts.minute} (must be 0-59)`;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Validate a TimeSpan. Returns an error message or null if valid.
+     */
+    validateTimeSpan(timeSpan: TimeSpan): string | null {
+        switch (timeSpan.kind) {
+            case 'instant':
+                return this.validateTimestamp(timeSpan.instant!);
+            case 'interval':
+                const startErr = this.validateTimestamp(timeSpan.start!);
+                if (startErr) return `Start: ${startErr}`;
+                const endErr = this.validateTimestamp(timeSpan.end!);
+                if (endErr) return `End: ${endErr}`;
+                // Check that start <= end (same calendar only)
+                if (timeSpan.start!.calendar === timeSpan.end!.calendar) {
+                    const adapter = this.getAdapterForTimestamp(timeSpan.start!);
+                    if (adapter) {
+                        const cmp = adapter.compare(timeSpan.start!, timeSpan.end!);
+                        if (cmp > 0) return 'Start date is after end date';
+                    }
+                }
+                return null;
+            case 'open-ended':
+                return this.validateTimestamp(timeSpan.start!);
+            case 'uncertain':
+                const rangeStartErr = this.validateTimestamp(timeSpan.range!.start);
+                if (rangeStartErr) return `Range start: ${rangeStartErr}`;
+                const rangeEndErr = this.validateTimestamp(timeSpan.range!.end);
+                if (rangeEndErr) return `Range end: ${rangeEndErr}`;
+                if (timeSpan.confidence !== undefined && (timeSpan.confidence < 0 || timeSpan.confidence > 1)) {
+                    return `Confidence must be 0-1, got ${timeSpan.confidence}`;
+                }
+                return null;
+            case 'unknown':
+                return null;
+            case 'relative':
+                if (!timeSpan.relativeTo) return 'Relative TimeSpan requires a reference ID';
+                return null;
+            default:
+                return `Unknown TimeSpan kind: ${(timeSpan as any).kind}`;
+        }
+    }
+
     // ── Parsing ──
 
     /**
@@ -259,7 +343,7 @@ export class TimeSpanService {
     /**
      * Parse a timestamp string using the appropriate calendar adapter.
      */
-    private parseTimestamp(input: string): Timestamp | null {
+    parseTimestamp(input: string): Timestamp | null {
         const gregorian = this.getCalendar(DEFAULT_CALENDAR);
         if (gregorian) {
             const result = gregorian.parse(input);
@@ -517,7 +601,7 @@ export class TimeSpanService {
      * Shift a timestamp by a given amount and unit.
      * Handles month/year boundaries correctly, including leap years.
      */
-    private shiftTimestamp(ts: Timestamp, amount: number, unit: TemporalOffset['unit']): Timestamp {
+    shiftTimestamp(ts: Timestamp, amount: number, unit: TemporalOffset['unit']): Timestamp {
         const result: Timestamp = { ...ts };
 
         switch (unit) {
