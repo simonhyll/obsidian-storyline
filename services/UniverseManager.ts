@@ -428,6 +428,8 @@ export class UniverseManager {
      * Resolve inherited collections for a book.
      * Returns merged entity file paths from Universe ∪ Series ∪ Book scopes.
      * Uses the supplied project's series, not the active project.
+     * @param collectionType A specific category subfolder (e.g., 'Characters', 'Locations').
+     *   Do NOT pass 'all' — use getInheritedCodexFolders() instead.
      */
     async resolveInheritedCollections(
         project: StoryLineProject,
@@ -481,6 +483,45 @@ export class UniverseManager {
             bookEntities,
             allEntities,
         };
+    }
+
+    /**
+     * Get the parent Codex folder paths from Universe and Series scopes.
+     * Returns an ordered array: [universeCodexFolder?, seriesCodexFolder?].
+     * These are the root Codex folders (e.g., "StoryLine/My Universe/Codex"),
+     * NOT category-specific subfolders. The caller (CodexManager) is responsible
+     * for scanning the category subfolders within each parent.
+     */
+    async getInheritedCodexFolders(project: StoryLineProject): Promise<string[]> {
+        const hierarchy = await this.resolveHierarchyPath(project);
+        const folders: string[] = [];
+
+        // Universe-level Codex folder
+        if (hierarchy.universe) {
+            const universeFolder = this.findUniverseFolder(hierarchy.universe.id);
+            if (universeFolder) {
+                const universeCodex = normalizePath(`${universeFolder}/${UNIVERSE_CODEX_FOLDER}`);
+                folders.push(universeCodex);
+            }
+        }
+
+        // Series-level Codex folder
+        if (hierarchy.series && (hierarchy.series.seriesUuid || hierarchy.series.name)) {
+            let seriesFolder: string | null = null;
+            const allSeries = await this.plugin.seriesManager.discoverSeries();
+            for (const { folder, meta } of allSeries) {
+                if (meta.seriesUuid === hierarchy.series.seriesUuid || meta.name === hierarchy.series.name) {
+                    seriesFolder = folder;
+                    break;
+                }
+            }
+            if (seriesFolder) {
+                const seriesCodex = normalizePath(`${seriesFolder}/${UNIVERSE_CODEX_FOLDER}`);
+                folders.push(seriesCodex);
+            }
+        }
+
+        return folders;
     }
 
     /**

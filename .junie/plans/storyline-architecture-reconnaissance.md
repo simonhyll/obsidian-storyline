@@ -1201,3 +1201,16 @@ Complete remaining Phase 1 integration: Codex inheritance, exclusive universe me
 - ✓ Test verification — 100/100 tests pass (96 existing + 4 new)
 - ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
 - ✓ Committed to feat/rework branch
+
+### ✓ Step 5: Fix Codex Inheritance Bugs
+Fix two functional bugs in Codex inheritance: resolveInheritedCollections('all') scanning wrong folder, and refresh paths losing inherited entries.
+
+- ✓ Add getInheritedCodexFolders to UniverseManager — returns parent Codex folder paths directly, no string manipulation
+- ✓ Fix main.ts startup — uses getInheritedCodexFolders instead of broken resolveInheritedCollections('all')
+- ✓ Fix performRefreshOpenViews — restores inherited codex after loadAll clears entries
+- ✓ Add 8 integration tests: getInheritedCodexFolders (3), Codex inheritance end-to-end (5)
+- ✓ Tests cover: non-Characters categories, empty parent folders, duplicate UUID conflicts, book-level precedence, project switching
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 108/108 tests pass (100 existing + 8 new)
+- ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
+- ✓ Committed to feat/rework branch

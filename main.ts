@@ -345,30 +345,9 @@ export default class SceneCardsPlugin extends Plugin {
                         await this.codexManager.loadAll(codexFolder);
                         // Load inherited codex from Universe and Series scopes
                         try {
-                            const inherited = await this.universeManager.resolveInheritedCollections(
-                                this.sceneManager.activeProject!,
-                                'all'
+                            const inheritedFolders = await this.universeManager.getInheritedCodexFolders(
+                                this.sceneManager.activeProject!
                             );
-                            const inheritedFolders: string[] = [];
-                            if (inherited.universeEntities.length > 0) {
-                                // Derive the universe codex folder from the first universe entity path
-                                for (const fp of inherited.universeEntities) {
-                                    const uCodex = fp.substring(0, fp.indexOf('/Characters')) || fp.substring(0, fp.lastIndexOf('/'));
-                                    const uCodexFolder = uCodex.endsWith('/Characters') ? uCodex.substring(0, uCodex.lastIndexOf('/')) : uCodex;
-                                    if (!inheritedFolders.includes(uCodexFolder)) {
-                                        inheritedFolders.push(uCodexFolder);
-                                    }
-                                }
-                            }
-                            if (inherited.seriesEntities.length > 0) {
-                                for (const fp of inherited.seriesEntities) {
-                                    const sCodex = fp.substring(0, fp.indexOf('/Characters')) || fp.substring(0, fp.lastIndexOf('/'));
-                                    const sCodexFolder = sCodex.endsWith('/Characters') ? sCodex.substring(0, sCodex.lastIndexOf('/')) : sCodex;
-                                    if (!inheritedFolders.includes(sCodexFolder)) {
-                                        inheritedFolders.push(sCodexFolder);
-                                    }
-                                }
-                            }
                             if (inheritedFolders.length > 0) {
                                 await this.codexManager.loadInheritedFolders(inheritedFolders);
                             }
@@ -2709,6 +2688,15 @@ export default class SceneCardsPlugin extends Plugin {
                     );
                     this.codexManager.initCategories(this.settings.codexEnabledCategories || [], customDefs);
                     await this.codexManager.loadAll(codexFolder);
+                    // Restore inherited codex from Universe and Series scopes
+                    try {
+                        const inheritedFolders = await this.universeManager.getInheritedCodexFolders(
+                            this.sceneManager.activeProject!
+                        );
+                        if (inheritedFolders.length > 0) {
+                            await this.codexManager.loadInheritedFolders(inheritedFolders);
+                        }
+                    } catch { /* Universe inheritance is optional; ignore errors */ }
                 }
             } catch { /* project may not be set yet */ }
         } else if (entityChanges) {
