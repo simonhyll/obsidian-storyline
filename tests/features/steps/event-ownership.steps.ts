@@ -95,25 +95,26 @@ Given('the author is viewing multiple Books', function (this: TestWorld) {
 When('they create a new Scene named {string}', function (this: TestWorld, name: string) {
   // Scene creation requires explicit book selection
   // The production code requires the active book to be set
-  if (!this.activeBook) {
-    throw new Error('Cannot create scene without active book');
+  if (!this.activeBook?.bookId) {
+    throw new Error('Cannot create scene without an owning Book ID');
   }
   const scenePath = `${this.activeBook.sceneFolder}/${name}.md`;
   this.scenes = [{
+    type: 'scene',
     title: name,
     filePath: scenePath,
-    bookId: this.activeBook.bookId,
+    ownerId: this.activeBook.bookId,
+    introducedIn: this.activeBook.bookId,
     sequence: 1,
     chronologicalOrder: 1,
-    content: '',
-  } as any];
+  }];
   this.createdFiles.set(scenePath, `---\ntype: scene\ntitle: ${name}\n---`);
 });
 
 Then('the correct owning Book must be explicitly established', function (this: TestWorld) {
   const scene = this.scenes[0];
   if (!scene) throw new Error('No scene created');
-  if ((scene as any).bookId !== this.activeBook?.bookId) {
+  if (scene.ownerId !== this.activeBook?.bookId) {
     throw new Error(`Scene bookId does not match active book`);
   }
 });

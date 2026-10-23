@@ -102,6 +102,11 @@ function changedLineNumbers(filename, oldPath) {
 
 const changedLines = new Map(changes.map(({ filename, oldPath }) =>
     [resolve(filename), changedLineNumbers(filename, oldPath)]));
+// Whole-file/function architecture budgets have their own baseline-aware gate.
+// Only check other ESLint rules against changed lines, so a newly enabled
+// structural rule cannot retroactively reject old files in a long-lived PR.
+const ARCH_RULES = new Set(['max-lines', 'max-lines-per-function', 'complexity',
+    'max-depth', 'max-statements', 'max-params']);
 const eslint = new ESLint();
 // lintFiles(), unlike lintText() on old revisions, retains valid TS project
 // context and matches diagnostics from `pnpm lint`.
@@ -113,7 +118,7 @@ for (const result of results) {
     totalCurrent += result.errorCount;
     if (!modified) continue;
     for (const finding of result.messages) {
-        if (finding.severity !== 2 || !modified.has(finding.line)) continue;
+        if (finding.severity !== 2 || !modified.has(finding.line) || ARCH_RULES.has(finding.ruleId)) continue;
         newErrors++;
         console.error(`${result.filePath}:${finding.line}:${finding.column}: ${finding.ruleId ?? 'ESLint'}: ${finding.message}`);
     }

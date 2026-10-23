@@ -35,7 +35,7 @@ function normalizeSelector(sel) {
   return sel
     .replace(/\[([^\]]*)\]/g, (match, inner) => {
       // Normalize quotes in attribute selectors
-      return '[' + inner.replace(/(["'])((?:(?!\1)[^\[]|\\.)*)\1/g, '$2') + ']';
+      return '[' + inner.replace(/(["'])((?:(?!\1)[^[]|\\.)*)\1/g, '$2') + ']';
     })
     .trim();
 }

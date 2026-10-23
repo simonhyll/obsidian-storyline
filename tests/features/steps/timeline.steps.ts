@@ -140,7 +140,7 @@ Then('only compatible Books are selectable', function (this: TestWorld) {
   if (compatible.length !== 1) {
     throw new Error(`Expected 1 compatible book, got ${compatible.length}`);
   }
-  if (compatible[0]!.bookId !== 'alpha-book') {
+  if (compatible[0]?.bookId !== 'alpha-book') {
     throw new Error('Wrong book selected as compatible');
   }
 });
