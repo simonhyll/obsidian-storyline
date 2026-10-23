@@ -44,6 +44,8 @@ Do not start all workstreams in one agent task or commit. Each stage must be ind
 - Run test/build/typecheck/lint on PRs and direct development-branch pushes. Fail on **new** errors throughout migration; make full typecheck/lint mandatory once baseline is clean.
 - Acceptance: reproducible clean gates, no blanket `eslint-disable` or `@ts-ignore` added solely to make the dashboard green.
 
+**Progress (2026-10-23):** Step 1A removed the 27 typecheck errors and added mandatory CI typecheck, verified on `feat/rework`. Step 1B cleaned a targeted subset of ESLint and MarkdownRenderer lifecycle errors; the last reported baseline remains approximately 787 lint problems (594 errors / 193 warnings). The changed-line lint gate is active. **The remaining historical lint backlog does not block Step 2**, provided `pnpm typecheck`, `pnpm test`, build and the incremental lint gate stay green. Avoid delaying the structure migration with mass lint reformatting.
+
 ### 2. Move TS source to `src/`, source assets to `assets/`, and ALL plugin outputs to `dist/`
 
 Desired source structure (illustrative; adjust for existing modules and plugin requirements):
@@ -60,7 +62,8 @@ src/
   views/
   types/             # only if needed
   styles/
-    main.scss
+    legacy.css          # Step 2: move existing CSS here unchanged
+    main.scss           # Step 3: replace legacy CSS with modular SCSS
     components/
     views/
     shared/
@@ -81,6 +84,7 @@ versions.json
 ```
 
 - Move application `.ts` files into `src/` as a coherent change; keep `tests/`, config, workflows and scripts at repository root. Handle `.d.ts` appropriately.
+- In **Step 2**, move the existing stylesheet to a source path such as `src/styles/legacy.css` and copy it byte-for-byte to `dist/styles.css` during build/watch. **Do not split or visually restyle CSS until Step 3**. Check that generated output retains the same cascade order and content.
 - Use `git mv` when practical; update all relative imports and aliases in `tsconfig.json`, `esbuild.config.mjs`, ESLint configuration, Vitest, developer tooling, Junie instructions and IDE references.
 - The esbuild entry becomes `src/main.ts`, and its output becomes **`dist/main.js`**, NOT root `main.js`. The authoring SCSS entry compiles to **`dist/styles.css`**. The authoritative source manifest moves to **`assets/manifest.json`** and is copied deterministically to **`dist/manifest.json`**. Do not maintain two hand-edited manifests. Preserve the Obsidian plugin ID `storyline`, name, version and compatibility metadata.
 - Move only real **source** assets under `assets/`, including `assets/manifest.json` as the source-of-truth manifest. Keep documentation screenshots in `screenshots/` unless there is a concrete reason to reorganize them. Do not put release artefacts into `assets/`.
