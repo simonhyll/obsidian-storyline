@@ -227,6 +227,23 @@ describe('TimelineNavigationService', () => {
             expect(item).toBeNull();
         });
 
+        it('navigates distinct items sharing exactly the same timestamp', () => {
+            const scenes = [
+                makeScene('Scene A', '2000-01-01', 'book-a', 'Book A/Scenes/A.md'),
+                makeScene('Scene B', '2000-01-01', 'book-b', 'Book B/Scenes/B.md'),
+                makeScene('Scene C', '2000-01-01', 'book-c', 'Book C/Scenes/C.md'),
+            ];
+            nav.updateItems(scenes, []);
+            nav.setSelectedDate(null);
+
+            const firstNext = nav.navigateNext();
+            const secondNext = nav.navigateNext();
+            expect(firstNext?.scene?.title).toBe('Scene B');
+            expect(secondNext?.scene?.title).toBe('Scene C');
+            expect(nav.navigateNext()).toBeNull();
+            expect(nav.navigatePrevious()?.scene?.title).toBe('Scene B');
+        });
+
         it('finds current index by binary search', () => {
             const scenes = [
                 makeScene('Scene A', '1993-01-02', 'book-a', 'Book A/Scenes/Scene A.md'),
