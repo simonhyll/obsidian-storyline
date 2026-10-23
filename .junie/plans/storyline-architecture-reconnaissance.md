@@ -1262,8 +1262,26 @@ Fix seven reported UI integration issues: duplicate modals, book card navigation
 - ✓ Typecheck verification — no new errors in changed files; pre-existing baseline errors unchanged
 - ✓ Committed to feat/rework branch
 
-### ✓ Step 10: Phase 3 Milestone 1 — Integrate Events into Existing Timeline
+### ✓ Step 10: Phase 3 Milestone 1 — Integrate Events into Existing Timeline (Superseded)
 Integrate canonical Events into the existing TimelineView, fix Codex dropdown, and add behavioral tests.
+Superseded by Step 11 which rebuilds the Timeline around a shared chronological axis.
+
+### ✓ Step 11: Rebuild Timeline Around Shared Chronological Axis
+Rebuild TimelineView so Events and Scenes share one chronological axis with proper sorting and Event marker rendering.
+
+- ✓ Unified temporal sorting — replaced incompatible Date.parse() and timestampToSortable() with TimeSpanService-based comparison via getSceneTimeSpan(), getSceneSortTimestamp(), and compareTimelineItems()
+- ✓ Events interleaved on shared axis — removed "Canonical Events" divider in chronological mode; Events sort by TimeSpan alongside Scenes
+- ✓ Event marker rendering — redesigned renderTimelineEvent as horizontal marker: date/title above thin line, description below
+- ✓ Reading order fix — removed "Canonical Events" appended section; Events appear as time-sorted reference rail
+- ✓ Swimlane Events lane — renamed from "⚡ Canonical Events" to "Events", removed "Book" label from swimlane event cards
+- ✓ TimeSpanPicker simplification — removed "Display label" field and unused displayInput reference
+- ✓ "Book" label fix — removed hardcoded "Book" from CodexView renderEventsList and TimelineView swimlane events
+- ✓ CSS redesign — complete rewrite of event marker styles with horizontal line, date/title top row, description below
+- ✓ 34 behavioral tests: unified sorting (16), event markers (5), no Canonical Events section (2), TimeSpanPicker (2), swimlane (2), CodexView (2), universe-wide events (1), relative dates (2), calendar safety (2)
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 279/279 tests pass (245 existing + 34 new)
+- ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
+- ✓ Committed to feat/rework branch
 
 - ✓ Add "+ New Event" button in TimelineView toolbar — opens EventModal, refreshes timeline after creation
 - ✓ Add Events to ViewSwitcher Codex dropdown — opens CodexView with 'events' category selected

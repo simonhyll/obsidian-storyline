@@ -2003,12 +2003,10 @@ export class CodexView extends ItemView {
                 timeBadge.setText(this.plugin.timeSpanService.format(event.timeSpan));
             }
 
-            // Ownership scope badge
-            const scopeBadge = meta.createEl('span', { cls: 'codex-entry-badge' });
+            // Ownership scope badge — only show when relevant
             if (event.ownerId) {
+                const scopeBadge = meta.createEl('span', { cls: 'codex-entry-badge' });
                 scopeBadge.setText(event.introducedIn ? 'Inherited' : 'Owned');
-            } else {
-                scopeBadge.setText('Book');
             }
 
             // Click to edit

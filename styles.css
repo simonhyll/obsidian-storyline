@@ -6990,38 +6990,64 @@ body.sl-auto-hide-tab-labels .story-line-view-switcher.sl-collapsed .story-line-
 }
 
 /* ============================================
-   Timeline Event entries
+   Timeline Event Markers
+   Horizontal marker style: date/title above a thin line, description below
    ============================================ */
 
-/* Event entry — non-draggable, visually distinct */
-.timeline-entry-event {
+/* Event marker entry — non-draggable, visually distinct from Scene cards */
+.timeline-entry-event-marker {
     cursor: pointer;
+    padding: 8px 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--text-accent) 3%, var(--background-secondary));
+    border-left: 2px solid var(--text-accent);
+    transition: background 0.15s ease;
 }
 
-.timeline-entry-event:hover {
-    background: transparent;
+.timeline-entry-event-marker:hover {
+    background: color-mix(in srgb, var(--text-accent) 8%, var(--background-secondary));
 }
 
-/* Event dot — different color from scene dots */
-.timeline-dot-event {
+/* Top row: date + title */
+.timeline-event-top {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.timeline-event-date {
+    font-size: 0.8em;
+    font-weight: 600;
+    color: var(--text-accent);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.timeline-event-title {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+/* Horizontal marker line */
+.timeline-event-marker-line {
+    height: 1px;
     background: var(--text-accent);
-    border-radius: 50%;
-    width: 12px;
-    height: 12px;
+    opacity: 0.4;
+    margin: 4px 0;
 }
 
-/* Event card — subtle accent border */
-.timeline-card-event {
-    border-left: 3px solid var(--text-accent);
-    background: color-mix(in srgb, var(--text-accent) 5%, var(--sc-card-bg, var(--background-primary)));
+/* Description below the line */
+.timeline-event-description {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    line-height: 1.4;
+    margin-top: 2px;
 }
 
-.timeline-card-event:hover {
-    box-shadow: var(--sl-shadow-sm);
-    transform: translateX(2px);
-}
-
-/* Event icon */
+/* Event icon (for swimlane cards) */
 .timeline-event-icon {
     margin-right: 4px;
     color: var(--text-accent);

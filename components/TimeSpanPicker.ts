@@ -26,7 +26,6 @@ export class TimeSpanPicker {
     private offsetAmountInput: HTMLInputElement | null = null;
     private offsetUnitSelect: HTMLSelectElement | null = null;
     private offsetDirectionSelect: HTMLSelectElement | null = null;
-    private displayInput: HTMLInputElement | null = null;
 
     constructor(
         container: HTMLElement,
@@ -65,21 +64,6 @@ export class TimeSpanPicker {
             });
 
         this.renderFields();
-
-        // Display label
-        new Setting(this.container)
-            .setName('Display label')
-            .addText(text => {
-                text.setPlaceholder('Optional display label');
-                text.onChange(async (value) => {
-                    const ts = this.getCurrentTimeSpan();
-                    if (ts) {
-                        ts.display = value || undefined;
-                        this.onChange(ts);
-                    }
-                });
-                this.displayInput = text.inputEl;
-            });
     }
 
     private kind: TimeSpan['kind'] = 'instant';
@@ -322,9 +306,6 @@ export class TimeSpanPicker {
         this.kind = timeSpan.kind;
         if (this.kindSelect) this.kindSelect.value = timeSpan.kind;
 
-        if (this.displayInput) {
-            this.displayInput.value = timeSpan.display || '';
-        }
 
         this.renderFields();
 

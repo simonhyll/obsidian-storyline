@@ -18,7 +18,7 @@ import { BUILTIN_BEAT_SHEETS, Scene, SceneStatus, TIMELINE_MODES, TIMELINE_MODE_
 import { getActDisplayLabel } from '../utils/actChapter';
 import { parseSceneLocations } from '../services/MetadataParser';
 import type { Event } from '../models/Event';
-import type { TimeSpan } from '../models/TimeSpan';
+import type { TimeSpan, Timestamp } from '../models/TimeSpan';
 
 /**
  * Timeline ordering mode
@@ -520,11 +520,12 @@ export class TimelineView extends ItemView {
                 }
             }
 
-            // Append Events at the end in reading order (non-draggable)
+            // In reading order, show Events as contextual markers after scenes.
+            // They appear as a reference rail, not as a separate appended section.
             if (events.length > 0) {
-                // Divider for events section
-                tlItems.push({ kind: 'divider', actLabel: 'Canonical Events', actNum: undefined });
-                for (const event of events) {
+                // Sort events by time for the reference rail
+                const sortedEvents = this.sortEventsByTime(events);
+                for (const event of sortedEvents) {
                     tlItems.push({ kind: 'event', event });
                 }
             }
@@ -640,9 +641,10 @@ export class TimelineView extends ItemView {
         const laneKeys = Array.from(laneKeysSet).sort();
         if (laneKeys.length === 0) laneKeys.push('(none)');
 
-        // Add "Canonical Events" lane if there are events
+        // Events appear in their own lane in swimlane mode, but integrated
+        // with the chronological axis, not as a separate section
         const hasEvents = events.length > 0;
-        const allLaneKeys = hasEvents ? [...laneKeys, '⚡ Canonical Events'] : laneKeys;
+        const allLaneKeys = hasEvents ? [...laneKeys, 'Events'] : laneKeys;
 
         // 2. Build row definitions — one row per scene in sequence order,
         //    with act dividers injected when the act changes.
@@ -745,7 +747,7 @@ export class TimelineView extends ItemView {
                 const lane = allLaneKeys[laneIdx];
                 const cell = grid.createDiv('swimlane-lane-cell');
 
-                if (lane === '⚡ Canonical Events') {
+                if (lane === 'Events') {
                     // Events lane — empty for scene rows, events rendered separately
                     continue;
                 }
@@ -819,7 +821,7 @@ export class TimelineView extends ItemView {
     }
 
     /**
-     * Render a compact Event card inside a swimlane cell.
+     * Render a compact Event marker inside a swimlane cell.
      */
     private renderSwimlaneEventCard(cell: HTMLElement, event: Event): void {
         const card = cell.createDiv('timeline-card swimlane-card swimlane-event-card');
@@ -842,16 +844,6 @@ export class TimelineView extends ItemView {
                 timeText.addClass('timeline-date-unknown');
             }
         }
-
-        // Scope badge
-        const footer = card.createDiv('timeline-card-footer');
-        const scopeBadge = footer.createSpan({ cls: 'timeline-card-status' });
-        if (event.ownerId) {
-            scopeBadge.setText(event.introducedIn ? 'Inherited' : 'Owned');
-        } else {
-            scopeBadge.setText('Book');
-        }
-        scopeBadge.setCssStyles({ color: 'var(--text-muted)' });
 
         // Click to edit
         card.addEventListener('click', (e) => {
@@ -1159,82 +1151,59 @@ export class TimelineView extends ItemView {
     // ────────────────────────────────────────────────────────────
 
     /**
-     * Render a single Event entry on the timeline track.
+     * Render a single Event as a horizontal timeline marker.
+     * Format:
+     *   DATE  Event Title
+     *   ─────────────────────
+     *   Description...
      * Events are non-draggable and visually distinct from Scene cards.
      */
     private renderTimelineEvent(track: HTMLElement, event: Event): void {
-        const entry = track.createDiv('timeline-entry timeline-entry-event');
+        const entry = track.createDiv('timeline-entry timeline-entry-event-marker');
         entry.dataset.path = event.filePath;
         entry.dataset.eventId = event.id;
 
-        // Left column: date/time badge (read-only for events)
-        const seqCol = entry.createDiv('timeline-entry-seq');
+        // Format the date
+        const dateText = event.timeSpan
+            ? this.plugin.timeSpanService.format(event.timeSpan)
+            : '?';
+
+        // Top row: date badge + event title
+        const topRow = entry.createDiv('timeline-event-top');
+        const dateBadge = topRow.createSpan({
+            cls: 'timeline-event-date',
+            text: dateText
+        });
         if (event.timeSpan) {
-            const timeBadge = seqCol.createSpan({
-                cls: 'timeline-date-badge',
-                text: this.plugin.timeSpanService.format(event.timeSpan)
-            });
-            // Show TimeSpan kind indicator for uncertain/unknown
             if (event.timeSpan.kind === 'uncertain') {
-                timeBadge.addClass('timeline-date-uncertain');
-                timeBadge.setAttr('title', 'Uncertain date');
+                dateBadge.addClass('timeline-date-uncertain');
+                dateBadge.setAttr('title', 'Uncertain date');
             } else if (event.timeSpan.kind === 'unknown') {
-                timeBadge.addClass('timeline-date-unknown');
-                timeBadge.setAttr('title', 'Unknown date');
+                dateBadge.addClass('timeline-date-unknown');
+                dateBadge.setAttr('title', 'Unknown date');
             }
-        } else {
-            const unknownBadge = seqCol.createSpan({
-                cls: 'timeline-date-badge timeline-date-unknown',
-                text: '?'
-            });
-            unknownBadge.setAttr('title', 'No date set');
         }
+        const titleSpan = topRow.createSpan({
+            cls: 'timeline-event-title',
+            text: event.name || 'Untitled Event'
+        });
 
-        // Center: dot (event indicator)
-        const dotCol = entry.createDiv('timeline-entry-dot-col');
-        const dot = dotCol.createDiv('timeline-dot timeline-dot-event');
+        // Horizontal marker line
+        entry.createDiv('timeline-event-marker-line');
 
-        // Right column: event card
-        const cardCol = entry.createDiv('timeline-entry-card');
-        const card = cardCol.createDiv('timeline-card timeline-card-event');
-
-        // Event icon
-        const iconSpan = card.createSpan({ cls: 'timeline-event-icon' });
-        obsidian.setIcon(iconSpan, 'calendar');
-
-        card.createDiv({ cls: 'timeline-card-title', text: event.name || 'Untitled Event' });
-
-        // Meta: location, participants, scope
-        const meta = card.createDiv('timeline-card-meta');
-        if (event.location) {
-            const locSpan = meta.createSpan({ cls: 'timeline-card-location' });
-            obsidian.setIcon(locSpan, 'map-pin');
-            locSpan.appendText(' ' + event.location);
+        // Bottom: description
+        if (event.description) {
+            const desc = entry.createDiv('timeline-event-description');
+            desc.setText(event.description);
         }
-        if (event.participants?.length) {
-            const chars = card.createDiv('timeline-card-chars');
-            event.participants.forEach(c => {
-                chars.createSpan({ cls: 'timeline-char-tag', text: c });
-            });
-        }
-
-        // Scope badge
-        const footer = card.createDiv('timeline-card-footer');
-        const scopeBadge = footer.createSpan({ cls: 'timeline-card-status' });
-        if (event.ownerId) {
-            scopeBadge.setText(event.introducedIn ? 'Inherited' : 'Owned');
-        } else {
-            scopeBadge.setText('Book');
-        }
-        scopeBadge.setCssStyles({ color: 'var(--text-muted)' });
 
         // Click to edit the event
-        card.addEventListener('click', (e) => {
+        entry.addEventListener('click', (e) => {
             e.stopPropagation();
             this.openEditEvent(event);
         });
 
-        card.setCssStyles({
+        entry.setCssStyles({
             transform: `scale(${this.zoomLevel})`,
             transformOrigin: 'left center',
         });
@@ -1254,8 +1223,10 @@ export class TimelineView extends ItemView {
     }
 
     /**
-     * Build chronologically sorted timeline items, interleaving Scenes and Events.
-     * Uses TimeSpanService for safe temporal comparison.
+     * Build chronologically sorted timeline items, interleaving Scenes and Events
+     * on a single shared chronological axis.
+     * Uses TimeSpanService for unified calendar-aware comparison.
+     * Items without temporal info are placed at the end in an "Undated" section.
      */
     private buildChronologicalTimelineItems(
         tlItems: Array<
@@ -1272,73 +1243,45 @@ export class TimelineView extends ItemView {
         actsWithScenes: Set<number>,
         sortedActs: number[]
     ): void {
-        const tsService = this.plugin.timeSpanService;
-
-        // Build a combined list of sortable items
+        // Build combined list with unified Timestamp-based sorting
         interface SortableItem {
-            sortKey: number; // epoch-like timestamp for sorting
-            hasTime: boolean;
+            timestamp: Timestamp | null;
+            calendar: string | undefined;
             scene?: Scene;
             sceneIdx?: number;
             event?: Event;
         }
         const sortable: SortableItem[] = [];
 
-        // Add scenes with temporal info
+        // Add scenes — normalize legacy dates via TimeSpanService
         for (let i = 0; i < scenes.length; i++) {
             const scene = scenes[i];
-            // Prefer TimeSpan if available, fall back to legacy storyDate
-            let sortKey: number | null = null;
-            if (scene.timeSpan) {
-                const earliest = tsService.getEarliestPoint?.(scene.timeSpan);
-                if (earliest) {
-                    sortKey = this.timestampToSortable(earliest);
-                }
-            }
-            if (sortKey === null) {
-                const legacy = this.parseSceneDateTimestamp(scene);
-                if (legacy !== null) {
-                    sortKey = legacy;
-                }
-            }
-            sortable.push({
-                sortKey: sortKey ?? Number.MAX_SAFE_INTEGER,
-                hasTime: sortKey !== null && sortKey !== Number.MAX_SAFE_INTEGER,
-                scene,
-                sceneIdx: i,
-            });
+            const ts = this.getSceneSortTimestamp(scene);
+            const calendar = ts?.calendar;
+            sortable.push({ timestamp: ts, calendar, scene, sceneIdx: i });
         }
 
-        // Add events with temporal info
+        // Add events — use TimeSpan directly
         for (const event of events) {
-            let sortKey: number | null = null;
-            if (event.timeSpan) {
-                const earliest = tsService.getEarliestPoint?.(event.timeSpan);
-                if (earliest) {
-                    sortKey = this.timestampToSortable(earliest);
-                }
-            }
-            sortable.push({
-                sortKey: sortKey ?? Number.MAX_SAFE_INTEGER,
-                hasTime: sortKey !== null && sortKey !== Number.MAX_SAFE_INTEGER,
-                event,
-            });
+            const ts = event.timeSpan
+                ? this.plugin.timeSpanService.getEarliestPoint(event.timeSpan)
+                : null;
+            const calendar = ts?.calendar;
+            sortable.push({ timestamp: ts, calendar, event });
         }
 
-        // Sort: items with dates first (by date), then items without dates
+        // Sort using unified TimeSpan-based comparison
         sortable.sort((a, b) => {
-            if (a.hasTime && b.hasTime) return a.sortKey - b.sortKey;
-            if (a.hasTime) return -1;
-            if (b.hasTime) return 1;
-            // Both have no time — scenes before events
+            const cmp = this.compareTimelineItems(a.timestamp, a.calendar, b.timestamp, b.calendar);
+            if (cmp !== 0) return cmp;
+            // Same date — scenes before events for stability
             if (a.scene && b.event) return -1;
             if (a.event && b.scene) return 1;
             return 0;
         });
 
-        // Render act dividers and items
+        // Render items on the shared axis
         let lastRenderedAct: number | undefined = undefined;
-        let eventsSectionStarted = false;
 
         for (const item of sortable) {
             if (item.scene) {
@@ -1363,10 +1306,7 @@ export class TimelineView extends ItemView {
                 });
             }
             if (item.event) {
-                if (!eventsSectionStarted) {
-                    tlItems.push({ kind: 'divider', actLabel: 'Canonical Events', actNum: undefined });
-                    eventsSectionStarted = true;
-                }
+                // Events are interleaved on the same axis — no separate section
                 tlItems.push({ kind: 'event', event: item.event });
             }
         }
@@ -1386,9 +1326,10 @@ export class TimelineView extends ItemView {
     /**
      * Convert a Timestamp to a sortable numeric value.
      * Uses a simple year/month/day linearization for comparison.
+     * Supports negative years (BC dates) and very large year values.
      */
-    private timestampToSortable(ts: { year: number; month?: number; day?: number; hour?: number; minute?: number }): number {
-        const y = ts.year;
+    private timestampToSortable(ts: Timestamp): number {
+        const y = ts.year ?? 0;
         const m = ts.month ?? 1;
         const d = ts.day ?? 1;
         const h = ts.hour ?? 0;
@@ -1398,7 +1339,53 @@ export class TimelineView extends ItemView {
     }
 
     /**
-     * Parse date-only component into a numeric value (midnight epoch or day-count). Returns null if unavailable.
+     * Get a TimeSpan for a Scene, normalizing legacy storyDate/storyTime in-memory.
+     * Does NOT modify the Scene's source file.
+     */
+    private getSceneTimeSpan(scene: Scene): TimeSpan | null {
+        // Prefer TimeSpan if available
+        if (scene.timeSpan) return scene.timeSpan;
+        // Fall back to legacy storyDate/storyTime
+        return this.plugin.timeSpanService.convertLegacyToTimeSpan(scene.storyDate, scene.storyTime);
+    }
+
+    /**
+     * Get a sortable Timestamp for a Scene, using TimeSpanService for unified comparison.
+     * Returns null if the Scene has no temporal information.
+     */
+    private getSceneSortTimestamp(scene: Scene): Timestamp | null {
+        const ts = this.getSceneTimeSpan(scene);
+        if (!ts) return null;
+        return this.plugin.timeSpanService.getEarliestPoint(ts);
+    }
+
+    /**
+     * Compare two Timeline items (Scene or Event) by their temporal placement.
+     * Uses TimeSpanService for calendar-aware comparison.
+     * Items without temporal info sort last.
+     */
+    private compareTimelineItems(
+        aTime: Timestamp | null,
+        aCalendar: string | undefined,
+        bTime: Timestamp | null,
+        bCalendar: string | undefined,
+    ): number {
+        // Both null → stable order
+        if (!aTime && !bTime) return 0;
+        // Null sorts last
+        if (!aTime) return 1;
+        if (!bTime) return -1;
+        // Different calendars → cannot compare, sort by calendar name for stability
+        if (aCalendar && bCalendar && aCalendar !== bCalendar) {
+            return aCalendar.localeCompare(bCalendar);
+        }
+        // Same calendar (or both Gregorian) → compare timestamps
+        return this.plugin.timeSpanService.compareTimestamps(aTime, bTime);
+    }
+
+    /**
+     * Parse date-only component into a Timestamp for date validation flags.
+     * Returns null if unavailable. Used only for date-order warning flags.
      */
     private parseSceneDateTimestamp(scene: Scene): number | null {
         try {
