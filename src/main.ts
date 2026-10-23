@@ -60,6 +60,8 @@ import { registerLeafChange } from './commands/registerLeafChange';
 import { registerViews } from './views/registerViews';
 import { createServices, wireServiceCallbacks } from './services/initServices';
 import { runStartupSequence } from './services/startup';
+import { discoverProjects, shouldSuppressNewProjectModal, showMobileProjectNotice } from './services/projectDiscovery';
+import { CreateProjectModal } from './components/CreateProjectModal';
 
 /**
  * StoryLine Plugin for Obsidian
@@ -2672,59 +2674,23 @@ export default class SceneCardsPlugin extends Plugin {
     }
 
     /**
-     * Scan for existing StoryLine projects.
-     * If none are found, retry a few times in case the vault / metadata cache
-     * hasn't finished indexing (common on mobile and after laptop wake).
-     * Only prompt for a new project if retries are exhausted.
+     * Scan for existing StoryLine projects and restore the active book.
+     * Delegates to {@link discoverProjects} for retry logic and mobile handling.
      */
     async bootstrapProjects(): Promise<void> {
-        let projects = await this.sceneManager.scanProjects();
-
-        // If nothing found but we expect a project, retry after short delays
-        // to let the vault / metadata cache finish indexing.
-        if (projects.length === 0 && this.settings.activeProjectFile) {
-            for (let attempt = 1; attempt <= 3; attempt++) {
-                await new Promise(r => window.setTimeout(r, attempt * 1000));
-                projects = await this.sceneManager.scanProjects();
-                if (projects.length > 0) break;
-            }
-        }
+        const projects = await discoverProjects({
+            sceneManager: this.sceneManager,
+            settings: { activeProjectFile: this.settings.activeProjectFile },
+            vault: this.app.vault,
+            platform: Platform,
+            notice: (msg: string, timeout?: number) => new Notice(msg, timeout),
+        });
 
         if (projects.length === 0) {
-            // If we expect a project to exist (e.g. from a previous session),
-            // verify that its file is actually missing before prompting creation.
-            // This prevents the startup race condition from creating duplicate projects
-            // when the vault/metadata cache is slow to index (e.g. synced folders).
-            if (this.settings.activeProjectFile) {
-                const exists = await this.app.vault.adapter.exists(this.settings.activeProjectFile);
-                if (exists) {
-                    // The file exists but wasn't found by scanProjects — retry once more
-                    // with a longer delay to give the metadata cache time to catch up.
-                    await new Promise(r => window.setTimeout(r, 5000));
-                    projects = await this.sceneManager.scanProjects();
-                    if (projects.length > 0) return;
-                }
-            }
-
-            // Mobile (iOS / iPadOS / Android) suppression: the vault file
-            // system on mobile can take a long time to populate, especially
-            // with iCloud / Dropbox / OneDrive sync. Auto-opening the New
-            // Project modal in that window leads to users seeing the dialog
-            // before their existing projects have shown up, and accidentally
-            // creating duplicates. Show a one-time notice instead and let
-            // the user invoke the modal manually from the command palette
-            // ("StoryLine: Create new project") once everything has loaded.
-            if (Platform.isMobile) {
-                new Notice(
-                    'StoryLine: no projects found yet. If sync is still running, give it a moment. ' +
-                    'Otherwise use the command palette → "StoryLine: Create new project".',
-                    8000,
-                );
+            if (shouldSuppressNewProjectModal(Platform)) {
+                showMobileProjectNotice((msg: string, timeout?: number) => new Notice(msg, timeout));
                 return;
             }
-
-            // Desktop: prompt the user to name their first project instead
-            // of auto-creating a "Default" one.
             const project = await this.openNewProjectModal();
             if (project) {
                 try {
@@ -2747,321 +2713,38 @@ export default class SceneCardsPlugin extends Plugin {
      */
     async openNewProjectModal(
         defaultUniverseId?: string,
-        defaultSeriesUuid?: string
+        defaultSeriesUuid?: string,
     ): Promise<StoryLineProject | null> {
         if (this._newProjectModalOpen) {
-            // Modal already open — ignore concurrent call
             return null;
         }
         this._newProjectModalOpen = true;
         try {
-            return await new Promise<StoryLineProject | null>((resolve) => {
-                const modal = new Modal(this.app);
-                // Resolve exactly once, including when Escape closes the modal.
-                // Creation failures leave the modal open so users can correct and retry.
-                let settled = false;
-                const settle = (result: StoryLineProject | null): void => {
-                    if (settled) return;
-                    settled = true;
-                    resolve(result);
-                };
-                modal.titleEl.setText('New StoryLine project');
-
-                // ── Type selector: Book / Series / Universe ──
-                type ProjectType = 'book' | 'series' | 'universe';
-                let projectType: ProjectType = 'book';
-
-                const typeSetting = new Setting(modal.contentEl)
-                    .setName('Project type')
-                    .setDesc('What are you creating?')
-                    .addDropdown((dropdown: DropdownComponent) => {
-                        dropdown
-                            .addOption('book', 'Book')
-                            .addOption('series', 'Series')
-                            .addOption('universe', 'Universe')
-                            .setValue('book')
-                            .onChange((v: ProjectType) => {
-                                projectType = v;
-                                renderFields();
-                            });
-                    });
-
-                // ── Fields ──
-                let title = '';
-                let customFolder = '';
-                let selectedUniverseId = defaultUniverseId || '';
-                let selectedSeriesUuid = defaultSeriesUuid || '';
-
-                // Monotonically increasing request ID to discard stale async responses
-                let seriesDropdownRequestId = 0;
-
-                // Universe dropdown (for Books and Series) — populated async after open
-                const universeSetting = new Setting(modal.contentEl)
-                    .setName('Universe')
-                    .setDesc('Optional: place this inside an existing Universe.')
-                    .addDropdown((dropdown: DropdownComponent) => {
-                        dropdown.addOption('', '— None —');
-                        dropdown.onChange((v: string) => {
-                            selectedUniverseId = v;
-                            // Increment request ID so stale async responses are discarded
-                            const myRequestId = ++seriesDropdownRequestId;
-                            (async () => {
-                                try {
-                                    await updateSeriesDropdown(myRequestId);
-                                } catch { /* ignore */ }
-                            })();
-                        });
-                    });
-
-                // Track async initialization to avoid stale responses overwriting later selections
-                let universeDropdownInitialized = false;
-
-                // Series dropdown (for Books only)
-                const seriesSetting = new Setting(modal.contentEl)
-                    .setName('Series')
-                    .setDesc('Optional: place this book inside an existing Series.')
-                    .addDropdown((dropdown: DropdownComponent) => {
-                        dropdown.addOption('', '— None —');
-                        dropdown.addOption('__new__', '+ Create new series…');
-                        if (defaultSeriesUuid) dropdown.setValue(defaultSeriesUuid);
-                        dropdown.onChange((v: string) => {
-                            selectedSeriesUuid = v;
-                            // Show/hide new series name field
-                            newSeriesNameSetting.settingEl.style.display = v === '__new__' ? '' : 'none';
-                        });
-                    });
-
-                // New series name field (hidden by default)
-                let newSeriesName = '';
-                const newSeriesNameSetting = new Setting(modal.contentEl)
-                    .setName('New series name')
-                    .setDesc('Name for the new series within the selected Universe.')
-                    .addText((text: TextComponent) => {
-                        text.setPlaceholder('My new series');
-                        text.onChange((v: string) => (newSeriesName = v));
-                    });
-                newSeriesNameSetting.settingEl.setCssStyles({ display: 'none' });
-
-                // Book title / Series name / Universe name
-                const titleSetting = new Setting(modal.contentEl)
-                    .setName('Book title')
-                    .setDesc('The title of this book.')
-                    .addText((text: TextComponent) => {
-                        text.setPlaceholder('My novel');
-                        text.onChange((v: string) => (title = v));
-                    });
-
-                // Custom location (advanced, collapsed by default)
-                const advancedContainer = modal.contentEl.createDiv({ cls: 'project-modal-advanced' });
-                const advancedHeader = advancedContainer.createDiv({ cls: 'project-modal-advanced-header' });
-                advancedHeader.createSpan({ text: '⚙ Advanced' });
-                const advancedContent = advancedContainer.createDiv({ cls: 'project-modal-advanced-content' });
-                advancedContent.setCssStyles({ display: 'none' });
-                let advancedOpen = false;
-                advancedHeader.addEventListener('click', () => {
-                    advancedOpen = !advancedOpen;
-                    advancedContent.setCssStyles({ display: advancedOpen ? '' : 'none' });
-                });
-
-                new Setting(advancedContent)
-                    .setName('Location')
-                    .setDesc(`Leave empty to use default (${this.settings.storyLineRoot}). Or enter a vault folder path like "Writing/Novels".`)
-                    .addText((text: TextComponent) => {
-                        text.setPlaceholder(this.settings.storyLineRoot);
-                        text.onChange((v: string) => (customFolder = v.trim()));
-                    });
-
-                // ── Render logic ──
-                const updateSeriesDropdown = async (requestId?: number) => {
-                    const dropdownEl = seriesSetting.controlEl.querySelector('select') as HTMLSelectElement;
-                    if (!dropdownEl) return;
-                    const currentVal = dropdownEl.value;
-                    dropdownEl.innerHTML = '';
-                    const optNone = document.createElement('option');
-                    optNone.value = '';
-                    optNone.text = '— None —';
-                    dropdownEl.add(optNone);
-                    const optNew = document.createElement('option');
-                    optNew.value = '__new__';
-                    optNew.text = '+ Create new series…';
-                    dropdownEl.add(optNew);
-
-                    try {
-                        const universeSeriesUuids = new Set<string>();
-                        if (selectedUniverseId) {
-                            const hierarchy = await this.universeManager.discoverHierarchy();
-                            for (const { universe, series: seriesList } of hierarchy) {
-                                if (universe.id === selectedUniverseId) {
-                                    for (const { meta } of seriesList) {
-                                        if (meta.seriesUuid) universeSeriesUuids.add(meta.seriesUuid);
-                                    }
-                                }
-                            }
-                        }
-                        const allSeriesList = await this.seriesManager.discoverSeries();
-                        for (const { meta } of allSeriesList) {
-                            if (selectedUniverseId && !universeSeriesUuids.has(meta.seriesUuid || '')) continue;
-                            if (!meta.seriesUuid) continue;
-                            const opt = document.createElement('option');
-                            opt.value = meta.seriesUuid;
-                            opt.text = meta.name;
-                            dropdownEl.add(opt);
-                        }
-                    } catch { /* no series yet */ }
-
-                    // Discard stale async response: only restore selection if this is the latest request
-                    if (requestId === undefined || requestId === seriesDropdownRequestId) {
-                        dropdownEl.value = currentVal;
-                    }
-                };
-
-                // Populate universe dropdown asynchronously, then populate series dropdown
-                (async () => {
-                    try {
-                        const universes = await this.universeManager.getAllUniverses();
-                        const dropdownEl = universeSetting.controlEl.querySelector('select') as HTMLSelectElement;
-                        if (!dropdownEl) return;
-                        for (const u of universes) {
-                            const opt = document.createElement('option');
-                            opt.value = u.id;
-                            opt.text = u.name;
-                            dropdownEl.add(opt);
-                        }
-                        if (defaultUniverseId) dropdownEl.value = defaultUniverseId;
-                        universeDropdownInitialized = true;
-                        // After universe dropdown is ready, populate series dropdown
-                        await updateSeriesDropdown(++seriesDropdownRequestId);
-                    } catch { /* no universes yet */ }
-                })();
-
-                const renderFields = () => {
-                    // Show/hide fields based on project type
-                    universeSetting.settingEl.style.display = projectType === 'universe' ? 'none' : '';
-                    seriesSetting.settingEl.style.display = projectType === 'book' ? '' : 'none';
-                    newSeriesNameSetting.settingEl.style.display = 'none';
-                    titleSetting.settingEl.style.display = '';
-                    advancedContainer.style.display = '';
-
-                    if (projectType === 'book') {
-                        titleSetting.nameEl.setText('Book title');
-                        titleSetting.descEl.setText('The title of this book. Each book gets its own scenes folder.');
-                        titleSetting.controlEl.querySelector('input')?.setAttribute('placeholder', 'My novel');
-                    } else if (projectType === 'series') {
-                        titleSetting.nameEl.setText('Series name');
-                        titleSetting.descEl.setText('Name for the new series.');
-                        titleSetting.controlEl.querySelector('input')?.setAttribute('placeholder', 'My trilogy');
-                    } else {
-                        titleSetting.nameEl.setText('Universe name');
-                        titleSetting.descEl.setText('Name for the new universe.');
-                        titleSetting.controlEl.querySelector('input')?.setAttribute('placeholder', 'My fictional universe');
-                    }
-                };
-
-                // ── Create button ──
-                let createBtn: ButtonComponent | null = null;
-
-                new Setting(modal.contentEl)
-                    .addButton((btn: ButtonComponent) => {
-                        createBtn = btn;
-                        btn.setButtonText('Create').setCta().onClick(async () => {
-                            if (!title.trim()) {
-                                new Notice('Please enter a name.');
-                                return;
-                            }
-                            createBtn?.setDisabled(true);
-                            try {
-                                let result: StoryLineProject | null = null;
-
-                                if (projectType === 'universe') {
-                                    // Create Universe
-                                    await this.universeManager.createUniverse(title.trim());
-                                    this.refreshOpenViews();
-                                    new Notice(`Universe "${title.trim()}" created.`);
-                                } else if (projectType === 'series') {
-                                    // Create Series
-                                    const meta = await this.seriesManager.createSeries(title.trim(), customFolder || undefined);
-
-                                    // Optionally add to universe — addSeriesToUniverse expects series folder path
-                                    if (selectedUniverseId && meta.seriesUuid) {
-                                        const found = await this.seriesManager.getSeriesByUuid(meta.seriesUuid);
-                                        if (found) {
-                                            await this.universeManager.addSeriesToUniverse(selectedUniverseId, found.folder);
-                                        }
-                                    }
-
-                                    this.refreshOpenViews();
-                                    new Notice(`Series "${title.trim()}" created.`);
-                                } else {
-                                    // Create Book
-                                    const basePath = customFolder || undefined;
-                                    const project = await this.sceneManager.createProject(title.trim(), '', basePath);
-                                    result = project;
-
-                                    // If series selected, wrap in series
-                                    if (selectedSeriesUuid && selectedSeriesUuid !== '__new__') {
-                                        // Add book to existing series
-                                        const seriesMeta = await this.seriesManager.getSeriesByUuid(selectedSeriesUuid);
-                                        if (seriesMeta) {
-                                            await this.seriesManager.addBookToSeries(selectedSeriesUuid, project);
-                                        }
-                                    } else if (selectedSeriesUuid === '__new__') {
-                                        // Create new series and add book
-                                        if (!newSeriesName.trim()) {
-                                            new Notice('Please enter a series name.');
-                                            createBtn?.setDisabled(false);
-                                            return;
-                                        }
-                                        const meta = await this.seriesManager.createSeries(newSeriesName.trim(), basePath);
-                                        if (meta.seriesUuid) {
-                                            await this.seriesManager.addBookToSeries(meta.seriesUuid, project);
-                                        }
-                                        // Add series to universe — addSeriesToUniverse expects series folder path
-                                        if (selectedUniverseId && meta.seriesUuid) {
-                                            const found = await this.seriesManager.getSeriesByUuid(meta.seriesUuid);
-                                            if (found) {
-                                                await this.universeManager.addSeriesToUniverse(selectedUniverseId, found.folder);
-                                            }
-                                        }
-                                    } else if (selectedUniverseId && !selectedSeriesUuid) {
-                                        // Book directly in universe (no series) — set universeId on project
-                                        project.universeId = selectedUniverseId;
-                                        await this.sceneManager.saveProjectFrontmatter(project);
-                                    }
-
-                                    await this.sceneManager.setActiveProject(project);
-                                    this.refreshOpenViews();
-                                    if (this.settings.autoOpenNavigator) this.openNavigator();
-                                    try { await this.activateView(BOARD_VIEW_TYPE); } catch { /* non-critical */ }
-                                }
-
-                                settle(result);
-                                modal.close();
-                            } catch (err: unknown) {
-                                new Notice((err instanceof Error ? err.message : String(err)), 10000);
-                                createBtn?.setDisabled(false);
-                            }
-                        });
-                    })
-                    .addButton((btn: ButtonComponent) => {
-                        btn.setButtonText('Cancel').onClick(() => {
-                            settle(null);
-                            modal.close();
-                        });
-                    });
-
-                // Initial render
-                renderFields();
-
-                modal.open();
-
-                // Clean up guard on close
-                modal.onClose = () => {
-                    this._newProjectModalOpen = false;
-                    settle(null);
-                };
-            });
+            const modal = new CreateProjectModal(this.app, {
+                app: this.app,
+                createUniverse: (name: string) => this.universeManager.createUniverse(name),
+                createSeries: (name: string, basePath?: string) => this.seriesManager.createSeries(name, basePath),
+                addSeriesToUniverse: (universeId: string, seriesFolder: string) =>
+                    this.universeManager.addSeriesToUniverse(universeId, seriesFolder),
+                getSeriesByUuid: (uuid: string) => this.seriesManager.getSeriesByUuid(uuid),
+                discoverSeries: () => this.seriesManager.discoverSeries(),
+                discoverHierarchy: () => this.universeManager.discoverHierarchy(),
+                getAllUniverses: () => this.universeManager.getAllUniverses(),
+                createProject: (title: string, desc: string, customBasePath?: string) =>
+                    this.sceneManager.createProject(title, desc, customBasePath),
+                addBookToSeries: (uuid: string, project: StoryLineProject) =>
+                    this.seriesManager.addBookToSeries(uuid, project),
+                saveProjectFrontmatter: (project: StoryLineProject) =>
+                    this.sceneManager.saveProjectFrontmatter(project),
+                setActiveProject: (project: StoryLineProject) => this.sceneManager.setActiveProject(project),
+                refreshOpenViews: () => this.refreshOpenViews(),
+                openNavigator: () => this.openNavigator(),
+                activateView: (viewType: string) => this.activateView(viewType),
+                autoOpenNavigator: this.settings.autoOpenNavigator,
+                storyLineRoot: this.settings.storyLineRoot,
+            }, defaultUniverseId, defaultSeriesUuid);
+            return await modal.openAndWait();
         } finally {
-            // Always clear the guard, even if something went wrong
             this._newProjectModalOpen = false;
         }
     }
