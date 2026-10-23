@@ -20,6 +20,18 @@ export default defineConfig([
       "obsidianmd/ui/sentence-case": ["error", {
         brands: ["StoryLine", "Scrivener", "Obsidian"],
       }],
+      // The inherited preset enabled the destructive any -> unknown fixer.
+      // Keep the warning/error, but NEVER change types automatically.
+      "@typescript-eslint/no-explicit-any": ["error", { fixToUnknown: false }],
+
+      // Structural budgets: count executable code, not blank/comment-only lines.
+      // Legacy violations will be refactored in bounded module groups.
+      "max-lines": ["error", { max: 200, skipBlankLines: true, skipComments: true }],
+      "max-lines-per-function": ["error", { max: 50, skipBlankLines: true, skipComments: true }],
+      "complexity": ["error", { max: 10 }],
+      "max-depth": ["error", { max: 3 }],
+      "max-statements": ["error", { max: 25 }],
+      "max-params": ["error", { max: 4 }],
     },
   },
   {
