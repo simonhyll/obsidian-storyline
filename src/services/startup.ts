@@ -248,22 +248,26 @@ async function loadCodexSafe(target: StartupTarget): Promise<void> {
         );
         await target.codexManager.loadAll(codexFolder);
 
-        // Load inherited codex from Universe and Series scopes
-        const project = target.sceneManager.activeProject;
-        if (project) {
-            // An optional inheritance lookup must not abort the rest of
-            // startup or suppress already-loaded local Codex entities.
-            try {
-                const inheritedFolders = await target.universeManager.getInheritedCodexFolders(project);
-                if (inheritedFolders.length > 0) {
-                    await target.codexManager.loadInheritedFolders(inheritedFolders);
-                }
-            } catch (e) {
-                console.warn('[StoryLine] Could not load inherited Codex resources:', e);
-            }
-        }
+        // Failure to load optional inherited resources must not suppress
+        // local Codex data or prevent subsequent Event and link loading.
+        await loadInheritedCodexSafe(target);
     } catch (e) {
         console.error('[StoryLine] Failed to load codex:', e);
+    }
+}
+
+/**
+ * Load optional Universe/Series Codex inheritance without failing startup.
+ * Local Codex data remains usable when inheritance is unavailable.
+ */
+async function loadInheritedCodexSafe(target: StartupTarget): Promise<void> {
+    const project = target.sceneManager.activeProject;
+    if (!project) return;
+    try {
+        const folders = await target.universeManager.getInheritedCodexFolders(project);
+        if (folders.length > 0) await target.codexManager.loadInheritedFolders(folders);
+    } catch (e) {
+        console.warn('[StoryLine] Could not load inherited Codex resources:', e);
     }
 }
 
