@@ -108,8 +108,9 @@ interface StartupSettings {
  * all services are initialized and registered.
  *
  * @param target - Narrow plugin interface providing services and settings.
+ * @returns Whether the full sequence finished; a failed startup must not schedule autosave.
  */
-export async function runStartupSequence(target: StartupTarget): Promise<void> {
+export async function runStartupSequence(target: StartupTarget): Promise<boolean> {
     try {
         // Phase 1: UI visibility
         applyUiVisibility(target);
@@ -125,8 +126,10 @@ export async function runStartupSequence(target: StartupTarget): Promise<void> {
 
         // Phase 5: Final refresh
         target.refreshOpenViews();
+        return true;
     } catch (startupErr) {
         console.error('[StoryLine] Startup sequence failed:', startupErr);
+        return false;
     }
 }
 
@@ -189,7 +192,7 @@ async function loadResourcesPhase(target: StartupTarget): Promise<void> {
 
     // Scan scene bodies for wikilinks after entities are fully loaded
     // Issue #271 fix: explicitly re-scan to ensure link discovery works on reload
-    rescanLinks(target);
+    await rescanLinks(target);
 }
 
 /**
@@ -248,9 +251,15 @@ async function loadCodexSafe(target: StartupTarget): Promise<void> {
         // Load inherited codex from Universe and Series scopes
         const project = target.sceneManager.activeProject;
         if (project) {
-            const inheritedFolders = await target.universeManager.getInheritedCodexFolders(project);
-            if (inheritedFolders.length > 0) {
-                await target.codexManager.loadInheritedFolders(inheritedFolders);
+            // An optional inheritance lookup must not abort the rest of
+            // startup or suppress already-loaded local Codex entities.
+            try {
+                const inheritedFolders = await target.universeManager.getInheritedCodexFolders(project);
+                if (inheritedFolders.length > 0) {
+                    await target.codexManager.loadInheritedFolders(inheritedFolders);
+                }
+            } catch (e) {
+                console.warn('[StoryLine] Could not load inherited Codex resources:', e);
             }
         }
     } catch (e) {
@@ -272,8 +281,8 @@ async function loadEventsSafe(target: StartupTarget): Promise<void> {
 /**
  * Re-scan all scenes for wikilinks after entities are loaded.
  */
-function rescanLinks(target: StartupTarget): void {
+async function rescanLinks(target: StartupTarget): Promise<void> {
     target.linkScanner.invalidateAll();
     target.linkScanner.rebuildLookups(target.settings.characterAliases);
-    void target.linkScanner.scanAllAsync(target.sceneManager.getAllScenes());
+    await target.linkScanner.scanAllAsync(target.sceneManager.getAllScenes());
 }
