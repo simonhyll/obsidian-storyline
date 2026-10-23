@@ -25,11 +25,12 @@ const { spawnSync } = require("child_process");
 const { readFileSync, writeFileSync } = require("fs");
 const { resolve } = require("path");
 const {
-  generateEntries,
-  generateMarkdown,
-  insertVersionSection,
-  hasVersionSection,
-} = require("../dist/services/changelog");
+	generateEntries,
+	generateMarkdown,
+	insertVersionSection,
+	hasVersionSection,
+	parseGitLogLine,
+} = require("./changelog-lib.cjs");
 
 // ---------------------------------------------------------------------------
 // Git helpers (spawnSync — no shell required)
@@ -41,9 +42,10 @@ function root() {
 
 /**
  * Run a git command and return stdout as a trimmed string.
+ * Uses portable 'git' command (no hardcoded path).
  */
 function git(...args) {
-  const result = spawnSync("/usr/bin/git", args, {
+  const result = spawnSync("git", args, {
     cwd: root(),
     encoding: "utf8",
     maxBuffer: 10 * 1024 * 1024, // 10 MB
@@ -207,7 +209,7 @@ function main() {
     }
 
     const raw = git("log", "-1", sha, `--format=%h|%s%n%b`);
-    const classified = parseLine(raw);
+    const classified = parseGitLogLine(raw);
     console.log(JSON.stringify(classified, null, 2));
     return;
   }

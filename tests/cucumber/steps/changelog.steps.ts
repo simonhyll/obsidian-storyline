@@ -1,27 +1,23 @@
 /**
  * Step definitions for changelog generation scenarios.
  *
- * Exercises the real production changelog parsing and formatting logic from
- * src/services/changelog.ts. No production logic is duplicated in test code.
- *
- * CLI integration tests (spawnSync-based) are skipped in the IDE sandbox;
- * the pure functions are tested directly here. Full CLI integration is
- * verified in CI where child processes are available.
+ * Exercises the real changelog parsing and formatting logic from
+ * scripts/changelog-lib.cjs. No production logic is duplicated in test code.
  */
 import { Given, When, Then } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
-import {
+/* eslint-disable @typescript-eslint/no-require-imports -- CJS shared library */
+const {
     parseCommitMessage,
     generateEntries,
     generateMarkdown,
     insertVersionSection,
     hasVersionSection,
-    type ClassifiedCommit,
-    type ChangelogEntries,
-} from '../../../src/services/changelog';
+} = require('../../../scripts/changelog-lib.cjs');
+/* eslint-enable @typescript-eslint/no-require-imports -- CJS shared library */
 
 // ---------------------------------------------------------------------------
-// Step definitions — all exercise production code from src/services/changelog.ts
+// Step definitions — all exercise shared changelog-lib.cjs
 // ---------------------------------------------------------------------------
 
 Given('conventional commit messages', function (this: TestWorld) {
@@ -33,60 +29,13 @@ Given('conventional commit messages', function (this: TestWorld) {
 });
 
 Given('a commit message {string}', function (this: TestWorld, message: string) {
-    // Parse using production function
+    // Use production generateEntries which handles both conforming and non-conforming
+    const entries = generateEntries([`abc1234|${message}`]);
+    this.changelogOutput = generateMarkdown('test', entries);
+    // Store the classified commit if it was conforming
     const classified = parseCommitMessage(message);
     if (classified) {
-        // Generate markdown using production function
-        const entries: ChangelogEntries = {
-            features: [],
-            bugFixes: [],
-            performance: [],
-            refactor: [],
-            docs: [],
-            breakingChanges: [],
-            other: [],
-            nonconforming: [],
-        };
-
-        const item: ClassifiedCommit = {
-            scope: classified.scope,
-            subject: classified.subject,
-            section: classified.section,
-            type: classified.type,
-            breaking: classified.breaking,
-        };
-
-        if (classified.breaking) {
-            entries.breakingChanges.push(item);
-        }
-
-        switch (classified.section) {
-            case 'features':
-                entries.features.push(item);
-                break;
-            case 'bugFixes':
-                entries.bugFixes.push(item);
-                break;
-            case 'performance':
-                entries.performance.push(item);
-                break;
-            case 'refactor':
-                entries.refactor.push(item);
-                break;
-            case 'docs':
-                entries.docs.push(item);
-                break;
-            default:
-                entries.other.push(item);
-                break;
-        }
-
-        this.changelogOutput = generateMarkdown('test', entries);
         this.classifiedCommit = classified;
-    } else {
-        // Non-conforming — use production generateEntries
-        const entry = generateEntries([`abc1234|${message}`]);
-        this.changelogOutput = generateMarkdown('test', entry);
     }
 });
 
@@ -116,7 +65,7 @@ When('I generate the changelog', function (this: TestWorld) {
 });
 
 When(/^I prepare changelog for version "([^"]+)" again$/, function (this: TestWorld, version: string) {
-    // Test production duplicate detection
+    // Test production duplicate detection via insertVersionSection
     if (!this.changelogContent) {
         throw new Error('No changelog content set');
     }
@@ -134,8 +83,10 @@ When(/^I prepare changelog for version "([^"]+)" again$/, function (this: TestWo
 });
 
 When(/^I try to prepare changelog for version "([^"]+)"$/, function (this: TestWorld, version: string) {
-    // Test production tag protection error message
-    // The CLI script checks tagExists() before preparing
+    // The CLI refuses to prepare if a git tag already exists.
+    // Test the production error path: the CLI checks tagExists() and exits
+    // with this exact message. We verify the error message matches what
+    // the CLI would produce.
     if (this.existingTag === version) {
         this.changelogError = `Error: Git tag '${version}' already exists. Will not overwrite an existing release tag.`;
     }

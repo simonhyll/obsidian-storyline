@@ -8,7 +8,6 @@ import type { Scene } from '../../../src/models/Scene';
 import type { StoryLineProject } from '../../../src/models/StoryLineProject';
 import type { TimeSpan } from '../../../src/models/TimeSpan';
 import type { CreationFormState } from '../../../src/services/projectCreation';
-import type { ClassifiedCommit } from '../../../src/services/changelog';
 
 export interface TestWorld {
   /** Scenes created during the scenario */
@@ -46,7 +45,7 @@ export interface TestWorld {
   /** Changelog commit blocks for preview testing */
   changelogCommits?: string[];
   /** Classified commit from parsing */
-  classifiedCommit?: ClassifiedCommit;
+  classifiedCommit?: { section: string; type: string; scope: string | null; subject: string; breaking: boolean };
   /** Changelog content for duplicate-prevention testing */
   changelogContent?: string;
   /** Whether changelog content was modified */
