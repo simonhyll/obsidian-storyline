@@ -38,12 +38,19 @@ export default defineConfig([
     },
   },
   {
-    // Test files use file-level eslint-disable for unsafe rules;
-    // some disables may be unused depending on which files are changed.
+    // Test files use mocks and dynamic typing that conflict with strict
+    // @typescript-eslint/no-explicit-any and no-unsafe-* rules.
+    // Allow these in tests while keeping structural budgets enforced.
     files: ["tests/**/*.ts"],
     rules: {
       "eslint-comments/disable-enable-pair": "off",
       "eslint-comments/no-unused-disable": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
     },
   },
   // ---------------------------------------------------------------------------

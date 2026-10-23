@@ -33,6 +33,10 @@ export interface BuildFormFieldsConfig {
     defaultSeriesUuid?: string;
     /** Callbacks for field changes. */
     callbacks: FormFieldCallbacks;
+    /** Callback for title field changes. */
+    onTitleChange: (title: string) => void;
+    /** Callback for new series name field changes. */
+    onNewSeriesNameChange: (name: string) => void;
 }
 
 /**
@@ -44,8 +48,8 @@ export function buildFormFields(config: BuildFormFieldsConfig): void {
     buildTypeSelector(config.contentEl, config.callbacks);
     buildUniverseDropdown(config.contentEl, config.refs, config.callbacks);
     buildSeriesDropdown(config.contentEl, config.refs, config.defaultSeriesUuid, config.callbacks);
-    buildNewSeriesNameField(config.contentEl, config.refs);
-    buildTitleField(config.contentEl, config.refs);
+    buildNewSeriesNameField(config.contentEl, config.refs, config.onNewSeriesNameChange);
+    buildTitleField(config.contentEl, config.refs, config.onTitleChange);
     buildAdvancedSection(config.contentEl, config.refs, config.storyLineRoot, config.callbacks);
     buildButtons(config.contentEl, config.refs, config.callbacks);
 }
@@ -138,15 +142,14 @@ function buildSeriesDropdown(
 function buildNewSeriesNameField(
     contentEl: HTMLElement,
     refs: FormFieldRefs,
+    onNewSeriesNameChange: (name: string) => void,
 ): void {
     refs.newSeriesNameSetting = new Setting(contentEl)
         .setName('New series name')
         .setDesc('Name for the new series within the selected universe.')
         .addText((text: TextComponent) => {
             text.setPlaceholder('My new series');
-            text.onChange((v: string) => {
-                // Callback will be set by the modal
-            });
+            text.onChange(onNewSeriesNameChange);
         });
     refs.newSeriesNameSetting.settingEl.setCssStyles({ display: 'none' });
 }
@@ -154,15 +157,14 @@ function buildNewSeriesNameField(
 function buildTitleField(
     contentEl: HTMLElement,
     refs: FormFieldRefs,
+    onTitleChange: (title: string) => void,
 ): void {
     refs.titleSetting = new Setting(contentEl)
         .setName('Book title')
         .setDesc('The title of this book.')
         .addText((text: TextComponent) => {
             text.setPlaceholder('My novel');
-            text.onChange((v: string) => {
-                // Callback will be set by the modal
-            });
+            text.onChange(onTitleChange);
         });
 }
 

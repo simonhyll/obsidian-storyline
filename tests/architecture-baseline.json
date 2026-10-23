@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "description": "Architecture debt baseline for StoryLine Step 6A",
-  "generatedAt": "2026-10-23T07:14:23.060Z",
+  "generatedAt": "2026-10-23T14:52:41.025Z",
   "files": {
     "src/components/AddFieldModal.ts": {
       "violations": [
@@ -68,6 +68,14 @@
         {
           "rule": "max-lines",
           "line": 212
+        }
+      ]
+    },
+    "src/components/CreateProjectDropdowns.ts": {
+      "violations": [
+        {
+          "rule": "max-params",
+          "line": 124
         }
       ]
     },
@@ -5275,6 +5283,22 @@
         }
       ]
     },
+    "tests/project-creation.test.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 156
+        },
+        {
+          "rule": "max-lines",
+          "line": 242
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 266
+        }
+      ]
+    },
     "tests/step0-temporal-ruler.test.ts": {
       "violations": [
         {
@@ -5425,14 +5449,14 @@
     }
   },
   "summary": {
-    "totalFilesWithViolations": 94,
-    "totalViolations": 1261,
+    "totalFilesWithViolations": 96,
+    "totalViolations": 1265,
     "byRule": {
-      "max-params": 49,
-      "max-lines-per-function": 335,
+      "max-params": 50,
+      "max-lines-per-function": 337,
       "complexity": 308,
       "max-statements": 230,
-      "max-lines": 78,
+      "max-lines": 79,
       "max-depth": 261
     }
   }

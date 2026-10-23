@@ -35,6 +35,14 @@ export interface DropdownState {
 }
 
 /**
+ * A minimal interface for checking whether the modal is still open.
+ */
+export interface ModalClosedChecker {
+    /** True if the modal has been closed. */
+    isClosed: boolean;
+}
+
+/**
  * Populate the universe dropdown with all available universes.
  *
  * @param deps - Dropdown dependencies.
@@ -105,15 +113,20 @@ export async function populateSeriesDropdown(
 
 /**
  * Update an existing series dropdown in-place, preserving the current selection.
+ * Skips the update if the modal has been closed or if a newer request has arrived.
  *
  * @param deps - Dropdown dependencies.
  * @param dropdownEl - The select element to update.
- * @param state - Current dropdown state.
+ * @param state - Current dropdown state (snapshot at call time).
+ * @param requestId - The request ID this call was made with.
+ * @param modalChecker - Interface to check if the modal is closed.
  */
 export async function updateSeriesDropdownInPlace(
     deps: DropdownDeps,
     dropdownEl: HTMLSelectElement,
     state: DropdownState,
+    requestId: number,
+    modalChecker: ModalClosedChecker,
 ): Promise<void> {
     const currentVal = dropdownEl.value;
     dropdownEl.innerHTML = '';
@@ -128,15 +141,21 @@ export async function updateSeriesDropdownInPlace(
 
     try {
         const seriesList = await fetchSeriesForUniverse(deps, state.selectedUniverseId);
+        // Skip if modal closed or a newer request superseded this one
+        if (modalChecker.isClosed) return;
+        if (state.seriesDropdownRequestId !== requestId) return;
         for (const s of seriesList) {
             const opt = document.createElement('option');
             opt.value = s.uuid;
             opt.text = s.name;
             dropdownEl.add(opt);
         }
+        // If the previously selected series is still valid, restore it;
+        // otherwise reset to none so an incompatible selection isn't kept.
+        if (currentVal && Array.from(dropdownEl.options).some(o => o.value === currentVal)) {
+            dropdownEl.value = currentVal;
+        }
     } catch { /* no series yet */ }
-
-    dropdownEl.value = currentVal;
 }
 
 /**

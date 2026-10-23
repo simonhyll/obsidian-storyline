@@ -53,6 +53,8 @@ export class CreateProjectModal extends Modal {
 
     private resolvePromise: ((result: StoryLineProject | null) => void) | null = null;
     private settled = false;
+    private isCreating = false;
+    isClosed = false;
 
     constructor(
         app: App,
@@ -89,6 +91,8 @@ export class CreateProjectModal extends Modal {
             storyLineRoot: this.deps.storyLineRoot,
             defaultSeriesUuid: this.defaultSeriesUuid,
             callbacks: this.callbacks,
+            onTitleChange: (title: string) => { this.form.title = title; },
+            onNewSeriesNameChange: (name: string) => { this.form.newSeriesName = name; },
         });
         updateFieldVisibility(this.refs, this.form.projectType);
     }
@@ -147,28 +151,39 @@ export class CreateProjectModal extends Modal {
     private async updateSeriesDropdown(): Promise<void> {
         const dropdownEl = this.refs.seriesSetting?.controlEl.querySelector('select');
         if (!dropdownEl) return;
+        const requestId = ++this.seriesDropdownRequestId;
         const state = {
             selectedUniverseId: this.form.selectedUniverseId,
-            seriesDropdownRequestId: this.seriesDropdownRequestId,
+            seriesDropdownRequestId: requestId,
         };
-        await updateSeriesDropdownInPlace(this.deps, dropdownEl, state);
+        await updateSeriesDropdownInPlace(this.deps, dropdownEl, state, requestId, this);
     }
 
     private async handleCreate(): Promise<void> {
+        if (this.isCreating) return;
         if (!this.form.title.trim()) {
             new Notice('Please enter a name.');
             return;
         }
+        if (this.form.selectedSeriesUuid === '__new__' && !this.form.newSeriesName.trim()) {
+            new Notice('Please enter a name for the new series.');
+            return;
+        }
+        this.isCreating = true;
         this.refs.createBtn?.setDisabled(true);
         try {
             const result = await executeCreation(this.form, this.deps);
-            this.showCreationNotice();
+            if (!this.isClosed) {
+                this.showCreationNotice();
+            }
             this.settle(result);
             this.close();
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
             new Notice(message, 10000);
             this.refs.createBtn?.setDisabled(false);
+        } finally {
+            this.isCreating = false;
         }
     }
 
@@ -188,6 +203,7 @@ export class CreateProjectModal extends Modal {
     }
 
     onClose(): void {
+        this.isClosed = true;
         this.settle(null);
     }
 }

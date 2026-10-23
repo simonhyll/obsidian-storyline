@@ -34,6 +34,16 @@ export interface CreationFormState {
 }
 
 /**
+ * Validation error thrown when form input is insufficient.
+ */
+export class CreationValidationError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'CreationValidationError';
+    }
+}
+
+/**
  * Dependencies for project creation operations.
  */
 export interface ProjectCreationDeps {
@@ -110,15 +120,18 @@ export async function createBook(
 
 /**
  * Execute the creation flow based on the current form state.
+ * Validates input before creating any files.
  *
- * @param form - The validated form state.
+ * @param form - The form state to validate and execute.
  * @param deps - Creation dependencies.
  * @returns The created project (null for Universe/Series creation).
+ * @throws CreationValidationError if the form input is invalid.
  */
 export async function executeCreation(
     form: CreationFormState,
     deps: ProjectCreationDeps,
 ): Promise<StoryLineProject | null> {
+    validateForm(form);
     if (form.projectType === 'universe') {
         return await createUniverse(form, deps);
     }
@@ -129,6 +142,26 @@ export async function executeCreation(
 }
 
 // ── Private helpers ──────────────────────────────────────
+
+/**
+ * Validate the form state before any persistence operations.
+ * Throws CreationValidationError if the input is insufficient.
+ *
+ * @param form - The form state to validate.
+ * @throws CreationValidationError when title, series name, or hierarchy is invalid.
+ */
+function validateForm(form: CreationFormState): void {
+    const title = form.title.trim();
+    if (!title) {
+        throw new CreationValidationError('Please enter a name.');
+    }
+    if (form.projectType === 'book' && form.selectedSeriesUuid === '__new__') {
+        const seriesName = form.newSeriesName.trim();
+        if (!seriesName) {
+            throw new CreationValidationError('Please enter a name for the new series.');
+        }
+    }
+}
 
 /**
  * Add the newly created series to the selected universe, if applicable.
