@@ -1551,7 +1551,7 @@ export class CodexView extends ItemView {
                 cls: 'codex-field-input',
                 attr: { type: 'text', placeholder: `Value for ${fieldName}` },
             });
-            input.value = fieldValue;
+            input.value = String(fieldValue);
             input.addEventListener('input', () => {
                 if (!draft.custom) draft.custom = {};
                 draft.custom[fieldName] = input.value;

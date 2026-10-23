@@ -3,8 +3,9 @@
  *
  * The Canonical Event persistence scenario exercises real EventManager with
  * in-memory vault harness. Scene creation safety now uses real SceneManager
- * with production ownership guard. Cancellation exercises real modal behavior
- * via cancellation-tests.ts and verifies no persistence operations occur.
+ * with production ownership guard. Cancellation scenarios verify that no
+ * persistence operations occur when the user cancels (partial coverage:
+ * the actual Obsidian Modal cancel handler cannot be tested in Node.js).
  */
 import { Given, When, Then } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
@@ -160,10 +161,12 @@ Then('no Scene is accidentally written into another Book', function (this: TestW
   }
 });
 
-// Cancellation scenario — exercises real modal cancellation behavior.
-// The dedicated cancellation-tests.ts verifies the actual production modal
-// classes (EventModal, QuickAddModal, CreateProjectModal) with jsdom.
-// Cucumber steps verify that no persistence operations occur.
+// Cancellation scenario — verifies no persistence operations occur.
+// Note: The actual Obsidian Modal cancel handler cannot be instantiated
+// in Node.js because Modal requires a browser DOM. The concurrency guard
+// (CreationConcurrencyGuard) is tested via concurrency-guard-test.cjs.
+// These steps verify that when cancellation occurs, no persistence
+// operations should have been triggered.
 
 Given('an Event or Scene creation dialog is open', function (this: TestWorld) {
   // Snapshot the vault state before cancellation
@@ -180,10 +183,10 @@ Given('an Event or Scene creation dialog is open', function (this: TestWorld) {
 });
 
 When('the author cancels', function (this: TestWorld) {
-  // The real EventModal cancel button calls resolve(null) then close().
-  // The real QuickAddModal cancel button calls close() without calling onSubmit.
-  // The dedicated cancellation-tests.ts verifies these actual production paths.
-  // Here we verify that no EventManager persistence operations occurred.
+  // Simulate cancellation: in production, EventModal.cancel calls
+  // resolve(null) then close(), and QuickAddModal.cancel calls close()
+  // without calling onSubmit. We verify the safety property: no
+  // persistence operations should occur.
   this.cancelled = true;
   if (this.eventManagerOperations && this.eventManagerOperations.length > 0) {
     throw new Error(

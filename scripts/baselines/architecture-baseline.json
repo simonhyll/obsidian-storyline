@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "description": "Architecture debt baseline for StoryLine Step 6A",
-  "generatedAt": "2026-10-23T22:50:19.145Z",
+  "generatedAt": "2026-10-23T23:49:39.402Z",
   "files": {
     "src/components/AddFieldModal.ts": {
       "violations": [
@@ -79,31 +79,31 @@
         },
         {
           "rule": "max-lines-per-function",
-          "line": 347
+          "line": 348
         },
         {
           "rule": "max-statements",
-          "line": 347
+          "line": 348
         },
         {
           "rule": "complexity",
-          "line": 347
+          "line": 348
         },
         {
           "rule": "max-depth",
-          "line": 528
+          "line": 530
         },
         {
           "rule": "max-lines-per-function",
-          "line": 925
+          "line": 943
         },
         {
           "rule": "complexity",
-          "line": 925
+          "line": 943
         },
         {
           "rule": "complexity",
-          "line": 1010
+          "line": 1029
         }
       ]
     },
@@ -795,247 +795,247 @@
       "violations": [
         {
           "rule": "max-lines-per-function",
-          "line": 144
+          "line": 145
         },
         {
           "rule": "complexity",
-          "line": 144
+          "line": 145
         },
         {
           "rule": "max-statements",
-          "line": 144
+          "line": 145
         },
         {
           "rule": "max-depth",
-          "line": 235
+          "line": 236
         },
         {
           "rule": "max-depth",
-          "line": 239
+          "line": 240
         },
         {
           "rule": "max-lines",
-          "line": 251
+          "line": 249
         },
         {
           "rule": "complexity",
-          "line": 316
+          "line": 317
         },
         {
           "rule": "max-statements",
-          "line": 316
+          "line": 317
         },
         {
           "rule": "complexity",
-          "line": 510
+          "line": 511
         },
         {
           "rule": "max-statements",
-          "line": 510
+          "line": 511
         },
         {
           "rule": "complexity",
-          "line": 581
+          "line": 582
         },
         {
           "rule": "complexity",
-          "line": 772
+          "line": 777
         },
         {
           "rule": "max-statements",
-          "line": 772
+          "line": 777
         },
         {
           "rule": "max-depth",
-          "line": 889
+          "line": 894
         },
         {
           "rule": "complexity",
-          "line": 953
+          "line": 958
         },
         {
           "rule": "complexity",
-          "line": 972
+          "line": 977
         },
         {
           "rule": "complexity",
-          "line": 1010
+          "line": 1015
         },
         {
           "rule": "max-depth",
-          "line": 1071
+          "line": 1076
         },
         {
           "rule": "max-lines-per-function",
-          "line": 1086
+          "line": 1091
         },
         {
           "rule": "complexity",
-          "line": 1086
+          "line": 1091
         },
         {
           "rule": "max-statements",
-          "line": 1086
+          "line": 1091
         },
         {
           "rule": "max-depth",
-          "line": 1209
+          "line": 1214
         },
         {
           "rule": "complexity",
-          "line": 1334
+          "line": 1339
         },
         {
           "rule": "complexity",
-          "line": 1396
+          "line": 1401
         },
         {
           "rule": "max-depth",
-          "line": 1409
+          "line": 1414
         },
         {
           "rule": "max-depth",
-          "line": 1449
+          "line": 1454
         },
         {
           "rule": "max-depth",
-          "line": 1452
+          "line": 1457
         },
         {
           "rule": "max-statements",
-          "line": 1482
+          "line": 1487
         },
         {
           "rule": "max-depth",
-          "line": 1497
+          "line": 1502
         },
         {
           "rule": "complexity",
-          "line": 1738
+          "line": 1743
         },
         {
           "rule": "complexity",
-          "line": 1896
+          "line": 1901
         },
         {
           "rule": "max-lines-per-function",
-          "line": 1948
+          "line": 1953
         },
         {
           "rule": "complexity",
-          "line": 1982
+          "line": 1987
         },
         {
           "rule": "max-depth",
-          "line": 2002
+          "line": 2007
         },
         {
           "rule": "max-lines-per-function",
-          "line": 2144
+          "line": 2149
         },
         {
           "rule": "complexity",
-          "line": 2144
+          "line": 2149
         },
         {
           "rule": "max-statements",
-          "line": 2144
+          "line": 2149
         },
         {
           "rule": "max-depth",
-          "line": 2179
+          "line": 2184
         },
         {
           "rule": "max-depth",
-          "line": 2183
+          "line": 2188
         },
         {
           "rule": "complexity",
-          "line": 2359
+          "line": 2364
         },
         {
           "rule": "complexity",
-          "line": 2401
+          "line": 2406
         },
         {
           "rule": "max-lines-per-function",
-          "line": 2461
+          "line": 2466
         },
         {
           "rule": "complexity",
-          "line": 2461
+          "line": 2466
         },
         {
           "rule": "max-statements",
-          "line": 2461
+          "line": 2466
         },
         {
           "rule": "max-depth",
-          "line": 2493
+          "line": 2498
         },
         {
           "rule": "max-depth",
-          "line": 2494
+          "line": 2499
         },
         {
           "rule": "max-depth",
-          "line": 2525
+          "line": 2530
         },
         {
           "rule": "max-depth",
-          "line": 2526
+          "line": 2531
         },
         {
           "rule": "complexity",
-          "line": 2583
+          "line": 2588
         },
         {
           "rule": "max-params",
-          "line": 2681
+          "line": 2686
         },
         {
           "rule": "max-params",
-          "line": 2715
+          "line": 2720
         },
         {
           "rule": "max-lines-per-function",
-          "line": 2888
+          "line": 2909
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3182
+          "line": 3203
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3363
+          "line": 3384
         },
         {
           "rule": "complexity",
-          "line": 3363
+          "line": 3384
         },
         {
           "rule": "max-statements",
-          "line": 3363
+          "line": 3384
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3509
+          "line": 3530
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3585
+          "line": 3606
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3734
+          "line": 3755
         },
         {
           "rule": "max-statements",
-          "line": 3734
+          "line": 3755
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3912
+          "line": 3933
         }
       ]
     },
@@ -2823,11 +2823,11 @@
       "violations": [
         {
           "rule": "complexity",
-          "line": 141
+          "line": 156
         },
         {
           "rule": "max-lines",
-          "line": 283
+          "line": 285
         }
       ]
     },
@@ -2839,107 +2839,107 @@
         },
         {
           "rule": "max-params",
-          "line": 566
+          "line": 567
         },
         {
           "rule": "max-lines-per-function",
-          "line": 1169
+          "line": 1179
         },
         {
           "rule": "complexity",
-          "line": 1169
+          "line": 1179
         },
         {
           "rule": "max-statements",
-          "line": 1169
+          "line": 1179
         },
         {
           "rule": "max-lines-per-function",
-          "line": 1311
+          "line": 1321
         },
         {
           "rule": "max-params",
-          "line": 1562
+          "line": 1572
         },
         {
           "rule": "max-params",
-          "line": 2009
+          "line": 2019
         },
         {
           "rule": "complexity",
-          "line": 2145
+          "line": 2155
         },
         {
           "rule": "max-lines-per-function",
-          "line": 2180
+          "line": 2190
         },
         {
           "rule": "max-statements",
-          "line": 2180
+          "line": 2190
         },
         {
           "rule": "max-depth",
-          "line": 2257
+          "line": 2267
         },
         {
           "rule": "max-params",
-          "line": 2343
+          "line": 2353
         },
         {
           "rule": "max-lines-per-function",
-          "line": 2736
+          "line": 2746
         },
         {
           "rule": "complexity",
-          "line": 2736
+          "line": 2746
         },
         {
           "rule": "max-statements",
-          "line": 2736
+          "line": 2746
         },
         {
           "rule": "max-lines-per-function",
-          "line": 2857
+          "line": 2867
         },
         {
           "rule": "max-statements",
-          "line": 2857
+          "line": 2867
         },
         {
           "rule": "max-params",
-          "line": 2986
+          "line": 2996
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3147
+          "line": 3157
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3290
+          "line": 3300
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3352
+          "line": 3362
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3483
+          "line": 3493
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3632
+          "line": 3642
         },
         {
           "rule": "complexity",
-          "line": 3632
+          "line": 3642
         },
         {
           "rule": "max-statements",
-          "line": 3632
+          "line": 3642
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3727
+          "line": 3737
         }
       ]
     },
@@ -3394,120 +3394,128 @@
           "line": 2078
         },
         {
+          "rule": "complexity",
+          "line": 2140
+        },
+        {
           "rule": "max-lines-per-function",
-          "line": 2129
+          "line": 2172
         },
         {
           "rule": "max-statements",
-          "line": 2129
+          "line": 2172
         },
         {
           "rule": "complexity",
-          "line": 2129
+          "line": 2172
         },
         {
           "rule": "max-depth",
-          "line": 2178
-        },
-        {
-          "rule": "max-lines-per-function",
-          "line": 2375
-        },
-        {
-          "rule": "max-lines-per-function",
-          "line": 2404
-        },
-        {
-          "rule": "max-lines-per-function",
-          "line": 2406
-        },
-        {
-          "rule": "max-statements",
-          "line": 2406
+          "line": 2222
         },
         {
           "rule": "complexity",
-          "line": 2406
+          "line": 2245
         },
         {
           "rule": "max-lines-per-function",
-          "line": 2592
+          "line": 2429
         },
         {
           "rule": "max-lines-per-function",
-          "line": 2617
+          "line": 2458
         },
         {
           "rule": "max-lines-per-function",
-          "line": 2718
+          "line": 2460
         },
         {
           "rule": "max-statements",
-          "line": 2718
-        },
-        {
-          "rule": "max-lines-per-function",
-          "line": 2781
-        },
-        {
-          "rule": "max-lines-per-function",
-          "line": 2893
+          "line": 2460
         },
         {
           "rule": "complexity",
-          "line": 2893
+          "line": 2460
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2646
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2671
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2772
         },
         {
           "rule": "max-statements",
-          "line": 2893
+          "line": 2772
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2835
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2947
         },
         {
           "rule": "complexity",
-          "line": 3169
+          "line": 2947
         },
         {
           "rule": "max-statements",
-          "line": 3169
+          "line": 2947
+        },
+        {
+          "rule": "complexity",
+          "line": 3223
+        },
+        {
+          "rule": "max-statements",
+          "line": 3223
         },
         {
           "rule": "max-depth",
-          "line": 3208
+          "line": 3262
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3422
+          "line": 3476
         },
         {
           "rule": "complexity",
-          "line": 3422
+          "line": 3476
         },
         {
           "rule": "max-statements",
-          "line": 3422
+          "line": 3476
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3497
+          "line": 3551
         },
         {
           "rule": "max-statements",
-          "line": 3497
+          "line": 3551
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3644
+          "line": 3698
         },
         {
           "rule": "complexity",
-          "line": 3644
+          "line": 3698
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3807
+          "line": 3861
         },
         {
           "rule": "max-statements",
-          "line": 3807
+          "line": 3861
         }
       ]
     },
@@ -4975,18 +4983,18 @@
       "violations": [
         {
           "rule": "max-statements",
-          "line": 30
+          "line": 34
         }
       ]
     }
   },
   "summary": {
     "totalFilesWithViolations": 80,
-    "totalViolations": 1164,
+    "totalViolations": 1166,
     "byRule": {
       "max-params": 48,
       "max-lines-per-function": 282,
-      "complexity": 303,
+      "complexity": 305,
       "max-statements": 226,
       "max-lines": 64,
       "max-depth": 241

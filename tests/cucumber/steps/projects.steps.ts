@@ -135,11 +135,11 @@ When('I create the universe', async function (this: TestWorld) {
 });
 
 When('I cancel', async function (this: TestWorld) {
-    // Exercise the real CreateProjectModal cancellation path.
-    // The modal's onCancelClick calls settle(null) then close().
-    // The dedicated cancellation-tests.ts verifies this behavior
-    // with the actual production modal class.
-    // Here we verify that no executeCreation was called.
+    // Cancellation: the user closes the dialog without submitting.
+    // In production, CreateProjectModal.onCancelClick calls settle(null) then close().
+    // The dedicated concurrency-guard-test.cjs verifies the real production
+    // CreationConcurrencyGuard class. Here we verify that no executeCreation
+    // was called by checking the mock dependency log.
     this.cancelled = true;
     // Verify no creation occurred
     if (this.mockDepsLog) {
