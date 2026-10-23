@@ -1,0 +1,127 @@
+# StoryLine — Maintainability & Tooling Roadmap
+
+Status: **planned**, not implemented. Owner: development team / Junie. Target branch: `feat/rework`.
+
+Created after Phase 3 Milestone 2B, commit `516bc72`. This roadmap addresses technical debt before Saved Views expands view-state, persistence and UI complexity.
+
+## Evidence from the current repository
+
+- TypeScript lives at repository root (`main.ts`, `settings.ts`, `constants.ts`) and in top-level `components/`, `models/`, `services/`, `utils/`, `views/`.
+- `esbuild.config.mjs` bundles `main.ts` to **root `main.js`**; the Obsidian manifest's `main` is `main.js`.
+- `styles.css` is a very large root-level stylesheet (>14,000 lines).
+- `vitest.config.ts` discovers `tests/**/*.test.ts`, with the Obsidian test mock at `tests/__mocks__/obsidian.ts`.
+- `.github/workflows/ci.yml` runs build and Vitest but does **not** currently enforce typecheck or ESLint, and runs on `main` pushes and PRs (not every direct `feat/rework` push).
+- `pnpm run typecheck` currently has **27 reported errors**; confirm exact baseline rather than assuming their provenance.
+- `CHANGELOG.md` is maintained manually and currently has duplicate `1.11.0` headings and a TODO placeholder.
+- `scripts/sync-vault.mjs` and release/CI workflows expect root `main.js`, `manifest.json`, `styles.css`. `main.js` is intentionally tracked.
+- Release publication is currently a **manual workflow dispatch**. Do not change that without a separate release-design decision.
+
+## Decision and ordering
+
+**Before starting Saved Views:** 0 (verification), 1 (quality baseline), 2 (source/assets layout), 3 (modular SCSS). These are bounded, sequential changes, not a giant rewrite.
+
+**Parallel / immediately after:** 4 (Cucumber BDD pilot, in addition to Vitest), 5 (commit-based changelog). Conventional Commits can be adopted immediately by all assistants even before automation is added.
+
+Do not start all workstreams in one agent task or commit. Each stage must be independently buildable, testable and reviewable. Prefer one stage per PR/commit series; automatically push work to `feat/rework` after verifying, respecting the user's usual no-manual-merge workflow. Preserve manuscript/vault file safety.
+
+### 0. Verify the 2B feature before refactoring
+
+- On a disposable Obsidian vault, smoke-test `516bc72`: ruler display, year jump and empty years, time-marker menu, Scene/Event date prefill and actual persisted frontmatter, scope ownership, multibook context and per-leaf navigation.
+- Distinguish service-only tests from real UI integration coverage.
+- Record an explicit `pnpm test`, `pnpm build`, `pnpm run typecheck`, `pnpm run lint:obsidian` baseline on current `feat/rework` and the resulting artefacts. Do not call baseline errors resolved until measured.
+- Make sure direct `feat/rework` pushes receive CI verification (branch trigger or equivalent), without making a failing historical typecheck an immediate unreviewable global gate.
+
+### 1. TypeScript and lint quality gates
+
+- Classify and **fix the existing TypeScript errors** (currently reported as 27) in a separate bounded cleanup, not by suppressing compiler output.
+- Use staged TypeScript strictness: turn on `strict` and other valuable checks only once the source actually passes; prefer explicit types, discriminated unions, and `unknown` narrowing over `any` / unsafe casts.
+- Add `pnpm lint` and enforce ESLint in CI; keep Obsidian-specific lint rules. Add type-aware rules with conscious scope and documented exceptions, especially around Obsidian's dynamic APIs.
+- Adopt automated formatting consistently (one formatter, minimal churn and one dedicated formatting commit if necessary). No drive-by format changes in behavioral patches.
+- Run test/build/typecheck/lint on PRs and direct development-branch pushes. Fail on **new** errors throughout migration; make full typecheck/lint mandatory once baseline is clean.
+- Acceptance: reproducible clean gates, no blanket `eslint-disable` or `@ts-ignore` added solely to make the dashboard green.
+
+### 2. Move TS source to `src/`; organize assets
+
+Desired source structure (illustrative; adjust for existing modules and plugin requirements):
+
+```text
+src/
+  main.ts
+  settings.ts
+  constants.ts
+  components/
+  models/
+  services/
+  utils/
+  views/
+  types/             # only if needed
+  styles/
+    main.scss
+    components/
+    views/
+    shared/
+assets/
+  images/            # shipped source images/icons, if any
+  fonts/             # only permitted distributable assets; do not assume needed
+  templates/         # resource files only if actually bundled/used
+tests/
+  __mocks__/
+  features/           # later Cucumber pilot
+scripts/
+main.js                # generated, kept at root for Obsidian
+styles.css             # compiled, kept at root for Obsidian
+manifest.json          # kept at root
+versions.json
+```
+
+- Move application `.ts` files into `src/` as a coherent change; keep `tests/`, config, workflows and scripts at repository root. Handle `.d.ts` appropriately.
+- Use `git mv` when practical; update all relative imports and aliases in `tsconfig.json`, `esbuild.config.mjs`, ESLint configuration, Vitest, developer tooling, Junie instructions and IDE references.
+- The esbuild entry becomes `src/main.ts`, but its output **remains root `main.js`**; Obsidian manifest ID and version metadata do not change.
+- Move only real **source** assets under `assets/`. Keep documentation screenshots in `screenshots/` unless a concrete reason exists to reorganize them. Do not put release artefacts into `assets/`.
+- If the runtime needs static assets, explicitly copy/bundle them and check packaging and vault sync. Do not assume Obsidian can resolve arbitrary source-relative paths in a packaged plugin.
+- Never change the vault folder structure or move user manuscript files as part of this refactor.
+- Acceptance: build and 100% of existing tests pass, old Obsidian vault-install/watch workflow still works, bundled `main.js` unchanged in intended behavior, release CI asset checks remain valid.
+
+### 3. Adopt modular SCSS with one output file
+
+- Add Sass tooling and compile `src/styles/main.scss` (or chosen canonical SCSS entry) to **root `styles.css`** for Obsidian.
+- Split the current stylesheet by responsibility: variables/tokens, base, forms, components, Timeline, Project Library, Codex, responsive/layout, etc. Use explicit `@use` / `@forward` modules rather than legacy global `@import`.
+- **Preserve current selector behavior and cascade order** during the mechanical split. No UI redesign in the same commit. Avoid changing CSS specificity unintentionally.
+- Integrate Sass into `pnpm dev` and `pnpm build` (including watch), and maintain `pnpm vault:watch` support for generated root `styles.css`.
+- Decide and document whether generated `styles.css` stays tracked (existing packaging workflows require it) and prevent accidental stale output. Never expect Obsidian to read `.scss` directly.
+- Acceptance: root CSS compiled deterministically, a documented smoke checklist across desktop/mobile views, existing CSS regressions avoided, CI/release checks continue to pass.
+
+### 4. Add Cucumber for real acceptance scenarios; retain Vitest for unit/service tests
+
+**Do not wholesale replace Vitest.** Cucumber/Gherkin describes feature behavior; the step definitions still require a meaningful integration harness.
+
+- Introduce `@cucumber/cucumber` for a small BDD pilot, with `tests/features/**/*.feature`, step definitions and a documented `pnpm test:bdd` command.
+- Keep Vitest (`pnpm test`) for TimeSpan arithmetic, parsers, metadata/UUID rules, and other fast isolated service tests.
+- The first feature should cover: select Books A+B in one Universe, Event X from a sibling scope, confirm chronological Timeline, jump to an empty year, create a canonical Event, verify one persisted file and correct ownership; ensure wrong-universe Book cannot be selected.
+- Step definitions MUST invoke production services and, when claiming a UI behavior, a real rendered view or appropriate Obsidian integration harness. Assertions on local test-only state or duplicated algorithms are **not** acceptance tests.
+- Use a disposable test vault with fixture data. Never run mutating scenarios against the only authoring vault.
+- Capture why a desktop/electron Obsidian smoke test might still be required if mocks cannot reproduce real DOM/workspace behavior.
+- Evaluate pilot maintenance and signal before expanding Cucumber to more scenarios. Do not translate 400+ existing unit tests into prose merely to increase BDD test counts.
+- Acceptance: reliable, failing-on-regression end-to-end-ish acceptance tests executed in CI, plus fast Vitest suite intact.
+
+### 5. Commit-driven changelog automation
+
+- Adopt **Conventional Commits** for all new changes, e.g. `feat(timeline): ...`, `fix(projects): ...`, `refactor(styles): ...`, `test(bdd): ...`, `docs: ...`; reserve `BREAKING CHANGE` for actual compatibility breaks.
+- Choose a single reliable generator such as `conventional-changelog` or Release Please after comparing it against current manual `release.yml`. Prefer changelog generation on an explicit preparation step / release PR rather than silent release publication.
+- Preserve existing historical changelog content; fix duplicate `1.11.0` headings and TODO placeholders with an explicit, reviewed change. Older nonconforming commits may require a curated initial baseline.
+- Version metadata `package.json`, `manifest.json` and `versions.json` must stay synchronized. Never auto-bump version or force-update tags in an unreviewed automation.
+- Keep the existing **manual release workflow** unless separately approved to change publishing semantics. Ensure release notes in `CHANGELOG.md` and release artefacts match the released version.
+- Add optional commit-message validation (commitlint or similar), with a migration policy that does not retroactively invalidate existing history.
+- Acceptance: new conventional commits produce reproducible release notes, manual release packaging still works, no automatically created release or moved tag, and published changelog accurately reflects user-facing changes.
+
+## Order of operations for Junie
+
+1. Verify current 2B implementation on a safe test vault and capture exact quality/tooling baselines.
+2. Do quality/typecheck/lint cleanup and CI gating; finish and verify it.
+3. Move TS to `src/`, organize genuinely distributable assets, update all tool paths. Finish and verify it.
+4. Split stylesheet into SCSS modules, compile to root `styles.css`. Finish and verify it.
+5. Add a Cucumber acceptance pilot while retaining Vitest.
+6. Introduce Conventional Commits / generated changelog workflow without changing release publication.
+7. Only then start Saved Views, unless stages 5–6 are explicitly decoupled and their verification is preserved.
+
+**Every stage:** run build, Vitest, the applicable BDD tests, lint, typecheck and a disposable-vault smoke test where behavior or packaging may change. Report failures honestly with new-vs-existing provenance. Verify the latest two commits and remote HEAD before and after work. Commit and push actual code, not only updates to a planning checkbox.
