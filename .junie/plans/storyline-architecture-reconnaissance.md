@@ -1327,7 +1327,7 @@ Implement the shared TimeSpan model, Event entities, Scene-Event references, Eve
 - ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
 - ✓ Committed to feat/rework branch
 
-### * Step 12: Phase 3 UX Corrections — Timeline, Workspace Tabs, Project Hierarchy, Drag-and-Drop
+### ✓ Step 12: Phase 3 UX Corrections — Timeline, Workspace Tabs, Project Hierarchy, Drag-and-Drop
 Fix four concrete UX issues: Timeline Event marker layout, workspace tab reuse, project creation redesign, and drag-and-drop hierarchy management.
 
 - ✓ Fix Event marker CSS layout — replaced flat children with proper .timeline-entry flex columns (seq, dot, card), vertical .timeline-event-content column, thin 1px marker line, and mobile-responsive max-width
