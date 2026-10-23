@@ -9,10 +9,10 @@ import { UNIVERSE_VIEW_TYPE } from '../constants';
  * the Universe → Series → Book hierarchy.
  *
  * Provides:
- * - Hierarchy tree with expandable universes, series, and books
- * - Cover thumbnails
+ * - Polished book cards with portrait-oriented covers
+ * - Expandable Universe and Series groupings
  * - Quick project switching
- * - Buttons for universe management operations
+ * - Universe management actions
  */
 export class UniverseView extends ItemView {
     private plugin: SceneCardsPlugin;
@@ -28,7 +28,7 @@ export class UniverseView extends ItemView {
     }
 
     getDisplayText(): string {
-        return 'StoryLine library';
+        return 'StoryLine Library';
     }
 
     getIcon(): string {
@@ -68,10 +68,10 @@ export class UniverseView extends ItemView {
             this.plugin.openAddSeriesToUniverseModal();
         });
 
-        // ── Hierarchy tree ──
-        const treeContainer = container.createDiv('sl-universe-tree-container');
+        // ── Library content ──
+        const libraryContainer = container.createDiv('sl-universe-library');
         this.selectorEl = renderUniverseSelector(
-            treeContainer,
+            libraryContainer,
             this.plugin,
             () => this.refresh()
         );
@@ -81,7 +81,7 @@ export class UniverseView extends ItemView {
         // Nothing to clean up
     }
 
-    /** Refresh the selector tree */
+    /** Refresh the library */
     async refresh(): Promise<void> {
         if (this.selectorEl) {
             await refreshUniverseSelector(

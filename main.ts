@@ -409,7 +409,7 @@ export default class SceneCardsPlugin extends Plugin {
         `);
 
         // Ribbon icon — open Project Library (Universe → Series → Book hierarchy)
-        this.addRibbonIcon('book-open-text', 'StoryLine Project Library', async () => {
+        this.addRibbonIcon('storyline-logo', 'StoryLine Project Library', async () => {
             try {
                 await this.activateView(UNIVERSE_VIEW_TYPE);
             } catch {
@@ -3949,15 +3949,20 @@ export default class SceneCardsPlugin extends Plugin {
 
     // ── Event modals ──────────────────────────────────
 
-    async openCreateEventModal(): Promise<void> {
+    async openCreateEventModal(eventsFolder?: string): Promise<void> {
         const { EventModal } = await import('./components/EventModal');
         const project = this.sceneManager.activeProject;
         if (!project) return;
 
-        const bookEventsFolder = this.sceneManager.getBookEventsFolder();
-        if (!bookEventsFolder) {
-            new Notice('No events folder found for the active project.');
-            return;
+        // If no folder specified, default to book-level
+        let folder: string | undefined = eventsFolder;
+        if (!folder) {
+            const bookFolder = this.sceneManager.getBookEventsFolder();
+            if (!bookFolder) {
+                new Notice('No events folder found for the active project.');
+                return;
+            }
+            folder = bookFolder;
         }
 
         const modal = new EventModal(
@@ -3965,7 +3970,7 @@ export default class SceneCardsPlugin extends Plugin {
             this,
             this.eventManager,
             this.timeSpanService,
-            bookEventsFolder ?? ''
+            folder
         );
         const result = await modal.openAsync();
         if (result) {
@@ -3997,12 +4002,74 @@ export default class SceneCardsPlugin extends Plugin {
 
         const events = this.eventManager.getAllEvents();
 
-        // Create Event button
+        // Create Event button with scope selection
         const actionsBar = modal.contentEl.createDiv('event-browser-actions');
         const createBtn = actionsBar.createEl('button', { cls: 'mod-cta', text: '+ New Event' });
+
+        // Dropdown for scope selection
+        const scopeSelect = actionsBar.createEl('select', {
+            attr: { title: 'Where to create the event' },
+        });
+        scopeSelect.setCssStyles({
+            marginLeft: '8px',
+            padding: '4px 8px',
+            fontSize: '12px',
+            borderRadius: '4px',
+            border: '1px solid var(--background-modifier-border)',
+            background: 'var(--background-secondary)',
+            color: 'var(--text-normal)',
+        });
+
+        const project = this.sceneManager.activeProject;
+        const bookFolder = this.sceneManager.getBookEventsFolder();
+
+        // Book scope (always available)
+        const bookOpt = scopeSelect.createEl('option', {
+            text: 'Book',
+            value: bookFolder || '',
+        });
+        if (bookFolder) bookOpt.selected = true;
+
+        // Series scope
+        if (project?.seriesUuid) {
+            const seriesFolder = this.sceneManager.getSeriesFolder();
+            if (seriesFolder) {
+                const seriesMeta = await this.seriesManager.loadSeriesMetadata(seriesFolder);
+                if (seriesMeta) {
+                    const seriesEventsFolder = `${seriesFolder}/Events`;
+                    scopeSelect.createEl('option', {
+                        text: `Series (${project.seriesId || 'Series'})`,
+                        value: seriesEventsFolder,
+                    });
+                }
+            }
+        }
+
+        // Universe scope
+        if (project?.universeId) {
+            const hierarchy = await this.universeManager.resolveHierarchyPath(project);
+            if (hierarchy.universe && hierarchy.series) {
+                // Derive universe folder from series folder (parent directory)
+                const seriesFolder = this.sceneManager.getSeriesFolder();
+                if (seriesFolder) {
+                    const universeFolder = seriesFolder.substring(0, seriesFolder.lastIndexOf('/'));
+                    const universeEventsFolder = `${universeFolder}/Events`;
+                    scopeSelect.createEl('option', {
+                        text: `Universe (${hierarchy.universe.name})`,
+                        value: universeEventsFolder,
+                    });
+                }
+            }
+        }
+
         createBtn.addEventListener('click', async () => {
+            const folder = scopeSelect.value;
+            if (!folder) {
+                new Notice('No events folder available.');
+                return;
+            }
             modal.close();
-            await this.openCreateEventModal();
+            await this.openCreateEventModal(folder);
         });
 
         if (events.length === 0) {

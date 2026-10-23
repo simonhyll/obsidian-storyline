@@ -1229,6 +1229,20 @@ Fix reloadEntities() losing inherited codex, add id parsing to CodexManager, and
 - ✓ Committed to feat/rework branch
 
 ### ✓ Step 7: Implement Phase 2 — TimeSpan and Events
+### ✓ Step 8: Project Library UX and Final UI Polish
+Complete the Project Library redesign, Event UX improvements, and navigation fixes.
+
+- ✓ Redesign UniverseView and UniverseSelector — replaced 16:9 cover banner with portrait-oriented book cards (2:3 aspect ratio), fallback covers with deterministic colors and initials, expandable Universe/Series groupings, proper empty states, and responsive grid layout
+- ✓ Fix ribbon icon — restored `storyline-logo` icon for Project Library (was `book-open-text`)
+- ✓ Event creation scope selection — added dropdown in Event browser for choosing Book/Series/Universe scope when creating Events
+- ✓ Fix EventSelectorModal cancellation — Cancel now returns null (not modified selections), Escape key resolves promise safely via onClose
+- ✓ Fix EventModal lifecycle — added onClose handler so Escape key resolves promise with null instead of hanging
+- ✓ Inspector Event linking — handles null return from cancelled EventSelectorModal
+- ✓ CSS redesign — complete rewrite of Project Library styles: card grid, portrait covers, fallback initials, hover effects, active selection outline, empty states, responsive breakpoints
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 209/209 tests pass
+- ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
+- ✓ Committed to feat/rework branch
 Implement the shared TimeSpan model, Event entities, Scene-Event references, Event UI, and validation.
 
 - ✓ Create services/TimeSpanService.ts — Full implementation: Gregorian calendar adapter, parsing all 6 TimeSpan kinds, comparison, overlap detection, contains, relative date resolution with chain accumulation, legacy storyDate/storyTime migration, display formatting, validateTimestamp, validateTimeSpan

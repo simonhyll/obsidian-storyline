@@ -5,18 +5,15 @@ import type { StoryLineProject } from '../models/StoryLineProject';
 import { attachTooltip } from './Tooltip';
 
 /**
- * UniverseSelector — a hierarchy-aware project selector that replaces
- * the flat ProjectSelector dropdown.
+ * UniverseSelector — a hierarchy-aware project library that displays
+ * Universe → Series → Book as polished book cards.
  *
- * Shows a tree view:
- * - Universe (expandable)
- *   - Series (expandable)
- *     - Book (clickable to switch)
- * - Standalone Series (expandable)
- *   - Book (clickable to switch)
- * - Standalone Books (clickable to switch)
- *
- * Supports cover thumbnails, series badges, and quick project creation.
+ * Features:
+ * - Portrait-oriented book cards (2:3 aspect ratio) with fallback covers
+ * - Expandable Universe and Series groupings
+ * - Active project highlighting
+ * - Sensible empty states
+ * - Responsive layout for dark/light themes
  */
 export function renderUniverseSelector(
     container: HTMLElement,
@@ -25,63 +22,29 @@ export function renderUniverseSelector(
 ): HTMLElement {
     const wrapper = container.createDiv('story-line-universe-selector');
 
-    const active = plugin.sceneManager.activeProject;
-
-    // ── Cover image thumbnail (if active project) ──
-    if (active) {
-        const coverEl = wrapper.createDiv({ cls: 'universe-selector-cover' });
-        attachTooltip(coverEl, 'Click to set cover image');
-        coverEl.setCssStyles({ cursor: 'pointer' });
-
-        if (active.coverImage) {
-            const resourcePath = plugin.app.vault.adapter.getResourcePath(active.coverImage);
-            if (resourcePath) {
-                coverEl.createEl('img', {
-                    cls: 'universe-selector-cover-img',
-                    attr: { src: resourcePath, alt: active.title },
-                });
-            }
-        } else {
-            const placeholder = coverEl.createSpan({ cls: 'universe-selector-cover-placeholder' });
-            obsidian.setIcon(placeholder, 'image');
-        }
-
-        coverEl.addEventListener('click', async () => {
-            const sceneFolder = plugin.sceneManager.getSceneFolder();
-            const { pickImage } = await import('./ImagePicker');
-            const result = await pickImage(plugin.app, sceneFolder, active.coverImage);
-            if (result === undefined) return; // cancelled
-            active.coverImage = result || undefined;
-            await plugin.sceneManager.saveProjectFrontmatter(active);
-            onSwitch();
-        });
-    }
-
-    // ── Hierarchy tree (async, always) ──
-    const treeEl = wrapper.createDiv({ cls: 'universe-selector-tree' });
-    treeEl.createSpan({ cls: 'universe-selector-loading', text: 'Loading...' });
+    // ── Loading state ──
+    const loadingEl = wrapper.createDiv({ cls: 'universe-selector-loading' });
+    loadingEl.createSpan({ text: 'Loading library...' });
 
     // ── New project button ──
     const newBtn = wrapper.createEl('button', {
-        cls: 'clickable-icon universe-selector-new',
-        attr: { 'aria-label': 'New StoryLine project', title: 'New project' },
+        cls: 'universe-selector-new-btn',
+        text: '+ New Project',
     });
-    obsidian.setIcon(newBtn, 'plus');
-
     newBtn.addEventListener('click', () => {
         (plugin.app as unknown as { commands: { executeCommandById: (id: string) => void } }).commands.executeCommandById('storyline:create-new-project');
     });
 
     // Build the async tree immediately
     refreshUniverseSelector(wrapper, plugin, onSwitch).catch(() => {
-        // If refresh fails, treeEl already has "Loading..." text
+        // If refresh fails, loadingEl is still visible
     });
 
     return wrapper;
 }
 
 /**
- * Create an expandable header with toggle functionality.
+ * Create an expandable section header with toggle functionality.
  * The header is inserted BEFORE the childrenEl in the DOM.
  */
 function createExpandableHeader(
@@ -122,7 +85,36 @@ function createExpandableHeader(
 }
 
 /**
- * Async version that builds the full tree with discovered hierarchy.
+ * Generate a deterministic fallback cover color from a title string.
+ */
+function getFallbackCoverColor(title: string): string {
+    // Simple hash to pick from a palette of pleasant colors
+    const colors = [
+        '#4A90D9', '#50B0A0', '#D97A4A', '#9B59B6',
+        '#E74C3C', '#2ECC71', '#F39C12', '#1ABC9C',
+        '#8E44AD', '#3498DB', '#E67E22', '#16A085',
+    ];
+    let hash = 0;
+    for (let i = 0; i < title.length; i++) {
+        hash = ((hash << 5) - hash) + title.charCodeAt(i);
+        hash |= 0;
+    }
+    return colors[Math.abs(hash) % colors.length];
+}
+
+/**
+ * Generate the first letter or two for the fallback cover.
+ */
+function getFallbackInitials(title: string): string {
+    const words = title.trim().split(/\s+/);
+    if (words.length >= 2) {
+        return (words[0][0] + words[1][0]).toUpperCase();
+    }
+    return title.substring(0, 2).toUpperCase();
+}
+
+/**
+ * Async version that builds the full library with discovered hierarchy.
  * Call this after initial render to populate with universe/series data.
  */
 export async function refreshUniverseSelector(
@@ -130,38 +122,57 @@ export async function refreshUniverseSelector(
     plugin: SceneCardsPlugin,
     onSwitch: () => void
 ): Promise<void> {
-    const treeEl = wrapper.querySelector<HTMLElement>('.universe-selector-tree');
-    if (!treeEl) return;
+    // Remove loading state
+    const loadingEl = wrapper.querySelector<HTMLElement>('.universe-selector-loading');
+    if (loadingEl) loadingEl.remove();
 
-    treeEl.empty();
+    // Clear previous content except the new project button
+    const newBtn = wrapper.querySelector<HTMLElement>('.universe-selector-new-btn');
+    wrapper.empty();
+    if (newBtn) wrapper.appendChild(newBtn);
 
     const active = plugin.sceneManager.activeProject;
     const projects = plugin.sceneManager.getProjects();
 
-    // Always show the full hierarchy, even with a single project.
+    // Container for all groups
+    const groupsContainer = wrapper.createDiv({ cls: 'universe-selector-groups' });
 
     // Discover hierarchy
     const hierarchy = await plugin.universeManager.discoverHierarchy();
 
     // Track which projects are in the hierarchy
     const hierarchyProjectPaths = new Set<string>();
+    let totalBooks = 0;
 
     // Render universes
-    for (const { universe, series } of hierarchy) {
-        const universeNode = treeEl.createDiv({ cls: 'universe-selector-node universe-selector-universe' });
-        const childrenEl = universeNode.createDiv({ cls: 'universe-selector-children' });
-        createExpandableHeader(universeNode, universe.name, 'globe', childrenEl);
+    for (const { universe, series: seriesList } of hierarchy) {
+        const universeSection = groupsContainer.createDiv({ cls: 'universe-selector-section' });
 
+        const childrenEl = universeSection.createDiv({ cls: 'universe-selector-children' });
+        createExpandableHeader(universeSection, universe.name, 'globe', childrenEl);
+
+        let universeBooks = 0;
         // Render series
-        for (const { meta, books } of series) {
-            const seriesNode = childrenEl.createDiv({ cls: 'universe-selector-node universe-selector-series' });
-            const seriesChildren = seriesNode.createDiv({ cls: 'universe-selector-children' });
-            createExpandableHeader(seriesNode, meta.name, 'library', seriesChildren);
+        for (const { meta, books } of seriesList) {
+            const seriesSection = childrenEl.createDiv({ cls: 'universe-selector-section' });
+            const seriesChildren = seriesSection.createDiv({ cls: 'universe-selector-children' });
+            createExpandableHeader(seriesSection, meta.name, 'library', seriesChildren);
 
+            // Book cards grid
+            const cardsGrid = seriesChildren.createDiv({ cls: 'universe-selector-cards' });
             for (const book of books) {
                 hierarchyProjectPaths.add(book.filePath);
-                renderBookItemInContainer(seriesChildren, book, active, plugin, onSwitch);
+                universeBooks++;
+                totalBooks++;
+                renderBookCard(cardsGrid, book, active, plugin, onSwitch);
             }
+        }
+
+        // If universe has no series, show empty state
+        if (seriesList.length === 0) {
+            childrenEl.createDiv({ cls: 'universe-selector-empty' }).createSpan({
+                text: 'No series in this universe yet.',
+            });
         }
     }
 
@@ -179,30 +190,50 @@ export async function refreshUniverseSelector(
     for (const { meta } of allSeries) {
         if (universeSeriesUuids.has(meta.seriesUuid || '')) continue;
 
-        const seriesNode = treeEl.createDiv({ cls: 'universe-selector-node universe-selector-series' });
-        const seriesChildren = seriesNode.createDiv({ cls: 'universe-selector-children' });
-        createExpandableHeader(seriesNode, meta.name, 'library', seriesChildren);
+        const seriesSection = groupsContainer.createDiv({ cls: 'universe-selector-section' });
+        const seriesChildren = seriesSection.createDiv({ cls: 'universe-selector-children' });
+        createExpandableHeader(seriesSection, meta.name, 'library', seriesChildren);
 
         const books = projects.filter(p =>
             p.seriesUuid === meta.seriesUuid || p.seriesId === meta.name
         );
+
+        const cardsGrid = seriesChildren.createDiv({ cls: 'universe-selector-cards' });
         for (const book of books) {
             hierarchyProjectPaths.add(book.filePath);
-            renderBookItemInContainer(seriesChildren, book, active, plugin, onSwitch);
+            totalBooks++;
+            renderBookCard(cardsGrid, book, active, plugin, onSwitch);
         }
     }
 
     // Render standalone books
-    for (const project of projects) {
-        if (hierarchyProjectPaths.has(project.filePath)) continue;
-        renderBookItemInContainer(treeEl, project, active, plugin, onSwitch);
+    const standaloneBooks = projects.filter(p => !hierarchyProjectPaths.has(p.filePath));
+    if (standaloneBooks.length > 0) {
+        const standaloneSection = groupsContainer.createDiv({ cls: 'universe-selector-section' });
+        const standaloneChildren = standaloneSection.createDiv({ cls: 'universe-selector-children' });
+        createExpandableHeader(standaloneSection, 'Standalone Books', 'book', standaloneChildren);
+
+        const cardsGrid = standaloneChildren.createDiv({ cls: 'universe-selector-cards' });
+        for (const book of standaloneBooks) {
+            totalBooks++;
+            renderBookCard(cardsGrid, book, active, plugin, onSwitch);
+        }
+    }
+
+    // Empty state — no projects at all
+    if (totalBooks === 0) {
+        const emptyState = wrapper.createDiv({ cls: 'universe-selector-empty-state' });
+        emptyState.createEl('h3', { text: 'Your library is empty' });
+        emptyState.createEl('p', {
+            text: 'Create your first StoryLine project to get started.',
+        });
     }
 }
 
 /**
- * Render a book item with proper plugin closure.
+ * Render a book card with portrait-oriented cover and title.
  */
-function renderBookItemInContainer(
+function renderBookCard(
     parent: HTMLElement,
     book: StoryLineProject,
     activeProject: StoryLineProject | null,
@@ -211,31 +242,60 @@ function renderBookItemInContainer(
 ): void {
     const isActive = activeProject && book.filePath === activeProject.filePath;
 
-    const bookEl = parent.createDiv({ cls: 'universe-selector-book-item' });
+    const card = parent.createDiv({ cls: 'universe-selector-card' });
     if (isActive) {
-        bookEl.addClass('universe-selector-book-active');
+        card.addClass('universe-selector-card-active');
     }
 
-    const iconEl = bookEl.createSpan({ cls: 'universe-selector-book-icon' });
-    obsidian.setIcon(iconEl, 'book');
+    // Cover area (portrait 2:3 aspect ratio)
+    const cover = card.createDiv({ cls: 'universe-selector-cover' });
 
-    bookEl.createSpan({
-        cls: 'universe-selector-book-label',
+    if (book.coverImage) {
+        const resourcePath = plugin.app.vault.adapter.getResourcePath(book.coverImage);
+        if (resourcePath) {
+            cover.createEl('img', {
+                cls: 'universe-selector-cover-img',
+                attr: { src: resourcePath, alt: book.title },
+            });
+        } else {
+            renderFallbackCover(cover, book.title);
+        }
+    } else {
+        renderFallbackCover(cover, book.title);
+    }
+
+    // Title and series info
+    const info = card.createDiv({ cls: 'universe-selector-card-info' });
+    info.createEl('div', {
+        cls: 'universe-selector-card-title',
         text: book.title,
     });
 
     if (book.seriesId) {
-        const badge = bookEl.createSpan({
-            cls: 'universe-selector-series-badge',
+        info.createEl('div', {
+            cls: 'universe-selector-card-series',
             text: book.seriesId,
         });
-        badge.setCssStyles({ fontSize: '0.75em', opacity: '0.6' });
     }
 
-    attachTooltip(bookEl, isActive ? 'Active project' : `Switch to ${book.title}`);
+    attachTooltip(card, isActive ? 'Active project' : `Switch to ${book.title}`);
 
-    bookEl.addEventListener('click', async () => {
+    card.addEventListener('click', async () => {
         await plugin.sceneManager.setActiveProject(book);
         onSwitch();
     });
+}
+
+/**
+ * Render a fallback cover with deterministic color and initials.
+ */
+function renderFallbackCover(coverEl: HTMLElement, title: string): void {
+    const color = getFallbackCoverColor(title);
+    const initials = getFallbackInitials(title);
+
+    const fallbackEl = coverEl.createDiv({
+        cls: 'universe-selector-cover-fallback',
+        text: initials,
+    });
+    fallbackEl.style.backgroundColor = color;
 }

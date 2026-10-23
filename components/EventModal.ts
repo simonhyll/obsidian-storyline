@@ -200,6 +200,11 @@ export class EventModal extends Modal {
 
     onClose(): void {
         this.contentEl.empty();
+        // Handle Escape key / programmatic close: resolve with null so the pending promise doesn't hang
+        if (!this.resolved) {
+            this.resolved = true;
+            this.resolve?.(null);
+        }
     }
 
     async saveEvent(): Promise<Event> {
@@ -272,10 +277,11 @@ export class EventModal extends Modal {
 export class EventSelectorModal extends Modal {
     private eventManager: EventManager;
     private timeSpanService: TimeSpanService;
+    private originalIds: string[];
     private selectedIds: string[];
 
     private resolved = false;
-    private resolve?: (ids: string[]) => void;
+    private resolve?: (ids: string[] | null) => void;
 
     constructor(
         app: App,
@@ -286,14 +292,16 @@ export class EventSelectorModal extends Modal {
         super(app);
         this.eventManager = eventManager;
         this.timeSpanService = timeSpanService;
+        this.originalIds = [...selectedIds];
         this.selectedIds = [...selectedIds];
     }
 
     /**
-     * Open the modal and return a promise that resolves with the selected Event IDs.
+     * Open the modal and return a promise that resolves with the selected Event IDs,
+     * or null if cancelled.
      */
-    openAsync(): Promise<string[]> {
-        return new Promise<string[]>((resolve) => {
+    openAsync(): Promise<string[] | null> {
+        return new Promise<string[] | null>((resolve) => {
             this.resolve = resolve;
             super.open();
         });
@@ -356,13 +364,19 @@ export class EventSelectorModal extends Modal {
         cancelBtn.setText('Cancel');
         cancelBtn.onClickEvent(() => {
             this.close();
+            // Cancel resolves with null — caller ignores the result
             if (!this.resolved) {
-                this.resolve?.(this.selectedIds);
+                this.resolve?.(null);
             }
         });
     }
 
     onClose(): void {
         this.contentEl.empty();
+        // Handle Escape key / programmatic close: resolve with null so the pending promise doesn't hang
+        if (!this.resolved) {
+            this.resolved = true;
+            this.resolve?.(null);
+        }
     }
 }

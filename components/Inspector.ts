@@ -607,7 +607,8 @@ export class InspectorComponent {
                     scene.eventRefs || []
                 );
                 const selectedIds = await modal.openAsync();
-                if (selectedIds !== undefined) {
+                // null means cancelled — ignore
+                if (selectedIds !== null && selectedIds !== undefined) {
                     await this.sceneManager.updateScene(scene.filePath, {
                         eventRefs: selectedIds.length > 0 ? selectedIds : undefined,
                     });
