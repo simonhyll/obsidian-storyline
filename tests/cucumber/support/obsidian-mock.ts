@@ -49,3 +49,83 @@ export class Notice {
         // No-op in test environment
     }
 }
+
+/** Minimal Modal mock for headless cancellation tests. */
+export class Modal {
+    public contentEl: HTMLElement;
+    public titleEl: HTMLElement;
+    private _onCloseCallbacks: Array<() => void> = [];
+    private _isOpen = false;
+
+    constructor(_app: unknown) {
+        // Use jsdom for contentEl when available, otherwise a minimal mock
+        const doc = typeof document !== 'undefined' ? document : null;
+        this.contentEl = doc ? doc.createElement('div') : { empty: () => {} } as unknown as HTMLElement;
+        this.titleEl = doc ? doc.createElement('div') : { setText: () => {} } as unknown as HTMLElement;
+    }
+
+    open(): void {
+        this._isOpen = true;
+    }
+
+    close(): void {
+        this._isOpen = false;
+        for (const cb of this._onCloseCallbacks) cb();
+        this.onClose();
+    }
+
+    onOpen(): void {
+        // Override in subclasses
+    }
+
+    onClose(): void {
+        // Override in subclasses
+    }
+}
+
+/** Minimal Setting mock for headless modal tests. */
+export class Setting {
+    public settingEl: HTMLElement;
+    public controlEl: HTMLElement;
+
+    constructor(container: HTMLElement) {
+        const doc = typeof document !== 'undefined' ? document : null;
+        this.settingEl = doc ? doc.createElement('div') : {} as unknown as HTMLElement;
+        this.controlEl = doc ? doc.createElement('div') : {} as unknown as HTMLElement;
+        if (doc) container.appendChild(this.settingEl);
+    }
+
+    setName(_name: string): this { return this; }
+    setDesc(_desc: string): this { return this; }
+    addText(_cb: (text: { setPlaceholder: () => unknown; setValue: () => unknown; onChange: (fn: (v: string) => void) => void; inputEl: HTMLElement }) => void): this {
+        const mockInput = { value: '' } as unknown as HTMLElement;
+        const mockText = {
+            setPlaceholder: () => mockText,
+            setValue: () => mockText,
+            onChange: (_fn: (v: string) => void) => {},
+            inputEl: mockInput,
+        };
+        _cb(mockText);
+        return this;
+    }
+    addTextArea(_cb: (text: { setPlaceholder: () => unknown; setValue: () => unknown; onChange: (fn: (v: string) => void) => void; inputEl: any }) => void): this {
+        const mockInput = { value: '', rows: 3, style: {} } as any;
+        const mockText = {
+            setPlaceholder: () => mockText,
+            setValue: () => mockText,
+            onChange: (_fn: (v: string) => void) => {},
+            inputEl: mockInput,
+        };
+        _cb(mockText);
+        return this;
+    }
+    addDropdown(_cb: (dd: { addOption: () => unknown; setValue: () => unknown; onChange: (fn: (v: string) => void) => void }) => void): this {
+        const mockDd = {
+            addOption: () => mockDd,
+            setValue: () => mockDd,
+            onChange: (_fn: (v: string) => void) => {},
+        };
+        _cb(mockDd);
+        return this;
+    }
+}

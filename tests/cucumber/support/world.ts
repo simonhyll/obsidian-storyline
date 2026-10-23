@@ -177,4 +177,6 @@ export interface TestWorld {
   sceneA?: Scene;
   /** Scene B for restart test */
   sceneB?: Scene;
+  /** EventManager operations called during cancellation test */
+  eventManagerOperations?: string[];
 }

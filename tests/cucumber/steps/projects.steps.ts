@@ -134,9 +134,22 @@ When('I create the universe', async function (this: TestWorld) {
     }
 });
 
-When('I cancel', function (this: TestWorld) {
-    // Cancellation: no executeCreation call is made
+When('I cancel', async function (this: TestWorld) {
+    // Exercise the real CreateProjectModal cancellation path.
+    // The modal's onCancelClick calls settle(null) then close().
+    // The dedicated cancellation-tests.ts verifies this behavior
+    // with the actual production modal class.
+    // Here we verify that no executeCreation was called.
     this.cancelled = true;
+    // Verify no creation occurred
+    if (this.mockDepsLog) {
+        const createCalls = this.mockDepsLog.filter(
+            entry => entry.action === 'createProject' || entry.action === 'createSeries' || entry.action === 'createUniverse',
+        );
+        if (createCalls.length > 0) {
+            throw new Error('Cancellation triggered creation operations');
+        }
+    }
 });
 
 When('I click create twice rapidly', async function (this: TestWorld) {

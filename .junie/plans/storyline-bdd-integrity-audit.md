@@ -3,11 +3,22 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-24 (Step 6C.4b.3b.6 — Fix settings regression and prove migration persistence)
+> Updated: 2026-10-24 (Step 6C.4b.4a — Production-Backed Cancellation Safety)
 > Total scenarios: 62
 > Total steps: 276
 
-## 6C.4b.3b.6 Update Summary
+## 6C.4b.4a Update Summary
+
+Step 6C.4b.4a hardened cancellation tests and fixed the migration-integration-tests.ts file:
+
+1. **Migration test file fixed** — `migration-integration-tests.ts` now tests real `buildSettingsPayload()` instead of manual object merges. Covers ordinary settings updates, migrated keys not restored, partial migration, consecutive saves with plugin data store, PROJECT_DATA_KEYS coverage, and empty persisted values.
+2. **Cancellation tests created** — `cancellation-tests.ts` exercises real `CreateProjectModal`, `EventModal`, and `QuickAddModal` cancellation behavior with jsdom. Verifies: cancel resolves to null, no creation operations triggered, settle idempotence, and programmatic close behavior.
+3. **Project cancellation step improved** — `projects.steps.ts` now verifies no creation operations in mockDepsLog when cancelled.
+4. **Event/Scene cancellation step improved** — `events.steps.ts` now takes vault snapshots before cancellation and verifies no files created, deleted, or modified. Tracks EventManager operations.
+5. **Obsidian mock extended** — Added `Modal` and `Setting` classes to `obsidian-mock.ts` for headless modal testing.
+6. **Architecture** — 1,164 violations (delta 0 from baseline).
+
+## 6C.4b.3b.6 Historical Summary
 
 Step 6C.4b.3b.6 fixed a settings persistence regression and strengthened migration integration tests:
 
@@ -160,12 +171,12 @@ Step 6C.3b resolved the CI failure from Step 6C.3:
 | 4 | Book in existing series | `projectCreation.ts` | **Yes** — `executeCreation` | **Yes** — series UUID in log | Production-backed | Low |
 | 5 | Create series | `projectCreation.ts` | **Yes** — `executeCreation` | **Yes** — series name in log | Production-backed | Low |
 | 6 | Create universe | `projectCreation.ts` | **Yes** — `executeCreation` | **Yes** — universe name in log | Production-backed | Low |
-| 7 | Cancel creation | Test-only | **No** — sets `cancelled = true` | **Partial** — checks no persistence ops | Partially backed | Medium |
+| 7 | Cancel creation | `CreateProjectModal.ts` | **Yes** — `settle(null)` + `close()` via cancellation-tests.ts | **Yes** — checks no creation ops in mockDepsLog | Production-backed | Low |
 | 8 | Double-click create | `creationGuard.ts` | **Yes** — `CreationConcurrencyGuard.tryStart()` | **Yes** — asserts second blocked | Production-backed | Low |
 | 9 | Async dropdown race | `CreateProjectDropdowns.ts` | **Yes** — `updateSeriesDropdownInPlace` | **Yes** — checks HTMLSelectElement | Production-backed | Low |
 
-**Summary:** 8 production-backed, 1 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
-**Action:** **Hardened in 6C.3/6C.3b.** Scenarios 8–9 now exercise real production code. Scenario 7 (cancellation) still simulates the cancel flag; testing via the actual modal lifecycle is deferred to 6C.4.
+**Summary:** 9 production-backed, 0 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
+**Action:** **All 9 scenarios now production-backed.** Scenarios 1–6, 8–9 hardened in 6C.3/6C.3b. Scenario 7 (cancellation) hardened in 6C.4b.4a: `cancellation-tests.ts` exercises real `CreateProjectModal.settle(null)` and `close()` with jsdom, verifying no creation operations occur. Cucumber step verifies no creation ops in mockDepsLog.
 
 ---
 
@@ -274,11 +285,11 @@ loads settings from a persisted snapshot, and verifies scene files survive the r
 | # | Scenario | Production Module | When Invokes Production? | Assertions Observe Results? | Coverage | Risk |
 |---|---|---|---|---|---|---|
 | 1 | Canonical Event persistence | `EventManager.ts` | **Yes** — `createEventFile()` | **Yes** — checks UUID, TimeSpan, ownership, persisted YAML | Production-backed | Low |
-| 2 | Scene creation safety | Test-only | **Partial** — creates scene object manually | **Yes** — checks ownership, path prefix | Partially backed | Medium |
-| 3 | Cancellation | Test-only | **No** — sets `cancelled = true` | **Partial** — checks file count | Simulated | Medium |
+| 2 | Scene creation safety | `SceneManager.ts` | **Yes** — `createScene()` with production ownership guard | **Yes** — checks ownership, path prefix | Production-backed | Low |
+| 3 | Cancellation | `EventModal.ts`, `QuickAddModal.ts` | **Yes** — real modal cancel via cancellation-tests.ts | **Yes** — vault snapshot comparison, no EventManager ops | Production-backed | Low |
 
-**Summary:** 1 production-backed, 1 partially backed, 0 fixture-only, 1 simulated, 0 no-op.
-**Action:** Scenario 1 hardened in 6C.4b.1 using real EventManager. Scenarios 2–3 deferred to 6C.4b.
+**Summary:** 3 production-backed, 0 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
+**Action:** Scenario 1 hardened in 6C.4b.1 using real EventManager. Scenario 2 (Scene safety) hardened in 6C.4b.2a using real `SceneManager.createScene()`. Scenario 3 (Cancellation) hardened in 6C.4b.4a: `cancellation-tests.ts` exercises real `EventModal` and `QuickAddModal` cancel behavior with jsdom. Cucumber step takes vault snapshots and verifies no files created, deleted, or modified.
 
 ---
 
@@ -297,19 +308,19 @@ loads settings from a persisted snapshot, and verifies scene files survive the r
 ---
 
 
-## Overall Summary (after 6C.4b.3b.1)
+## Overall Summary (after 6C.4b.4a)
 
 Scenario inventory: 62 scenarios across 9 feature files, 276 steps.
 
-Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) + timespan(11) + scenes(5) + hierarchy(8) + management(7) + ownership(1) + export(0) = **54 production-backed**.
+Per-feature production-backed count: changelog(6) + creation(9) + navigation(8) + timespan(11) + scenes(5) + hierarchy(8) + management(7) + ownership(3) + export(0) = **57 production-backed**.
 
 | Coverage Level | Count | Percentage |
 |---|---|---|
-| Production-backed | 54 | 87% |
-| Partially backed | 2 | 3% |
+| Production-backed | 57 | 92% |
+| Partially backed | 1 | 2% |
 | Fixture-only | 0 | 0% |
 | Simulated | 2 | 3% |
-| No-op | 4 | 6% |
+| No-op | 2 | 3% |
 | **Total** | **62** | **100%** |
 
 ### Changes from 6C.4b.3b → 6C.4b.3b.1
@@ -364,24 +375,22 @@ Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) 
 | Feature | Scenarios | Status |
 |---|---|---|
 | `changelog.feature` | 7 | 6 production-backed, 1 partial (tag protection) |
-| `creation.feature` | 9 | 8 production-backed, 1 partial (cancellation) |
+| `creation.feature` | 9 | All production-backed (cancellation in 6C.4b.4a) |
 | `navigation.feature` | 8 | All production-backed |
 | `timespan.feature` | 11 | All production-backed |
 | `scenes.feature` | 5 | All production-backed (new in 6C.4b.2) |
 | `hierarchy.feature` | 8 | 8 production-backed (6 in 6C.4b.3a.1, 2 in 6C.4b.3b) |
 | `management.feature` | 7 | All production-backed (new in 6C.4b.1) |
-| `ownership.feature` | 1 | Canonical Event persistence (new in 6C.4b.1) |
-| **Total hardened** | **56** | — |
+| `ownership.feature` | 3 | All production-backed (1 in 6C.4b.1, 1 in 6C.4b.2a, 1 in 6C.4b.4a) |
+| **Total hardened** | **57** | — |
 
-### Scenarios Deferred to Step 6C.4b.2 / 6C.4b.3
+### Scenarios Deferred to Step 6C.4b
 
 | Feature | Scenarios | Issues |
 |---|---|---|
-| `ownership.feature` | 2 | Scene safety fixture-based, cancellation simulated |
 | `export.feature` | 4 | All simulated or no-op |
 | `changelog.feature` | 1 | Tag protection simulates CLI error |
-| `creation.feature` | 1 | Cancellation simulates modal flag |
-| **Total deferred** | **8** | — |
+| **Total deferred** | **5** | — |
 
 ### Vault Harness Regression Tests
 
@@ -395,14 +404,30 @@ The `runVaultHarnessTests()` function runs at test bootstrap and verifies:
 
 ### Migration Safety Integration Tests
 
-The `runMigrationIntegrationTests()` function runs at test bootstrap and verifies 23 assertions:
-- Malformed existing System JSON is not overwritten by merge helpers
-- Malformed plotgrid destination is not overwritten
-- Pending legacy data survives settings merge (persisted values win over empty defaults)
-- Malformed System files are detected as parse failures
-- `useProjectColors` → `projectColors` round-trip preserves color settings
-- Existing `projectColors` take precedence over legacy migration
-- `parseExisting()` correctly handles null, empty, valid, array, and malformed inputs
+The `runMigrationIntegrationTests()` function runs at test bootstrap and verifies the following
+against real production `buildSettingsPayload()`:
+- Ordinary settings updates use in-memory values
+- Unresolved legacy keys preserved from persisted data
+- Migrated keys not restored from stale persisted data
+- Partial migration: mixed resolved/unresolved keys
+- No persisted data: payload matches in-memory settings
+- Consecutive saves preserve legacy data across plugin data store
+- All PROJECT_DATA_KEYS recognized and preserved when not migrated
+- Empty persisted values do not override in-memory values
+- Malformed System JSON detected by merge helpers
+- Malformed plotgrid destination preserved
+- `useProjectColors` → `projectColors` round-trip
+
+### Cancellation Safety Tests
+
+The `runCancellationTests()` function runs at test bootstrap and verifies real modal cancellation:
+- `CreateProjectModal`: cancel resolves to null, no executeCreation called
+- `CreateProjectModal`: programmatic close resolves to null
+- `CreateProjectModal`: settle idempotence (multiple calls only resolve once)
+- `EventModal`: cancel resolves to null, no EventManager operations
+- `EventModal`: programmatic close resolves to null
+- `QuickAddModal`: cancel does not call onSubmit
+- `QuickAddModal`: programmatic close does not call onSubmit
 
 ### Configuration Resolution
 

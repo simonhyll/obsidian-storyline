@@ -9,6 +9,7 @@ import { Before, BeforeAll } from '@cucumber/cucumber';
 import { TestWorld } from './world';
 import { runVaultHarnessTests } from './vault-harness-tests';
 import { runMigrationIntegrationTests } from './migration-integration-tests';
+import { runSettingsPayloadTests } from './settings-payload-tests';
 
 // Patch the 'obsidian' module in the module registry so that production
 // code (EventManager, SceneManager) can import TFile, parseYaml, and
@@ -23,10 +24,11 @@ Module._resolveFilename = function (request: string, ...rest: unknown[]): string
     return originalResolveFilename.apply(this, [request, ...rest]);
 };
 
-// Run vault harness and migration safety regression tests once at test bootstrap
+// Run vault harness, migration safety and settings payload regression tests
 BeforeAll(async () => {
     await runVaultHarnessTests();
     runMigrationIntegrationTests();
+    await runSettingsPayloadTests();
 });
 
 Before(function (this: TestWorld) {
