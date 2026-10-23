@@ -1,39 +1,34 @@
 /**
- * Test helpers for UniverseManager and SeriesManager hierarchy integration tests.
+ * Test helpers for UniverseManager, SeriesManager, and SceneManager hierarchy
+ * integration tests.
  *
- * Creates minimal plugin mocks so that production UniverseManager and SeriesManager
- * instances can be constructed and exercised against the in-memory vault harness.
+ * Creates real production manager instances backed by an in-memory vault so that
+ * Book creation, membership, Scene creation, and Universe isolation are tested
+ * against actual production code.
  */
 
 import { UniverseManager } from '../../../src/services/UniverseManager';
 import { SeriesManager } from '../../../src/services/SeriesManager';
+import { SceneManager } from '../../../src/services/SceneManager';
 import type SceneCardsPlugin from '../../../src/main';
 import type { SceneCardsSettings } from '../../../src/settings';
-import type { StoryLineProject } from '../../../src/models/StoryLineProject';
-import { createInMemoryVault, createAppMock, type TestVault } from './in-memory-vault';
+import {
+  createInMemoryVault,
+  createAppMock,
+  type TestVault,
+} from './in-memory-vault';
 
 /**
  * Create a minimal plugin mock for hierarchy manager testing.
  *
  * The mock provides:
  * - settings.storyLineRoot for the base folder path
- * - sceneManager with getProjects(), activeProject, and saveProjectFrontmatter
+ * - sceneManager (populated after SceneManager is created)
  * - seriesManager (populated after SeriesManager is created)
  */
 export function createHierarchyPluginMock(
   settings?: Partial<SceneCardsSettings>,
-  projects?: StoryLineProject[],
 ): SceneCardsPlugin {
-  const sceneManager = {
-    getProjects: () => projects ?? [],
-    activeProject: null as StoryLineProject | null,
-    setActiveProject: async (_p: StoryLineProject) => {},
-    saveProjectFrontmatter: async (_p: StoryLineProject) => {},
-    scanProjects: async () => {},
-    getSeriesFolder: () => null,
-    updateProjectPath: async (_old: string, _new: string, _p: StoryLineProject) => {},
-  };
-
   return {
     settings: {
       storyLineRoot: 'StoryLine',
@@ -41,37 +36,52 @@ export function createHierarchyPluginMock(
       defaultPovCharacter: '',
       ...settings,
     },
-    sceneManager,
+    sceneManager: null as unknown as SceneManager,
     seriesManager: null as unknown as SeriesManager,
     flushCorkboardPositions: async () => {},
     invalidateCorkboardCache: () => {},
     saveSettings: async () => {},
+    flushPendingWritingChanges: () => {},
+    saveProjectSystemData: async () => {},
+    loadProjectSystemData: async () => {},
+    fieldTemplates: { load: async () => {}, getAll: () => [] },
   } as unknown as SceneCardsPlugin;
 }
 
 /**
  * Set up a complete hierarchy test environment with an isolated vault,
- * UniverseManager, and SeriesManager.
+ * real SceneManager, UniverseManager, and SeriesManager.
  *
- * Returns all components needed to test Universe → Series → Book relationships.
+ * Returns all components needed to test Universe → Series → Book relationships
+ * using actual production operations.
  */
 export function setupHierarchyTest(
   settings?: Partial<SceneCardsSettings>,
 ) {
   const vault = createInMemoryVault();
-  const app = createAppMock(vault) as unknown as import('obsidian').App;
+  const appMock = createAppMock(vault);
+  const app = appMock as unknown as import('obsidian').App;
 
   // Create plugin mock — will be updated with managers
   const plugin = createHierarchyPluginMock(settings);
 
-  // Create managers
+  // Create real production managers
+  const sceneManager = new SceneManager(app, plugin);
   const universeManager = new UniverseManager(app, plugin);
   const seriesManager = new SeriesManager(app, plugin);
 
   // Wire up mutual references
+  plugin.sceneManager = sceneManager;
   plugin.seriesManager = seriesManager;
 
-  return { vault, app, plugin, universeManager, seriesManager };
+  return {
+    vault,
+    app: appMock,
+    plugin,
+    sceneManager,
+    universeManager,
+    seriesManager,
+  };
 }
 
 /**
@@ -84,6 +94,20 @@ export function createReloadedUniverseManager(
 ) {
   const app = createAppMock(vault) as unknown as import('obsidian').App;
   return new UniverseManager(app, plugin);
+}
+
+/**
+ * Create a fresh SceneManager instance against the same vault.
+ * Used to test persistence reload.
+ */
+export function createReloadedSceneManager(
+  vault: TestVault,
+  plugin: SceneCardsPlugin,
+) {
+  const app = createAppMock(vault) as unknown as import('obsidian').App;
+  const sm = new SceneManager(app, plugin);
+  plugin.sceneManager = sm;
+  return sm;
 }
 
 /**

@@ -3,11 +3,32 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-23 (Step 6C.4b.3a — Production-backed hierarchy tests)
+> Updated: 2026-10-23 (Step 6C.4b.3a.1 — Real Book membership and Scene isolation)
 > Total scenarios: 61
 > Total steps: 270
 
-## 6C.4b.3a Update Summary
+## 6C.4b.3a.1 Update Summary
+
+Step 6C.4b.3a.1 eliminated false-green hierarchy tests by replacing manually constructed Book
+objects and synthetic Scene objects with real production operations:
+
+1. **Real SceneManager in hierarchy tests** — `setupHierarchyTest()` now creates a real
+   `SceneManager` instance backed by the in-memory vault, not a mock that returns static arrays.
+2. **Book belongs to universe** — Uses `SceneManager.createProject()` to create the book, then
+   `saveProjectFrontmatter()` to persist `universeId`. Verifies the persisted YAML frontmatter
+   contains the correct universe UUID.
+3. **Book in series in universe** — Creates the book via `createProject()`, then adds it to the
+   series via `SeriesManager.addBookToSeries()`. Verifies `seriesUuid` and inherited `universeId`.
+4. **Universe isolation** — Creates real Scenes via `SceneManager.createScene()` in each book.
+   Uses `UniverseManager.getBooksInUniverse()` and `SceneManager.loadScenesForBooks()` to verify
+   cross-universe Scene isolation with actual persisted Scene UUIDs.
+5. **Series ↔ Universe** — Retains the real `addSeriesToUniverse()` test from 6C.4b.3a, now with
+   a real SceneManager for Book creation.
+6. **File split** — Extracted isolation, series, and deferred scenarios into separate step files
+   to keep `hierarchy.steps.ts` under the 200-line budget.
+7. **Removed** `hierarchy-assertions.ts` (assertions are now inline in the step files).
+
+## 6C.4b.3a Historical Summary
 
 Step 6C.4b.3a hardened five hierarchy scenarios by replacing fake implementations with real UniverseManager and SeriesManager tests:
 
@@ -163,16 +184,19 @@ This feature has 5 regular Scenarios and 2 Scenario Outlines (each with 3 exampl
 
 | # | Scenario | Production Module | When Invokes Production? | Assertions Observe Results? | Coverage | Risk |
 |---|---|---|---|---|---|---|
-| 1 | Book belongs to universe | `UniverseManager.ts` | **Yes** — `createUniverse()` | **Yes** — checks UUID, name, book reference | Production-backed | Low |
-| 2 | Book in series in universe | `UniverseManager.ts`, `SeriesManager.ts` | **Yes** — `createUniverse()`, `createSeries()`, `addSeriesToUniverse()` | **Yes** — checks all UUIDs match | Production-backed | Low |
+| 1 | Book belongs to universe | `SceneManager.ts`, `UniverseManager.ts` | **Yes** — `createProject()` + `saveProjectFrontmatter()` | **Yes** — checks persisted YAML frontmatter | Production-backed | Low |
+| 2 | Book in series in universe | `SceneManager.ts`, `SeriesManager.ts` | **Yes** — `createProject()` + `addBookToSeries()` | **Yes** — checks seriesUuid, universeId | Production-backed | Low |
 | 3 | Series belongs to universe | `UniverseManager.ts`, `SeriesManager.ts` | **Yes** — `addSeriesToUniverse()` | **Yes** — checks seriesIds, universeId | Production-backed | Low |
-| 4 | Universe isolation | `UniverseManager.ts` | **Yes** — `getBooksInUniverse()` | **Yes** — checks cross-universe isolation | Production-backed | Low |
+| 4 | Universe isolation | `SceneManager.ts`, `UniverseManager.ts` | **Yes** — `createScene()` + `loadScenesForBooks()` | **Yes** — checks real Scene UUIDs | Production-backed | Low |
 | 5 | Universe UUID stability | `UniverseManager.ts` | **Yes** — fresh manager reload | **Yes** — checks UUID survives reload | Production-backed | Low |
 | 6 | Legacy settings migration | Test-only | **No** — test implements migration | **Yes** — checks settings keys | Simulated | Medium |
 | 7 | Project restoration | Test-only | **No** — test implements restore | **Yes** — checks active book | Simulated | Medium |
 
 **Summary:** 5 production-backed, 0 partially backed, 0 fixture-only, 2 simulated, 0 no-op.
-**Action:** **Hardened in 6C.4b.3a.** Scenarios 1–5 now exercise real UniverseManager and SeriesManager with in-memory vault. Scenarios 6–7 (legacy migration and restart) remain simulated; deferred to 6C.4b.3b.
+**Action:** **Hardened in 6C.4b.3a.1.** Scenarios 1–5 now exercise real `SceneManager.createProject()`,
+`SeriesManager.addBookToSeries()`, `SceneManager.createScene()`, and `loadScenesForBooks()` with
+in-memory vault. No manually constructed Book objects or synthetic Scene objects remain.
+Scenarios 6–7 (legacy migration and restart) remain simulated; deferred to 6C.4b.3b.
 
 ---
 
@@ -221,7 +245,7 @@ This feature has 5 regular Scenarios and 2 Scenario Outlines (each with 3 exampl
 ---
 
 
-## Overall Summary (after 6C.4b.2)
+## Overall Summary (after 6C.4b.3a.1)
 
 Scenario inventory: 61 scenarios across 9 feature files, 270 steps.
 
@@ -236,13 +260,16 @@ Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) 
 | No-op | 3 | 5% |
 | **Total** | **61** | **100%** |
 
-### Changes from 6C.4b.2a → 6C.4b.3a
+### Changes from 6C.4b.3a → 6C.4b.3a.1
 
 | Feature | Change |
 |---|---|
-| `hierarchy.feature` | 5 scenarios now production-backed (was 0) |
-| Vault harness | Added `adapter.read()`, `write()`, `list()` |
-| Test helpers | New `hierarchy-test-helpers.ts` and `hierarchy-assertions.ts` |
+| `hierarchy.feature` | Replaced manually constructed Book objects with `SceneManager.createProject()` |
+| `hierarchy.feature` | Replaced synthetic Scene objects with `SceneManager.createScene()` |
+| `hierarchy.feature` | Universe isolation now uses `loadScenesForBooks()` with real Scene UUIDs |
+| Test helpers | `setupHierarchyTest()` creates real `SceneManager` instance |
+| Test files | Split into `hierarchy.steps.ts`, `hierarchy-series.steps.ts`, `hierarchy-isolation.steps.ts`, `hierarchy-deferred.steps.ts` |
+| Removed | `hierarchy-assertions.ts` (assertions now inline) |
 
 ### Changes from 6C.4b.1 → 6C.4b.2
 
