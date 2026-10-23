@@ -1,7 +1,8 @@
 # StoryLine — Architecture Hardening & Maintainability Refactor
 
-Status: **planned / initial lint rules activated**. Target branch: `feat/rework`.
+Status: **Step 6A implemented**. Target branch: `feat/rework`.
 Created after Step 5 changelog automation (`d60fffb`), at the author's explicit request.
+Step 6A completed: lint rules verified, baseline measured, regression gate active, autofix safety confirmed.
 
 ## Non-negotiable design goals
 
@@ -14,7 +15,7 @@ Created after Step 5 changelog automation (`d60fffb`), at the author's explicit 
 
 ## Final ESLint budgets (Step 6A)
 
-Initial rules have been added to `eslint.config.mjs` for TypeScript files. Verify rules and use the thresholds consistently:
+Rules are active in `eslint.config.mjs` for TypeScript and JavaScript files. The regression gate enforces no increase in architectural debt.
 
 | Rule | Target |
 |------|--------|
@@ -40,6 +41,26 @@ The `max-lines*` core rules count physical, **effective source lines**, not arbi
 7. Enforce JSDoc progressively for exported/public production APIs with a carefully scoped plugin/ruleset; document exceptions; ensure doc comments do **not** count toward the 200-line file budget. Skip generated code.
 8. The architecture/quality commands and full diagnostic report should be easy to use with pnpm. CI must still run `pnpm build`, `pnpm test`, `pnpm test:bdd`, `pnpm typecheck`, CSS regression and changelog smoke checks.
 9. Commit and push Step 6A alone; report exact baseline counts; **stop before structural refactoring**.
+
+### Step 6A implementation report
+
+**Lint rules verified:** All six structural rules active for `.ts`, `.mjs`, and `.cjs` files. ESLint config extended with separate configuration for Node.js scripts that disables Obsidian-specific rules while keeping structural budgets.
+
+**Architecture debt baseline:** 94 files with 1,290 architecture violations:
+- `max-lines-per-function`: 340 violations (largest category)
+- `complexity`: 315 violations
+- `max-depth`: 273 violations
+- `max-statements`: 235 violations
+- `max-lines`: 78 violations
+- `max-params`: 49 violations
+
+Top offenders: `tests/universe-integration.test.ts` (217 violations), `src/main.ts` (121), `src/views/CharacterView.ts` (66), `src/views/TimelineView.ts` (62), `src/views/PlotgridView.ts` (61).
+
+**Regression gate:** `scripts/architecture-gate.cjs` compares current violations against `tests/architecture-baseline.json`. Fails on new files with violations or increased violations in existing files. Integrated into CI as `pnpm lint:architecture`.
+
+**Autofix safety:** Verified in isolated checkout — `pnpm lint --fix` does not break TypeScript compilation or tests. The `@typescript-eslint/no-explicit-any` rule has `fixToUnknown: false` to prevent destructive type changes.
+
+**JSDoc standards:** Documented in DEVELOPMENT.md. JSDoc comment lines excluded from 200-line file budget via ESLint `skipComments: true`.
 
 ### Step 6B — Decompose the codebase in bounded iterations
 

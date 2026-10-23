@@ -57,6 +57,9 @@ jobs:
           LINT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: pnpm lint:changed
 
+      - name: Architecture regression gate
+        run: pnpm lint:architecture
+
       - name: Validate vault sync script
         run: node --check scripts/sync-vault.mjs
 

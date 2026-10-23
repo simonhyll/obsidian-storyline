@@ -1,6 +1,6 @@
 # StoryLine — Maintainability & Tooling Roadmap
 
-Status: **in progress**. Steps 1A/1B (quality cleanup), 2 (source/distribution), 3 (SCSS), 4 (Cucumber BDD), and 5 (changelog automation) implemented; **Step 6A architecture linting and Step 6B maintainability refactor are next, before Saved Views**. Owner: development team / Junie. Target branch: `feat/rework`.
+Status: **in progress**. Steps 1A/1B (quality cleanup), 2 (source/distribution), 3 (SCSS), 4 (Cucumber BDD), 5 (changelog automation), and 6A (architecture linting) implemented; **Step 6B maintainability refactor is next, before Saved Views**. Owner: development team / Junie. Target branch: `feat/rework`.
 
 Created after Phase 3 Milestone 2B, commit `516bc72`. This roadmap addresses technical debt before Saved Views expands view-state, persistence and UI complexity.
 

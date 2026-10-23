@@ -158,4 +158,36 @@ This updates the installed plugin's three files; it is not a general migration o
 
 `.github/workflows/release.yml` is manually dispatched with an existing intended version. It verifies `assets/manifest.json`, `package.json` and `versions.json`, builds on GitHub Actions, and uploads `dist/main.js`, `dist/styles.css` and `dist/manifest.json` as **flat** release assets. It does not commit generated `dist/` files. Inspect release/version metadata and tag behavior before running this workflow, especially for versions already published.
 
-SCSS migration, Cucumber BDD, and changelog automation are implemented. See `.junie/plans/storyline-maintainability-roadmap.md` for the remaining work (Saved Views, ESLint cleanup).
+## Architecture lint budgets
+
+The repository enforces structural limits on all hand-authored TypeScript and JavaScript code:
+
+| Rule | Limit | Scope |
+|------|-------|-------|
+| `max-lines` | 200 effective lines | Per file (blanks/comments excluded) |
+| `max-lines-per-function` | 50 effective lines | Per function/method |
+| `complexity` | 10 cyclomatic | Per function |
+| `max-depth` | 3 | Nesting depth |
+| `max-statements` | 25 | Per function |
+| `max-params` | 4 | Per function/constructor |
+
+These rules apply to `.ts`, `.mjs`, and `.cjs` files. Generated `dist/` artifacts are excluded.
+
+The historical backlog is tracked in `tests/architecture-baseline.json`. The regression gate (`pnpm lint:architecture`) fails if new files introduce violations or existing files increase their violation count. Step 6B will progressively decompose oversized modules until the baseline reaches zero.
+
+### JSDoc standards
+
+Meaningful JSDoc is required on:
+
+- **Exported functions and public class methods** — explain purpose, behavioral contracts, and side effects.
+- **Parameters** — describe meaning when not obvious from the name alone.
+- **Return values** — explain semantics, especially for complex types or discriminated unions.
+- **Side effects** — document file I/O, vault mutations, settings changes, or DOM modifications.
+- **Errors and cancellation** — when a function can throw, return null on cancellation, or abort.
+- **Async lifecycle** — for Obsidian plugin lifecycle methods, document when cleanup occurs.
+- **Data ownership** — for functions that create or modify Scenes, Events, or Codex entries, document which Book/Series/Universe owns the result.
+- **Calendar and TimeSpan semantics** — for date-related functions, document calendar assumptions and precision.
+
+JSDoc comment lines do **not** count toward the 200-line file budget. Avoid restating TypeScript types or generating meaningless boilerplate.
+
+SCSS migration, Cucumber BDD, changelog automation, and architecture linting are implemented. See `.junie/plans/storyline-maintainability-roadmap.md` for the remaining work (Step 6B decomposition, Saved Views).

@@ -4,8 +4,11 @@ import obsidianmd from "eslint-plugin-obsidianmd";
 
 export default defineConfig([
   {
-    ignores: ["*.mjs", "main.js", "dist/**", "node_modules/**"],
+    ignores: ["dist/**", "node_modules/**"],
   },
+  // ---------------------------------------------------------------------------
+  // TypeScript source files (Obsidian plugin code)
+  // ---------------------------------------------------------------------------
   ...obsidianmd.configs.recommended,
   {
     files: ["**/*.ts"],
@@ -41,6 +44,34 @@ export default defineConfig([
     rules: {
       "eslint-comments/disable-enable-pair": "off",
       "eslint-comments/no-unused-disable": "off",
+    },
+  },
+  // ---------------------------------------------------------------------------
+  // Hand-authored JavaScript scripts (build, CI, vault sync, etc.)
+  // These are Node.js scripts, not Obsidian plugin code, so Obsidian-specific
+  // rules are disabled. We still enforce structural budgets.
+  // ---------------------------------------------------------------------------
+  {
+    files: ["**/*.mjs", "**/*.cjs"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+    },
+    rules: {
+      // Structural budgets apply to scripts as well.
+      "max-lines": ["error", { max: 200, skipBlankLines: true, skipComments: true }],
+      "max-lines-per-function": ["error", { max: 50, skipBlankLines: true, skipComments: true }],
+      "complexity": ["error", { max: 10 }],
+      "max-depth": ["error", { max: 3 }],
+      "max-statements": ["error", { max: 25 }],
+      "max-params": ["error", { max: 4 }],
+      // Node.js scripts legitimately use Node.js APIs and process globals.
+      "obsidianmd/no-nodejs-modules": "off",
+      "no-undef": "off",
+      // Console logging is expected in CLI scripts.
+      "obsidianmd/rule-custom-message": "off",
+      // Scripts may use require() in CJS context.
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
 ]);
