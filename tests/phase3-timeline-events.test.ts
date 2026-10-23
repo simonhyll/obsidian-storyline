@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Event } from '../src/models/Event';
 import type { TimeSpan, Timestamp } from '../src/models/TimeSpan';
@@ -379,8 +380,8 @@ describe('Phase 3: Events in Timeline', () => {
     describe('ViewSwitcher Codex dropdown', () => {
         it('Events item is added to the Codex dropdown', async () => {
             // Verify the ViewSwitcher source contains the Events dropdown item
-            const fs = require('fs');
-            const source = fs.readFileSync('src/components/ViewSwitcher.ts', 'utf-8');
+
+            const source = readFileSync('src/components/ViewSwitcher.ts', 'utf-8');
             // The Events item should be added after Locations
             expect(source).toContain("'calendar'");
             expect(source).toContain("'Events'");
@@ -393,8 +394,8 @@ describe('Phase 3: Events in Timeline', () => {
     describe('Timeline toolbar', () => {
         it('New Event button is visible in Timeline toolbar', async () => {
             // Verify the TimelineView source contains the New Event button
-            const fs = require('fs');
-            const source = fs.readFileSync('src/views/TimelineView.ts', 'utf-8');
+
+            const source = readFileSync('src/views/TimelineView.ts', 'utf-8');
             expect(source).toContain('+ New Event');
             expect(source).toContain('openCreateEventModal');
         });
