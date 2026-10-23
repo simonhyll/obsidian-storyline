@@ -7,8 +7,9 @@ Keep this **plugin repository** separate from the **writing vault**. The Obsidia
 
 ## Project and distribution layout
 
-- `src/`: TypeScript application source and the current legacy stylesheet (`src/styles/legacy.css`). SCSS migration is planned separately.
+- `src/`: TypeScript application source only (`.ts` and `.d.ts`).
 - `assets/manifest.json`: authoritative plugin manifest.
+- `assets/scss/`: modular Sass source (`main.scss` and partials in `abstracts/`, `base/`, `components/`, `views/`, `layout/` and `responsive/`).
 - `dist/`: **generated** distributable plugin files (`main.js`, `manifest.json`, `styles.css`), excluded from Git.
 - `tests/`: Vitest tests and Obsidian mocks.
 - `scripts/sync-vault.mjs`: copies the three `dist/` files into the installed StoryLine plugin directory.
@@ -48,7 +49,7 @@ Terminal B — watch `dist/` and sync changed builds into a **test** vault:
 
     pnpm vault:watch -- "/absolute/path/to/author-starforge-dev"
 
-The build watches TypeScript as well as `src/styles/legacy.css` and `assets/manifest.json`, copying the latter two into `dist/` on change. The vault sync script watches `dist/` and installs changes into the flat plugin directory. Reload StoryLine in Obsidian to pick up new JavaScript. A hot-reload plugin is optional and should only be used in the test vault; a manifest change may require restarting Obsidian.
+The build watches TypeScript and all nested Sass modules under `assets/scss/`, recompiling them to `dist/styles.css`; it also copies `assets/manifest.json` into `dist/manifest.json` on change. The vault sync script watches `dist/` and installs changes into the flat plugin directory. Reload StoryLine in Obsidian to pick up new JavaScript. A hot-reload plugin is optional and should only be used in the test vault; a manifest change may require restarting Obsidian.
 
 Run `pnpm build` after changing packaging or before creating a release.
 
@@ -77,4 +78,4 @@ This updates the installed plugin's three files; it is not a general migration o
 
 `.github/workflows/release.yml` is manually dispatched with an existing intended version. It verifies `assets/manifest.json`, `package.json` and `versions.json`, builds on GitHub Actions, and uploads `dist/main.js`, `dist/styles.css` and `dist/manifest.json` as **flat** release assets. It does not commit generated `dist/` files. Inspect release/version metadata and tag behavior before running this workflow, especially for versions already published.
 
-See `.junie/plans/storyline-maintainability-roadmap.md` for the upcoming modular SCSS, Cucumber and changelog work.
+SCSS migration is implemented. See `.junie/plans/storyline-maintainability-roadmap.md` for the remaining Cucumber and changelog work.
