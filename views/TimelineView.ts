@@ -501,8 +501,8 @@ export class TimelineView extends ItemView {
             | { kind: 'empty-act'; actLabel: string; actNum: number };
 
         const tlItems: TLItem[] = [];
-        if (effectiveOrder === 'chronological' && events.length > 0) {
-            // Chronological mode: interleave Scenes and Events by TimeSpan
+        if (effectiveOrder === 'chronological') {
+            // Chronologically sort Scenes even when the timeline contains no Events.
             this.buildChronologicalTimelineItems(tlItems, scenes, events, dateInvalidFlags, timeInvalidFlags, definedActs, actsWithScenes, sortedActs);
         } else {
             // Reading order mode: scenes first, then events at the end
