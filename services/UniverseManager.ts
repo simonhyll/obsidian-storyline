@@ -605,6 +605,7 @@ export class UniverseManager {
     /**
      * Discover all universes and their series/books in the vault.
      * Returns a tree structure for navigation.
+     * Includes books that belong directly to a Universe (without a Series).
      */
     async discoverHierarchy(): Promise<Array<{
         universe: UniverseMetadata;
@@ -614,6 +615,7 @@ export class UniverseManager {
             folder: string;
             books: StoryLineProject[];
         }>;
+        directBooks: StoryLineProject[];
     }>> {
         const universes = await this.getAllUniverses();
         const result: Array<{
@@ -624,6 +626,7 @@ export class UniverseManager {
                 folder: string;
                 books: StoryLineProject[];
             }>;
+            directBooks: StoryLineProject[];
         }> = [];
 
         for (const universe of universes) {
@@ -640,7 +643,6 @@ export class UniverseManager {
             const allSeries = await this.plugin.seriesManager.discoverSeries();
             for (const { folder, meta } of allSeries) {
                 if (meta.universeId === universe.id || universe.seriesIds?.includes(meta.seriesUuid || '')) {
-                    // Find books in this series
                     const projects = this.plugin.sceneManager.getProjects();
                     const books = projects.filter(p =>
                         p.seriesUuid === meta.seriesUuid || p.seriesId === meta.name
@@ -649,7 +651,13 @@ export class UniverseManager {
                 }
             }
 
-            result.push({ universe, folder: universeFolder, series: seriesList });
+            // Find books that belong directly to this universe (no series)
+            const projects = this.plugin.sceneManager.getProjects();
+            const directBooks = projects.filter(p =>
+                p.universeId === universe.id && !p.seriesUuid
+            );
+
+            result.push({ universe, folder: universeFolder, series: seriesList, directBooks });
         }
 
         return result;

@@ -46,31 +46,47 @@ export function renderUniverseSelector(
 /**
  * Create an expandable section header with toggle functionality.
  * The header is inserted BEFORE the childrenEl in the DOM.
+ * If seriesUuid is provided, the header becomes draggable for hierarchy management.
  */
 function createExpandableHeader(
     parent: HTMLElement,
     label: string,
     icon: string,
-    childrenEl: HTMLElement
+    childrenEl: HTMLElement,
+    seriesUuid?: string
 ): HTMLElement {
-    // Insert the header BEFORE the children element in the DOM
     const header = parent.createDiv({ cls: 'universe-selector-header' });
     header.insertAdjacentElement('afterend', childrenEl);
     const toggle = header.createSpan({ cls: 'universe-selector-toggle' });
     obsidian.setIcon(toggle, 'chevron-right');
-
     const iconEl = header.createSpan({ cls: 'universe-selector-icon' });
     obsidian.setIcon(iconEl, icon);
+    header.createSpan({ cls: 'universe-selector-label', text: label });
 
-    header.createSpan({
-        cls: 'universe-selector-label',
-        text: label,
-    });
+    if (seriesUuid) {
+        const dragHandle = header.createEl('button', {
+            cls: 'universe-selector-drag-handle',
+            attr: { 'aria-label': `Drag to move "${label}"` },
+        });
+        obsidian.setIcon(dragHandle, 'grip-vertical');
+        header.setAttribute('draggable', 'true');
+        let isDragging = false;
+        dragHandle.addEventListener('mousedown', (e) => { e.stopPropagation(); isDragging = true; });
+        header.addEventListener('dragstart', (e: DragEvent) => {
+            if (!e.dataTransfer) return;
+            e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'series', seriesUuid }));
+            header.addClass('dragging');
+        });
+        header.addEventListener('dragend', () => { header.removeClass('dragging'); });
+        header.addEventListener('click', (e) => {
+            if (isDragging) { isDragging = false; return; }
+            toggleExpand();
+        });
+    }
 
     let expanded = false;
     childrenEl.addClass('universe-selector-children-collapsed');
-
-    header.addEventListener('click', () => {
+    const toggleExpand = () => {
         expanded = !expanded;
         if (expanded) {
             childrenEl.removeClass('universe-selector-children-collapsed');
@@ -79,8 +95,10 @@ function createExpandableHeader(
             childrenEl.addClass('universe-selector-children-collapsed');
             obsidian.setIcon(toggle, 'chevron-right');
         }
-    });
-
+    };
+    if (!seriesUuid) {
+        header.addEventListener('click', toggleExpand);
+    }
     return header;
 }
 
@@ -145,7 +163,7 @@ export async function refreshUniverseSelector(
     let totalBooks = 0;
 
     // Render universes
-    for (const { universe, series: seriesList } of hierarchy) {
+    for (const { universe, series: seriesList, directBooks } of hierarchy) {
         const universeSection = groupsContainer.createDiv({ cls: 'universe-selector-section' });
         universeSection.dataset.universeId = universe.id;
 
@@ -156,12 +174,24 @@ export async function refreshUniverseSelector(
         setupDropTarget(header, 'universe', universe.id, plugin, onSwitch);
 
         let universeBooks = 0;
+
+        // Render direct books (books that belong to universe without a series)
+        if (directBooks.length > 0) {
+            const directGrid = childrenEl.createDiv({ cls: 'universe-selector-cards' });
+            for (const book of directBooks) {
+                hierarchyProjectPaths.add(book.filePath);
+                universeBooks++;
+                totalBooks++;
+                renderBookCard(directGrid, book, active, plugin, onSwitch);
+            }
+        }
+
         // Render series
         for (const { meta, books } of seriesList) {
             const seriesSection = childrenEl.createDiv({ cls: 'universe-selector-section' });
             seriesSection.dataset.seriesUuid = meta.seriesUuid || '';
             const seriesChildren = seriesSection.createDiv({ cls: 'universe-selector-children' });
-            const seriesHeader = createExpandableHeader(seriesSection, meta.name, 'library', seriesChildren);
+            const seriesHeader = createExpandableHeader(seriesSection, meta.name, 'library', seriesChildren, meta.seriesUuid || undefined);
 
             // Series header is a drop target for Books
             setupDropTarget(seriesHeader, 'series', meta.seriesUuid || '', plugin, onSwitch);
@@ -203,7 +233,7 @@ export async function refreshUniverseSelector(
         const seriesSection = groupsContainer.createDiv({ cls: 'universe-selector-section' });
         seriesSection.dataset.seriesUuid = meta.seriesUuid || '';
         const seriesChildren = seriesSection.createDiv({ cls: 'universe-selector-children' });
-        const seriesHeader = createExpandableHeader(seriesSection, meta.name, 'library', seriesChildren);
+        const seriesHeader = createExpandableHeader(seriesSection, meta.name, 'library', seriesChildren, meta.seriesUuid || undefined);
 
         // Standalone series can receive books via drag
         setupDropTarget(seriesHeader, 'series', meta.seriesUuid || '', plugin, onSwitch);
@@ -275,12 +305,13 @@ function setupDropTarget(
         element.removeClass('drag-over');
         try {
             const data = JSON.parse(e.dataTransfer?.getData('text/plain') || '{}');
-
             if (data.type === 'book') {
                 await handleDropBook(plugin, data.filePath, targetType, targetId, onSwitch);
+            } else if (data.type === 'series') {
+                await handleDropSeries(plugin, data.seriesUuid, targetType, targetId, onSwitch);
             }
-        } catch {
-            // Ignore invalid drag data
+        } catch (err) {
+            new obsidian.Notice((err instanceof Error ? err.message : String(err)), 10000);
         }
     });
 }
@@ -299,16 +330,8 @@ async function handleDropBook(
     if (!book) return;
 
     if (targetType === 'standalone') {
-        // Detach book from series/universe
         if (book.seriesUuid) {
-            const meta = await plugin.seriesManager.getSeriesByUuid(book.seriesUuid);
-            if (meta && meta.bookIds) {
-                const idx = meta.bookIds.indexOf(book.bookId || '');
-                if (idx !== -1) {
-                    meta.bookIds.splice(idx, 1);
-                    await plugin.seriesManager.saveSeriesMetadata(meta);
-                }
-            }
+            await plugin.seriesManager.removeBookFromSeries(book.seriesUuid, book);
         }
         book.seriesUuid = undefined;
         book.seriesId = undefined;
@@ -316,41 +339,43 @@ async function handleDropBook(
         await plugin.sceneManager.saveProjectFrontmatter(book);
         onSwitch();
     } else if (targetType === 'series' && targetId) {
-        // Add book to series
-        const meta = await plugin.seriesManager.getSeriesByUuid(targetId);
-        if (meta) {
-            // Remove from old series first
-            if (book.seriesUuid && book.seriesUuid !== targetId) {
-                const oldMeta = await plugin.seriesManager.getSeriesByUuid(book.seriesUuid);
-                if (oldMeta && oldMeta.bookIds) {
-                    const idx = oldMeta.bookIds.indexOf(book.bookId || '');
-                    if (idx !== -1) {
-                        oldMeta.bookIds.splice(idx, 1);
-                        await plugin.seriesManager.saveSeriesMetadata(oldMeta);
-                    }
-                }
-            }
-            await plugin.seriesManager.addBookToSeries(targetId, book);
-            onSwitch();
+        if (book.seriesUuid && book.seriesUuid !== targetId) {
+            await plugin.seriesManager.removeBookFromSeries(book.seriesUuid, book);
         }
+        await plugin.seriesManager.addBookToSeries(targetId, book);
+        onSwitch();
     } else if (targetType === 'universe' && targetId) {
-        // Add book directly to universe (no series)
-        book.universeId = targetId;
-        // Remove from old series if any
         if (book.seriesUuid) {
-            const oldMeta = await plugin.seriesManager.getSeriesByUuid(book.seriesUuid);
-            if (oldMeta && oldMeta.bookIds) {
-                const idx = oldMeta.bookIds.indexOf(book.bookId || '');
-                if (idx !== -1) {
-                    oldMeta.bookIds.splice(idx, 1);
-                    await plugin.seriesManager.saveSeriesMetadata(oldMeta);
-                }
-            }
-            book.seriesUuid = undefined;
-            book.seriesId = undefined;
+            await plugin.seriesManager.removeBookFromSeries(book.seriesUuid, book);
         }
+        book.universeId = targetId;
+        book.seriesUuid = undefined;
+        book.seriesId = undefined;
         await plugin.sceneManager.saveProjectFrontmatter(book);
         onSwitch();
+    }
+}
+
+async function handleDropSeries(
+    plugin: SceneCardsPlugin,
+    seriesUuid: string,
+    targetType: 'universe' | 'series' | 'standalone',
+    targetId: string,
+    onSwitch: () => void
+): Promise<void> {
+    if (targetType === 'universe' && targetId) {
+        const found = await plugin.seriesManager.getSeriesByUuid(seriesUuid);
+        if (!found) throw new Error('Series not found');
+        await plugin.universeManager.addSeriesToUniverse(targetId, found.folder);
+        onSwitch();
+    } else if (targetType === 'standalone') {
+        const found = await plugin.seriesManager.getSeriesByUuid(seriesUuid);
+        if (!found) throw new Error('Series not found');
+        const meta = found.meta;
+        if (meta.universeId) {
+            await plugin.universeManager.removeSeriesFromUniverse(meta.universeId, seriesUuid);
+            onSwitch();
+        }
     }
 }
 
@@ -498,19 +523,18 @@ async function handleBookReorder(
     const source = plugin.sceneManager.getProjects().find(p => p.filePath === sourcePath);
     const target = plugin.sceneManager.getProjects().find(p => p.filePath === targetPath);
     if (!source || !target || source.seriesUuid !== target.seriesUuid || !source.seriesUuid) {
-        return; // Different series or no series — no reorder
+        return;
     }
-    const meta = await plugin.seriesManager.getSeriesByUuid(source.seriesUuid);
-    if (!meta || !meta.bookIds) return;
-
-    const sourceIdx = meta.bookIds.indexOf(source.bookId || '');
-    const targetIdx = meta.bookIds.indexOf(target.bookId || '');
+    const found = await plugin.seriesManager.getSeriesByUuid(source.seriesUuid);
+    if (!found || !found.meta.bookIds) return;
+    const meta = found.meta;
+    const bookIds = meta.bookIds!;
+    const sourceIdx = bookIds.indexOf(source.bookId || '');
+    const targetIdx = bookIds.indexOf(target.bookId || '');
     if (sourceIdx === -1 || targetIdx === -1) return;
-
-    // Move source to target position
-    meta.bookIds.splice(sourceIdx, 1);
-    meta.bookIds.splice(targetIdx, 0, source.bookId || '');
-    await plugin.seriesManager.saveSeriesMetadata(meta);
+    bookIds.splice(sourceIdx, 1);
+    bookIds.splice(targetIdx, 0, source.bookId || '');
+    await plugin.seriesManager.saveSeriesMetadata(found.folder, meta);
     onSwitch();
 }
 

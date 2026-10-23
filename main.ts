@@ -2166,13 +2166,14 @@ export default class SceneCardsPlugin extends Plugin {
         const { workspace } = this.app;
 
         // Project Library is navigational — always reuse or create a single instance
+        // in the main editor area, not the right sidebar.
         if (viewType === UNIVERSE_VIEW_TYPE) {
             const leaves = workspace.getLeavesOfType(UNIVERSE_VIEW_TYPE);
             if (leaves.length > 0) {
                 workspace.revealLeaf(leaves[0]);
                 return;
             }
-            const leaf = workspace.getRightLeaf(false) ?? workspace.getLeaf(false);
+            const leaf = workspace.getLeaf(false);
             if (leaf) {
                 await leaf.setViewState({ type: UNIVERSE_VIEW_TYPE, active: true });
                 workspace.revealLeaf(leaf);
@@ -3484,7 +3485,7 @@ export default class SceneCardsPlugin extends Plugin {
                 const typeSetting = new Setting(modal.contentEl)
                     .setName('Project type')
                     .setDesc('What are you creating?')
-                    .addDropdown((dropdown: obsidian.DropdownComponent) => {
+                    .addDropdown((dropdown: DropdownComponent) => {
                         dropdown
                             .addOption('book', 'Book')
                             .addOption('series', 'Series')
@@ -3502,28 +3503,39 @@ export default class SceneCardsPlugin extends Plugin {
                 let selectedUniverseId = defaultUniverseId || '';
                 let selectedSeriesUuid = defaultSeriesUuid || '';
 
-                // Universe dropdown (for Books and Series)
+                // Universe dropdown (for Books and Series) — populated async after open
                 const universeSetting = new Setting(modal.contentEl)
                     .setName('Universe')
                     .setDesc('Optional: place this inside an existing Universe.')
-                    .addDropdown((dropdown: obsidian.DropdownComponent) => {
+                    .addDropdown((dropdown: DropdownComponent) => {
                         dropdown.addOption('', '— None —');
-                        const universes = this.universeManager.getUniverses();
-                        for (const u of universes) {
-                            dropdown.addOption(u.id, u.name);
-                        }
-                        if (defaultUniverseId) dropdown.setValue(defaultUniverseId);
                         dropdown.onChange((v: string) => {
                             selectedUniverseId = v;
                             updateSeriesDropdown();
                         });
                     });
 
+                // Populate universe dropdown asynchronously
+                (async () => {
+                    try {
+                        const universes = await this.universeManager.getAllUniverses();
+                        const dropdownEl = universeSetting.controlEl.querySelector('select') as HTMLSelectElement;
+                        if (!dropdownEl) return;
+                        for (const u of universes) {
+                            const opt = document.createElement('option');
+                            opt.value = u.id;
+                            opt.text = u.name;
+                            dropdownEl.add(opt);
+                        }
+                        if (defaultUniverseId) dropdownEl.value = defaultUniverseId;
+                    } catch { /* no universes yet */ }
+                })();
+
                 // Series dropdown (for Books only)
                 const seriesSetting = new Setting(modal.contentEl)
                     .setName('Series')
                     .setDesc('Optional: place this book inside an existing Series.')
-                    .addDropdown((dropdown: obsidian.DropdownComponent) => {
+                    .addDropdown((dropdown: DropdownComponent) => {
                         dropdown.addOption('', '— None —');
                         dropdown.addOption('__new__', '+ Create new series…');
                         if (defaultSeriesUuid) dropdown.setValue(defaultSeriesUuid);
@@ -3575,7 +3587,7 @@ export default class SceneCardsPlugin extends Plugin {
                     });
 
                 // ── Render logic ──
-                const updateSeriesDropdown = () => {
+                const updateSeriesDropdown = async () => {
                     const dropdownEl = seriesSetting.controlEl.querySelector('select') as HTMLSelectElement;
                     if (!dropdownEl) return;
                     const currentVal = dropdownEl.value;
@@ -3589,29 +3601,28 @@ export default class SceneCardsPlugin extends Plugin {
                     optNew.text = '+ Create new series…';
                     dropdownEl.add(optNew);
 
-                    // Filter series by selected universe
-                    const allSeries = this.seriesManager.discoverSeries();
-                    const universeSeriesUuids = new Set<string>();
-                    if (selectedUniverseId) {
-                        const hierarchy = this.universeManager.discoverHierarchy();
-                        for (const { universe, series: seriesList } of hierarchy) {
-                            if (universe.id === selectedUniverseId) {
-                                for (const { meta } of seriesList) {
-                                    if (meta.seriesUuid) universeSeriesUuids.add(meta.seriesUuid);
+                    try {
+                        const universeSeriesUuids = new Set<string>();
+                        if (selectedUniverseId) {
+                            const hierarchy = await this.universeManager.discoverHierarchy();
+                            for (const { universe, series: seriesList } of hierarchy) {
+                                if (universe.id === selectedUniverseId) {
+                                    for (const { meta } of seriesList) {
+                                        if (meta.seriesUuid) universeSeriesUuids.add(meta.seriesUuid);
+                                    }
                                 }
                             }
                         }
-                    }
-                    // Also add standalone series if no universe selected
-                    const allSeriesList = this.seriesManager.discoverSeries();
-                    for (const { meta } of allSeriesList) {
-                        if (selectedUniverseId && !universeSeriesUuids.has(meta.seriesUuid || '')) continue;
-                        if (!meta.seriesUuid) continue;
-                        const opt = document.createElement('option');
-                        opt.value = meta.seriesUuid;
-                        opt.text = meta.name;
-                        dropdownEl.add(opt);
-                    }
+                        const allSeriesList = await this.seriesManager.discoverSeries();
+                        for (const { meta } of allSeriesList) {
+                            if (selectedUniverseId && !universeSeriesUuids.has(meta.seriesUuid || '')) continue;
+                            if (!meta.seriesUuid) continue;
+                            const opt = document.createElement('option');
+                            opt.value = meta.seriesUuid;
+                            opt.text = meta.name;
+                            dropdownEl.add(opt);
+                        }
+                    } catch { /* no series yet */ }
                     dropdownEl.value = currentVal;
                 };
 
@@ -3662,9 +3673,12 @@ export default class SceneCardsPlugin extends Plugin {
                                     // Create Series
                                     const meta = await this.seriesManager.createSeries(title.trim(), customFolder || undefined);
 
-                                    // Optionally add to universe
+                                    // Optionally add to universe — addSeriesToUniverse expects series folder path
                                     if (selectedUniverseId && meta.seriesUuid) {
-                                        await this.universeManager.addSeriesToUniverse(selectedUniverseId, meta.seriesUuid);
+                                        const found = await this.seriesManager.getSeriesByUuid(meta.seriesUuid);
+                                        if (found) {
+                                            await this.universeManager.addSeriesToUniverse(selectedUniverseId, found.folder);
+                                        }
                                     }
 
                                     this.refreshOpenViews();
@@ -3693,9 +3707,12 @@ export default class SceneCardsPlugin extends Plugin {
                                         if (meta.seriesUuid) {
                                             await this.seriesManager.addBookToSeries(meta.seriesUuid, project);
                                         }
-                                        // Add series to universe
-                                        if (selectedUniverseId) {
-                                            await this.universeManager.addSeriesToUniverse(selectedUniverseId, meta.seriesUuid);
+                                        // Add series to universe — addSeriesToUniverse expects series folder path
+                                        if (selectedUniverseId && meta.seriesUuid) {
+                                            const found = await this.seriesManager.getSeriesByUuid(meta.seriesUuid);
+                                            if (found) {
+                                                await this.universeManager.addSeriesToUniverse(selectedUniverseId, found.folder);
+                                            }
                                         }
                                     } else if (selectedUniverseId && !selectedSeriesUuid) {
                                         // Book directly in universe (no series) — set universeId on project

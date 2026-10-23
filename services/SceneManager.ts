@@ -804,6 +804,7 @@ export class SceneManager implements ISceneStore {
                 seriesId: fm.seriesId || undefined,
                 bookId: typeof fm.bookId === 'string' ? fm.bookId : undefined,
                 seriesUuid: typeof fm.seriesUuid === 'string' ? fm.seriesUuid : undefined,
+                universeId: typeof fm.universeId === 'string' ? fm.universeId : undefined,
                 coverImage: fm.coverImage || undefined,
                 activeBeatSheet: fm.activeBeatSheet || undefined,
             };
@@ -2744,6 +2745,13 @@ export class SceneManager implements ISceneStore {
             existingFm.seriesUuid = project.seriesUuid;
         } else {
             delete existingFm.seriesUuid;
+        }
+
+        // Universe ID
+        if (project.universeId) {
+            existingFm.universeId = project.universeId;
+        } else {
+            delete existingFm.universeId;
         }
 
         // Cover image

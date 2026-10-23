@@ -410,6 +410,105 @@ export class SeriesManager {
         return results;
     }
 
+    // ── Convenience methods for hierarchy management ──
+
+    /**
+     * Create a new standalone series (not tied to an existing project).
+     */
+    async createSeries(name: string, basePath?: string): Promise<SeriesMetadata> {
+        const safeName = name.replace(/[\\/:*?"<>|]/g, '-');
+        const root = basePath || this.plugin.settings.storyLineRoot;
+        const seriesFolder = normalizePath(`${root}/${safeName}`);
+        const adapter = this.app.vault.adapter;
+        if (await adapter.exists(seriesFolder)) {
+            throw new Error(`A folder named "${safeName}" already exists.`);
+        }
+        await this.ensureFolder(seriesFolder);
+        const seriesCodexFolder = normalizePath(`${seriesFolder}/Codex`);
+        await this.ensureFolder(seriesCodexFolder);
+        await this.ensureFolder(normalizePath(`${seriesCodexFolder}/Characters`));
+        await this.ensureFolder(normalizePath(`${seriesCodexFolder}/Locations`));
+        const now = new Date().toISOString().split('T')[0];
+        const seriesUuid = crypto.randomUUID();
+        const meta: SeriesMetadata = {
+            name: safeName,
+            seriesUuid,
+            bookOrder: [],
+            bookIds: [],
+            created: now,
+        };
+        await this.saveSeriesMetadata(seriesFolder, meta);
+        new Notice(`Series "${safeName}" created`);
+        return meta;
+    }
+
+    /** Look up a series by its UUID. */
+    async getSeriesByUuid(seriesUuid: string): Promise<({ folder: string; meta: SeriesMetadata }) | null> {
+        const all = await this.discoverSeries();
+        return all.find(s => s.meta.seriesUuid === seriesUuid) || null;
+    }
+
+    /** Add an existing book project to a series by series UUID. */
+    async addBookToSeries(seriesUuid: string, project: import('../models/StoryLineProject').StoryLineProject): Promise<void> {
+        const found = await this.getSeriesByUuid(seriesUuid);
+        if (!found) throw new Error(`Series with UUID "${seriesUuid}" not found.`);
+        const { folder: seriesFolder, meta } = found;
+        const adapter = this.app.vault.adapter;
+        const bookFolders = deriveProjectFoldersFromFilePath(project.filePath);
+        const bookBaseName = bookFolders.baseFolder.split('/').pop() ?? '';
+        const targetBookFolder = normalizePath(`${seriesFolder}/${bookBaseName}`);
+        if (normalizePath(bookFolders.baseFolder) !== targetBookFolder) {
+            await this.moveFolderRecursive(bookFolders.baseFolder, targetBookFolder);
+            await this.removeDuplicateLegacyFolder(bookFolders.baseFolder, targetBookFolder);
+        }
+        const seriesCodexFolder = normalizePath(`${seriesFolder}/Codex`);
+        await this.ensureFolder(seriesCodexFolder);
+        await this.ensureFolder(normalizePath(`${seriesCodexFolder}/Characters`));
+        await this.ensureFolder(normalizePath(`${seriesCodexFolder}/Locations`));
+        const bookCodexFolder = normalizePath(`${targetBookFolder}/Codex`);
+        if (await adapter.exists(bookCodexFolder)) {
+            await this.migrateCodexFolder(bookCodexFolder, seriesCodexFolder);
+        }
+        const bookId = project.bookId ?? crypto.randomUUID();
+        project.bookId = bookId;
+        if (!meta.bookOrder.includes(bookBaseName)) meta.bookOrder.push(bookBaseName);
+        meta.bookIds = meta.bookIds ?? [];
+        if (!meta.bookIds.includes(bookId)) meta.bookIds.push(bookId);
+        await this.saveSeriesMetadata(seriesFolder, meta);
+        project.seriesId = meta.name;
+        project.seriesUuid = meta.seriesUuid;
+        project.bookId = bookId;
+        await this.plugin.sceneManager.saveProjectFrontmatter(project);
+        new Notice(`Book "${project.title}" added to series "${meta.name}"`);
+    }
+
+    /** Remove a book from its series by series UUID. */
+    async removeBookFromSeries(seriesUuid: string, project: import('../models/StoryLineProject').StoryLineProject): Promise<void> {
+        const found = await this.getSeriesByUuid(seriesUuid);
+        if (!found) throw new Error(`Series with UUID "${seriesUuid}" not found.`);
+        const { folder: seriesFolder, meta } = found;
+        const bookFolders = deriveProjectFoldersFromFilePath(project.filePath);
+        const bookBaseName = bookFolders.baseFolder.split('/').pop() ?? '';
+        const root = this.plugin.settings.storyLineRoot;
+        const targetBookFolder = normalizePath(`${root}/${bookBaseName}`);
+        const seriesCodexFolder = normalizePath(`${seriesFolder}/Codex`);
+        const localCodexFolder = normalizePath(`${bookFolders.baseFolder}/Codex`);
+        await this.ensureFolder(localCodexFolder);
+        await this.copyFolderRecursive(seriesCodexFolder, localCodexFolder);
+        if (normalizePath(bookFolders.baseFolder) !== targetBookFolder) {
+            await this.moveFolderRecursive(bookFolders.baseFolder, targetBookFolder);
+        }
+        meta.bookOrder = meta.bookOrder.filter(b => b !== bookBaseName);
+        if (project.bookId && meta.bookIds) {
+            meta.bookIds = meta.bookIds.filter(id => id !== project.bookId);
+        }
+        await this.saveSeriesMetadata(seriesFolder, meta);
+        delete project.seriesId;
+        delete project.seriesUuid;
+        await this.plugin.sceneManager.saveProjectFrontmatter(project);
+        new Notice(`Book "${project.title}" removed from series "${meta.name}"`);
+    }
+
     // ── Pre-flight ─────────────────────────────────────
 
     /**
