@@ -1247,6 +1247,19 @@ Complete the Project Library redesign, Event UX improvements, and navigation fix
 ### ✓ Step 9: Fix Project Library Navigation and Integrate Events (Recommit)
 Reimplement and commit the five Phase 3 UX fixes that were previously reported but missing from git.
 
+### ✓ Step 10: Fix Hierarchy Lifecycle Bugs
+Fix five remaining hierarchy lifecycle bugs: dropdown recursion, project registry updates, detach safety, and test coverage.
+
+- ✓ Fix main.ts recursive dropdown — moved async universe loading OUTSIDE updateSeriesDropdown()
+- ✓ Add SceneManager.updateProjectPath() — updates projects Map key, re-derives folder paths, keeps active project reference consistent
+- ✓ Fix SeriesManager.addBookToSeries — calls updateProjectPath and saves activeProjectFile in plugin settings
+- ✓ Fix SeriesManager.removeBookFromSeries — adds preflight collision check, calls updateProjectPath, saves activeProjectFile
+- ✓ Replace broken hierarchy-data-integrity tests with 12 real lifecycle tests
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 328/328 tests pass
+- ✓ Typecheck verification — 24 errors (down from 51 baseline); all remaining are pre-existing
+- ✓ Committed as a156168 and pushed to origin/feat/rework
+
 - ✓ Add SeriesManager convenience methods — createSeries, getSeriesByUuid, addBookToSeries, removeBookFromSeries
 - ✓ Fix main.ts project creation modal — async dropdown population with getAllUniverses()/discoverSeries(), correct addSeriesToUniverse argument types
 - ✓ Fix Project Library workspace placement — opens in main editor area, not right sidebar
