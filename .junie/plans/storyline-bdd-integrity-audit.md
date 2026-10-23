@@ -3,11 +3,21 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-24 (Step 6C.4b.3b.5 — Test-first migration safety closure)
+> Updated: 2026-10-24 (Step 6C.4b.3b.6 — Fix settings regression and prove migration persistence)
 > Total scenarios: 62
 > Total steps: 276
 
-## 6C.4b.3b.5 Update Summary
+## 6C.4b.3b.6 Update Summary
+
+Step 6C.4b.3b.6 fixed a settings persistence regression and strengthened migration integration tests:
+
+1. **saveSettings() regression fixed** — Previous merge order `{ ...this.settings, ...persisted }` made ALL persisted values override in-memory settings, so changing any setting would be lost. Replaced with `buildSettingsPayload()` selective merge: normal settings from `this.settings`, only unresolved legacy keys preserved from persisted data.
+2. **`buildSettingsPayload()` added** — Production-owned function in `legacyMigration.ts` that implements the selective merge strategy. Tests exercise this real function with the plugin data store.
+3. **`handleExistingDestination()` fixed** — Now detects malformed JSON destinations and refuses to overwrite them. Added write verification before deleting source files.
+4. **Migration integration tests rewritten** — Replaced local object merges with tests of `buildSettingsPayload()`, covering ordinary settings updates, migrated keys not restored, partial migration, consecutive saves, and PROJECT_DATA_KEYS coverage.
+5. **Architecture** — 1,164 violations (delta 0 from baseline).
+
+## 6C.4b.3b.5 Historical Summary
 
 Step 6C.4b.3b.5 created test-first integration evidence for migration safety and closed two remaining data-loss paths:
 

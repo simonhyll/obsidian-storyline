@@ -16,7 +16,6 @@ import type { StoryLineProject } from '../models/StoryLineProject';
 
 // Re-export everything from the helpers module
 export {
-  PROJECT_DATA_KEYS,
   KEY_TO_SYSTEM_FILE,
   hasProjectDataKeys,
   stripProjectDataKeys,
@@ -31,6 +30,12 @@ export {
   deriveSystemFolder,
   deriveSystemFolderFromProjectFile,
 } from './legacyMigration.helpers';
+
+// Import PROJECT_DATA_KEYS for use in buildSettingsPayload
+import { PROJECT_DATA_KEYS } from './legacyMigration.helpers';
+
+// Re-export PROJECT_DATA_KEYS separately so it's available to consumers
+export { PROJECT_DATA_KEYS };
 
 /**
  * Outcome of migrating a single legacy entry.
@@ -178,4 +183,51 @@ export function removeObsoleteLegacyKeys(legacyData: Record<string, unknown>): b
     }
   }
   return dirty;
+}
+
+/**
+ * Build the settings payload for saveSettings().
+ *
+ * This function implements a selective merge:
+ * - Ordinary settings come from the in-memory `currentSettings` object.
+ * - Unresolved legacy migration keys (those NOT in `migratedKeys`) are
+ *   preserved from the persisted `data.json` snapshot, so that a failed
+ *   migration does not lose the original author data when settings are saved.
+ * - Successfully migrated keys are NOT restored from persisted data,
+ *   avoiding stale values.
+ *
+ * @param currentSettings - The current in-memory settings object.
+ * @param persisted - The persisted data.json snapshot (null if never saved).
+ * @param migratedKeys - Set of legacy keys that were successfully migrated.
+ * @returns The merged settings payload to save.
+ */
+export function buildSettingsPayload(
+  currentSettings: Record<string, unknown>,
+  persisted: Record<string, unknown> | null,
+  migratedKeys: Set<string>,
+): Record<string, unknown> {
+  const payload: Record<string, unknown> = { ...currentSettings };
+
+  if (!persisted || typeof persisted !== 'object') {
+    return payload;
+  }
+
+  for (const [key, value] of Object.entries(persisted)) {
+    if (PROJECT_DATA_KEYS.includes(key) && !migratedKeys.has(key)) {
+      if (value !== undefined && !isEmptyValue(value)) {
+        payload[key] = value;
+      }
+    }
+  }
+
+  return payload;
+}
+
+/** Check if a value is an empty default. */
+function isEmptyValue(value: unknown): boolean {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'string') return value === '';
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === 'object') return Object.keys(value).length === 0;
+  return false;
 }

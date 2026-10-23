@@ -78,6 +78,7 @@ import {
 	mergeCustomSectionsData,
 	deriveSystemFolder,
 	deriveSystemFolderFromProjectFile,
+	buildSettingsPayload,
 } from './services/legacyMigration';
 
 /**
@@ -688,14 +689,14 @@ export default class SceneCardsPlugin extends Plugin {
         setWordcountLocale(normalizeStoryLineLocale(this.sceneManager?.getEffectiveLocale() ?? this.settings.defaultProjectLanguage));
 
         const persisted = await this.loadData();
-        // Merge order matters: in-memory settings first, then persisted data on top.
-        // This ensures that unresolved legacy values in data.json (e.g., characterAliases
-        // that failed to migrate) are not overwritten by empty defaults loaded into
-        // this.settings when System/ files failed to parse.
-        const toSave: Record<string, unknown> = {
-            ...this.settings,
-            ...(persisted && typeof persisted === 'object' ? persisted : {}),
-        };
+        // Use production-owned selective merge: normal settings come from
+        // this.settings, but unresolved legacy migration keys are preserved
+        // from the persisted data.json snapshot.
+        const toSave: Record<string, unknown> = buildSettingsPayload(
+            this.settings as unknown as Record<string, unknown>,
+            persisted && typeof persisted === 'object' ? persisted : null,
+            this._migratedKeys,
+        );
 
         if (this._systemMigrationDone) {
             this.applyMigrationStripping(toSave);
@@ -2726,14 +2727,30 @@ export default class SceneCardsPlugin extends Plugin {
     ): Promise<void> {
         const newContent = await adapter.read(newPath);
         const newHasData = this.hasUsableData(filename, newContent);
+        const newIsMalformed = this.isMalformedJson(newContent);
 
         if (this.contentsEqual(oldContent, newContent)) {
             await this.trashFileIfExists(oldPath);
+        } else if (newIsMalformed) {
+            // Destination is malformed — do NOT overwrite.
         } else if (!newHasData && oldHasData) {
             await adapter.write(newPath, oldContent);
-            await this.trashFileIfExists(oldPath);
+            const verifyContent = await adapter.read(newPath);
+            if (verifyContent === oldContent) {
+                await this.trashFileIfExists(oldPath);
+            }
         }
-        // Both have different meaningful data — preserve both.
+    }
+
+    /** Check if content is malformed JSON (nonempty but unparseable). */
+    private isMalformedJson(content: string): boolean {
+        if (!content || content.trim() === '') return false;
+        try {
+            JSON.parse(content);
+            return false;
+        } catch {
+            return true;
+        }
     }
 
     /** Check if a JSON file has usable data. */
