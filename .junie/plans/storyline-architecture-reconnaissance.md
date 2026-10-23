@@ -1229,23 +1229,31 @@ Fix reloadEntities() losing inherited codex, add id parsing to CodexManager, and
 - ✓ Committed to feat/rework branch
 
 ### ✓ Step 7: Implement Phase 2 — TimeSpan and Events
-Implement the shared TimeSpan model, Event entities, and Scene-Event references.
+Implement the shared TimeSpan model, Event entities, Scene-Event references, Event UI, and validation.
 
-- ✓ Create services/TimeSpanService.ts — Full implementation: Gregorian calendar adapter, parsing all 6 TimeSpan kinds, comparison, overlap detection, contains, relative date resolution with chain accumulation, legacy storyDate/storyTime migration, display formatting
-- ✓ Fix TimeSpanService date arithmetic — proper month/year boundary handling, leap year support, day clamping for month overflow
-- ✓ Add TimeSpanService serializeToYaml/deserializeFromYaml — lossless TimeSpan round-trips through YAML
+- ✓ Create services/TimeSpanService.ts — Full implementation: Gregorian calendar adapter, parsing all 6 TimeSpan kinds, comparison, overlap detection, contains, relative date resolution with chain accumulation, legacy storyDate/storyTime migration, display formatting, validateTimestamp, validateTimeSpan
+- ✓ TimeSpanService: fixed date arithmetic — proper month/year boundary handling, leap year support, day clamping for month overflow
+- ✓ TimeSpanService: added serializeToYaml/deserializeFromYaml — lossless TimeSpan round-trips through YAML for all 6 variants
+- ✓ TimeSpanService: added validateTimestamp/validateTimeSpan — Gregorian date validation, leap year checks, month/day range, interval ordering, calendar verification
+- ✓ TimeSpanService: made shiftTimestamp and parseTimestamp public for test access
 - ✓ Create models/Event.ts (114 lines) — Event model with timeSpan, location, participants, ownerId, introducedIn, createEvent factory
-- ✓ Rewrite services/EventManager.ts — Uses Obsidian parseYaml/stringifyYaml, TimeSpan serialization in frontmatter, body preservation, setTimeSpanService, deleteEvent, buildEventContent
+- ✓ Rewrite services/EventManager.ts — Uses Obsidian parseYaml/stringifyYaml, TimeSpan serialization in frontmatter, body preservation, unknown frontmatter field preservation, setTimeSpanService, deleteEvent, buildEventContent
 - ✓ Update models/Scene.ts — Added optional timeSpan and eventRefs fields
+- ✓ Update services/MetadataParser.ts — Added parseTimeSpan for reading TimeSpan from Scene frontmatter, eventRefs parsing, and timeSpan/eventRefs serialization in generateSceneContent
 - ✓ Create components/TimeSpanPicker.ts (447 lines) — UI for selecting all 6 TimeSpan kinds with Obsidian Setting API
 - ✓ Create components/EventCard.ts (92 lines) — Event rendering component for views
-- ✓ Add SceneManager.getEventsFolder() — Book/series event folder resolution
+- ✓ Create components/EventModal.ts (368 lines) — EventModal (create/edit/delete) and EventSelectorModal (multi-select Event linking for Scenes)
+- ✓ Add SceneManager.getBookEventsFolder() — Book-level Events folder resolution (independent of Series/Universe)
 - ✓ Add UniverseManager.getInheritedEventFolders() — Universe/Series event inheritance
-- ✓ Wire up in main.ts — TimeSpanService + EventManager initialization, loadActiveProjectEvents on startup/reload/refresh
-- ✓ Fix obsidian mock — Recursive YAML parser supporting arbitrary nesting depth and arrays
+- ✓ Wire up in main.ts — TimeSpanService + EventManager initialization, loadActiveProjectEvents on startup/reload/refresh, Event commands (create-event, browse-events), Event modal integration
+- ✓ Fix Event hierarchy loading — getBookEventsFolder() loads book events independently; loadInheritedFolders loads Series/Universe without duplication
+- ✓ Fix Event save data preservation — saveEvent preserves unknown frontmatter fields and Markdown body content
+- ✓ Fix buildEventContent — proper YAML frontmatter formatting with trailing newline
+- ✓ Add styles.css — Event modal and browser styling
 - ✓ 46 tests for TimeSpanService: parsing (11), formatting (7), comparison (5), overlap (7), contains (4), relative resolution (5), legacy migration (4), calendar registration (3)
 - ✓ 24 tests for EventManager: TimeSpan round-trips (6), persistence (4), CRUD (6), duplicate UUID detection (1), date arithmetic (6), overlap queries (1)
+- ✓ 24 new integration tests: Event hierarchy loading (3), Event persistence (5), Scene-Event integration (3), TimeSpan validation (9), TimeSpan arithmetic edge cases (4)
 - ✓ Build verification — pnpm run build passes
-- ✓ Test verification — 180/180 tests pass (156 existing + 24 new)
+- ✓ Test verification — 204/204 tests pass (180 existing + 24 new)
 - ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
 - ✓ Committed to feat/rework branch
