@@ -85,14 +85,17 @@ When('the author selects both Books in Timeline', function (this: TestWorld) {
 
 Then('the Scenes and Event appear chronologically', function (this: TestWorld) {
   const timestamps = this.timelineItems.map(item => item.timestamp);
-  // Verify chronological order
+  const timeSpanService = new TimeSpanService();
+  // Check order using the production calendar adapter, preserving precision.
   for (let i = 1; i < timestamps.length; i++) {
-    if (timestamps[i] && timestamps[i - 1]) {
-      const prev = timestamps[i - 1]!.year * 10000 + timestamps[i - 1]!.month * 100 + timestamps[i - 1]!.day;
-      const curr = timestamps[i]!.year * 10000 + timestamps[i]!.month * 100 + timestamps[i]!.day;
-      if (curr < prev) {
-        throw new Error(`Timeline not chronological: item ${i - 1} (${prev}) > item ${i} (${curr})`);
-      }
+    const previous = timestamps[i - 1];
+    const current = timestamps[i];
+    if (!previous || !current) continue;
+    if (previous.calendar !== current.calendar) {
+      throw new Error('Cannot compare unrelated calendar systems in this scenario');
+    }
+    if (timeSpanService.compareTimestamps(previous, current) > 0) {
+      throw new Error(`Timeline not chronological at item ${i}`);
     }
   }
   // Verify all three items are present
