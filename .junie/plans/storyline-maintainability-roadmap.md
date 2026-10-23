@@ -61,14 +61,16 @@ src/
   utils/
   views/
   types/             # only if needed
-  styles/
-    legacy.css          # Step 2: move existing CSS here unchanged
-    main.scss           # Step 3: replace legacy CSS with modular SCSS
-    components/
-    views/
-    shared/
 assets/
   manifest.json       # authoritative SOURCE manifest; copied to dist/
+  scss/
+    main.scss          # Sass entry point
+    abstracts/
+    base/
+    components/
+    views/
+    layout/
+    responsive/
   images/             # shipped source images/icons, if any
   templates/          # resource files only if actually bundled/used
 tests/
@@ -84,7 +86,7 @@ versions.json
 ```
 
 - Move application `.ts` files into `src/` as a coherent change; keep `tests/`, config, workflows and scripts at repository root. Handle `.d.ts` appropriately.
-- In **Step 2**, move the existing stylesheet to a source path such as `src/styles/legacy.css` and copy it byte-for-byte to `dist/styles.css` during build/watch. **Do not split or visually restyle CSS until Step 3**. Check that generated output retains the same cascade order and content.
+- **Historical Step 2 staging:** the temporary stylesheet lived at `src/styles/legacy.css` during the initial distribution migration. This staging path is now retired. **Final invariant: `src/` contains only TypeScript (`.ts`, `.d.ts`), all SCSS belongs under `assets/scss/`, and generated CSS is only `dist/styles.css`.**
 - Use `git mv` when practical; update all relative imports and aliases in `tsconfig.json`, `esbuild.config.mjs`, ESLint configuration, Vitest, developer tooling, Junie instructions and IDE references.
 - The esbuild entry becomes `src/main.ts`, and its output becomes **`dist/main.js`**, NOT root `main.js`. The authoring SCSS entry compiles to **`dist/styles.css`**. The authoritative source manifest moves to **`assets/manifest.json`** and is copied deterministically to **`dist/manifest.json`**. Do not maintain two hand-edited manifests. Preserve the Obsidian plugin ID `storyline`, name, version and compatibility metadata.
 - Move only real **source** assets under `assets/`, including `assets/manifest.json` as the source-of-truth manifest. Keep documentation screenshots in `screenshots/` unless there is a concrete reason to reorganize them. Do not put release artefacts into `assets/`.
@@ -97,11 +99,13 @@ versions.json
 
 **Step 2 implementation report (2026-10-23):** Commits `50f5915` and `6ab211e` moved 97 TS source files to `src/`, `manifest.json` to `assets/`, CSS source to `src/styles/legacy.css` and generated plugin artifacts to `dist/`. The GitHub CI run for `6ab211e` initially failed incremental lint due to newly modified source-read lines in two test files; typed `node:fs` imports were added in subsequent fixes. The dev-mode `esbuild` asset watcher and `DEVELOPMENT.md` were also corrected subsequently. Preserve these fixes before Step 3. **CI/test success does not establish an actual Obsidian desktop smoke test** unless separately reported.
 
-**Step 3 implementation report (2026-10-23):** Commit `ea66591` replaced the 14,680-line `src/styles/legacy.css` with 31 modular SCSS files compiled via Sass to `dist/styles.css`. The CSS regression check verifies 2,159 selectors, 8,150 declarations, and 11 at-rules match the baseline exactly. Build pipeline updated to compile SCSS with watch support. ESLint postinstall patch added for `assets/manifest.json` path. **An actual Obsidian desktop smoke test is still needed** to verify visual parity.
+**Step 3 implementation report (2026-10-23):** Commit `ea66591` replaced the 14,680-line `src/styles/legacy.css` with modular SCSS. A later correction moved all **32 SCSS files** (entry point and partials) into `assets/scss/` as required by the user; `src/` now contains TypeScript only. The build compiles Sass to `dist/styles.css`. The CSS regression check verifies 2,159 selectors, 8,150 declarations, and 11 at-rules match the baseline exactly. Build pipeline updated to compile SCSS with watch support. ESLint postinstall patch added for `assets/manifest.json` path. **An actual Obsidian desktop smoke test is still needed** to verify visual parity.
+
+**Typecheck correction:** The 113 TypeScript errors reported with Step 3 were **not historical**: commit `618021a` had replaced valid types with `unknown` in TypeScript and test mocks immediately before the SCSS migration. Those substitutions were reverted to restore the previously passing typecheck. New lint changes must preserve valid types rather than replace `any` with `unknown` without narrowing.
 
 ### 3. Adopt modular SCSS with one output file
 
-- Add Sass tooling and compile `src/styles/main.scss` (or chosen canonical SCSS entry) to **`dist/styles.css`**, never the repository root.
+- Add Sass tooling and compile **`assets/scss/main.scss`** to **`dist/styles.css`**, never the repository root or `src/`.
 - Split the current stylesheet by responsibility: variables/tokens, base, forms, components, Timeline, Project Library, Codex, responsive/layout, etc. Use explicit `@use` / `@forward` modules rather than legacy global `@import`.
 - **Preserve current selector behavior and cascade order** during the mechanical split. No UI redesign in the same commit. Avoid changing CSS specificity unintentionally.
 - Integrate Sass into `pnpm dev` and `pnpm build` (including watch), and maintain `pnpm vault:watch` support for generated **`dist/styles.css`**.
