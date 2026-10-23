@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SeriesManager } from '../services/SeriesManager';
-import { SceneManager } from '../services/SceneManager';
-import { UniverseManager } from '../services/UniverseManager';
+import { SeriesManager } from '../src/services/SeriesManager';
+import { SceneManager } from '../src/services/SceneManager';
+import { UniverseManager } from '../src/services/UniverseManager';
 import { normalizePath, TFile } from 'obsidian';
 
 describe('Hierarchy lifecycle', () => {

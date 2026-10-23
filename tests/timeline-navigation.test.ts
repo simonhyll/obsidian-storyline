@@ -5,11 +5,11 @@
  * time marker generation, and edge cases.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TimeSpanService } from '../services/TimeSpanService';
-import { TimelineNavigationService } from '../services/TimelineNavigationService';
-import type { Scene } from '../models/Scene';
-import type { Event } from '../models/Event';
-import { createEvent } from '../models/Event';
+import { TimeSpanService } from '../src/services/TimeSpanService';
+import { TimelineNavigationService } from '../src/services/TimelineNavigationService';
+import type { Scene } from '../src/models/Scene';
+import type { Event } from '../src/models/Event';
+import { createEvent } from '../src/models/Event';
 
 // ── Helpers ──
 

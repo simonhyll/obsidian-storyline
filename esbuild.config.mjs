@@ -11,7 +11,7 @@ const distDir = resolve(__dirname, "dist");
 mkdirSync(distDir, { recursive: true });
 
 const context = await esbuild.context({
-  entryPoints: ["main.ts"],
+  entryPoints: ["src/main.ts"],
   bundle: true,
   external: [
     "obsidian",

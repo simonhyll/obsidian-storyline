@@ -13,10 +13,10 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TimeSpanService } from '../services/TimeSpanService';
-import type { Scene } from '../models/Scene';
-import type { Event } from '../models/Event';
-import type { TimeSpan, Timestamp } from '../models/TimeSpan';
+import { TimeSpanService } from '../src/services/TimeSpanService';
+import type { Scene } from '../src/models/Scene';
+import type { Event } from '../src/models/Event';
+import type { TimeSpan, Timestamp } from '../src/models/TimeSpan';
 
 // ─── Helpers ───
 

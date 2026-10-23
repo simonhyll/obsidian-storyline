@@ -5,10 +5,10 @@
  * UniverseManager, and the shared chronological projection logic.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createEvent } from '../models/Event';
-import type { TimeSpan, Timestamp } from '../models/TimeSpan';
-import type { StoryLineProject } from '../models/StoryLineProject';
-import { TimeSpanService } from '../services/TimeSpanService';
+import { createEvent } from '../src/models/Event';
+import type { TimeSpan, Timestamp } from '../src/models/TimeSpan';
+import type { StoryLineProject } from '../src/models/StoryLineProject';
+import { TimeSpanService } from '../src/services/TimeSpanService';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 

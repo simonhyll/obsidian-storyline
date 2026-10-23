@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import type { Scene } from '../models/Scene';
-import type { StoryLineProject, SeriesMetadata } from '../models/StoryLineProject';
-import type { Character } from '../models/Character';
-import type { StoryLocation } from '../models/Location';
-import type { CodexEntry } from '../models/Codex';
+import type { Scene } from '../src/models/Scene';
+import type { StoryLineProject, SeriesMetadata } from '../src/models/StoryLineProject';
+import type { Character } from '../src/models/Character';
+import type { StoryLocation } from '../src/models/Location';
+import type { CodexEntry } from '../src/models/Codex';
 
 describe('Model Compatibility', () => {
     describe('Scene model backward compatibility', () => {

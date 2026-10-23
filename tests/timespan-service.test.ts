@@ -6,14 +6,14 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TimeSpanService } from '../services/TimeSpanService';
+import { TimeSpanService } from '../src/services/TimeSpanService';
 import {
     createInstantTimeSpan,
     createIntervalTimeSpan,
     createUncertainTimeSpan,
     createUnknownTimeSpan,
     createRelativeTimeSpan,
-} from '../models/TimeSpan';
+} from '../src/models/TimeSpan';
 
 describe('TimeSpanService', () => {
     let service: TimeSpanService;

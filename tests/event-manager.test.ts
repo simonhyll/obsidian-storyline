@@ -6,16 +6,16 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { EventManager } from '../services/EventManager';
-import { TimeSpanService } from '../services/TimeSpanService';
+import { EventManager } from '../src/services/EventManager';
+import { TimeSpanService } from '../src/services/TimeSpanService';
 import {
     createInstantTimeSpan,
     createIntervalTimeSpan,
     createUncertainTimeSpan,
     createUnknownTimeSpan,
     createRelativeTimeSpan,
-} from '../models/TimeSpan';
-import type { Event } from '../models/Event';
+} from '../src/models/TimeSpan';
+import type { Event } from '../src/models/Event';
 
 // Note: This test file uses the obsidian mock alias from vitest.config.ts
 // The mock at tests/__mocks__/obsidian.ts provides parseYaml/stringifyYaml

@@ -13,7 +13,7 @@ import {
     type UncertainTimeSpan,
     type UnknownTimeSpan,
     type RelativeTimeSpan,
-} from '../models/TimeSpan';
+} from '../src/models/TimeSpan';
 
 describe('TimeSpan', () => {
     describe('discriminated union types', () => {

@@ -2,7 +2,7 @@
   "name": "obsidian-storyline",
   "version": "1.11.1",
   "description": "Transform your vault into a powerful book planning and writingtool with StoryLine",
-  "main": "main.js",
+  "main": "dist/main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",

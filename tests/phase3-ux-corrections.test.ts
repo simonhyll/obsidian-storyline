@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { Timestamp, TimeSpan } from '../models/TimeSpan';
+import type { Timestamp, TimeSpan } from '../src/models/TimeSpan';
 
 describe('Timeline Event marker layout', () => {
     describe('Event marker DOM structure', () => {

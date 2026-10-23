@@ -6,11 +6,11 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TimeSpanService } from '../services/TimeSpanService';
-import { EventManager } from '../services/EventManager';
-import type { Event } from '../models/Event';
-import type { TimeSpan } from '../models/TimeSpan';
-import { MetadataParser } from '../services/MetadataParser';
+import { TimeSpanService } from '../src/services/TimeSpanService';
+import { EventManager } from '../src/services/EventManager';
+import type { Event } from '../src/models/Event';
+import type { TimeSpan } from '../src/models/TimeSpan';
+import { MetadataParser } from '../src/services/MetadataParser';
 // Import TFile from the obsidian mock so instanceof checks pass
 import { TFile } from 'obsidian';
 

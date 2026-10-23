@@ -8,9 +8,9 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TimeSpanService } from '../services/TimeSpanService';
-import { EventManager } from '../services/EventManager';
-import type { TimeSpan } from '../models/TimeSpan';
+import { TimeSpanService } from '../src/services/TimeSpanService';
+import { EventManager } from '../src/services/EventManager';
+import type { TimeSpan } from '../src/models/TimeSpan';
 
 function createMockApp() {
     return {
@@ -29,7 +29,7 @@ describe('EventSelectorModal', () => {
     it('openAsync does not call itself recursively', async () => {
         // The bug was that EventSelectorModal.open() called this.open() instead of super.open()
         // We verify the fix by checking that openAsync exists and is different from the Modal.open
-        const { EventSelectorModal } = await import('../components/EventModal');
+        const { EventSelectorModal } = await import('../src/components/EventModal');
 
         const app = createMockApp();
         const timeSpanService = new TimeSpanService();
@@ -49,7 +49,7 @@ describe('EventSelectorModal', () => {
     });
 
     it('preserves selected IDs from constructor', async () => {
-        const { EventSelectorModal } = await import('../components/EventModal');
+        const { EventSelectorModal } = await import('../src/components/EventModal');
 
         const app = createMockApp();
         const timeSpanService = new TimeSpanService();
@@ -75,7 +75,7 @@ describe('EventModal TimeSpanPicker integration', () => {
     });
 
     it('TimeSpanPicker.setValue exists and handles all 6 TimeSpan kinds', async () => {
-        const { TimeSpanPicker } = await import('../components/TimeSpanPicker');
+        const { TimeSpanPicker } = await import('../src/components/TimeSpanPicker');
 
         // Create a mock container
         const container = {
@@ -117,7 +117,7 @@ describe('EventModal TimeSpanPicker integration', () => {
     });
 
     it('TimeSpanPicker.setValue(null) sets kind to unknown', async () => {
-        const { TimeSpanPicker } = await import('../components/TimeSpanPicker');
+        const { TimeSpanPicker } = await import('../src/components/TimeSpanPicker');
 
         const container = {
             empty: vi.fn(),
@@ -146,7 +146,7 @@ describe('EventModal TimeSpanPicker integration', () => {
 
 describe('EventModal data preservation', () => {
     it('EventModal initializes fields from existing event', async () => {
-        const { EventModal } = await import('../components/EventModal');
+        const { EventModal } = await import('../src/components/EventModal');
 
         const app = createMockApp();
         const timeSpanService = new TimeSpanService();

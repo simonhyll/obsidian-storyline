@@ -13,8 +13,8 @@ import {
     getEffectiveOwnerId,
     deriveUniverseFolderFromSeries,
     deriveSeriesFolderFromBook,
-} from '../models/Universe';
-import type { SeriesMetadata, StoryLineProject } from '../models/StoryLineProject';
+} from '../src/models/Universe';
+import type { SeriesMetadata, StoryLineProject } from '../src/models/StoryLineProject';
 
 describe('Universe Model', () => {
     describe('Constants', () => {

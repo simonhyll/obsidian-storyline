@@ -9,4 +9,5 @@ coverage/
 .dev-vault/
 .storyline-dev-vault/
 
-# main.js is intentionally tracked for the inherited release workflow.
+# dist/ contains generated plugin artifacts (main.js, styles.css, manifest.json).
+# The authoritative source manifest lives in assets/manifest.json.

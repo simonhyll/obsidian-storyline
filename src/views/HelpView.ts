@@ -2,7 +2,7 @@
 import { ItemView, WorkspaceLeaf, MarkdownRenderer, Component, Notice, TFile } from 'obsidian';
 import type SceneCardsPlugin from '../main';
 import { HELP_VIEW_TYPE } from '../constants';
-import HELP_MARKDOWN from '../HELP.md';
+import HELP_MARKDOWN from '../../HELP.md';
 
 /**
  * HelpView — displays the HELP.md documentation in a dedicated

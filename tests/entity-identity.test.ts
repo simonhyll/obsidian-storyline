@@ -6,7 +6,7 @@ import {
     isLegacyIdentity,
     detectDuplicateIdConflicts,
     type EntityIdentity,
-} from '../models/EntityIdentity';
+} from '../src/models/EntityIdentity';
 
 describe('Entity Identity', () => {
     describe('generateEntityId', () => {

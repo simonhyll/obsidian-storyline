@@ -1,12 +1,12 @@
 // @ts-nocheck — integration tests use mocked Obsidian API with intentional type casting
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type SceneCardsPlugin from '../main';
-import type { SceneManager } from '../services/SceneManager';
-import type { SeriesManager } from '../services/SeriesManager';
-import { UniverseManager } from '../services/UniverseManager';
-import { CodexManager } from '../services/CodexManager';
-import type { StoryLineProject, SeriesMetadata } from '../models/StoryLineProject';
-import type { UniverseMetadata } from '../models/Universe';
+import type SceneCardsPlugin from '../src/main';
+import type { SceneManager } from '../src/services/SceneManager';
+import type { SeriesManager } from '../src/services/SeriesManager';
+import { UniverseManager } from '../src/services/UniverseManager';
+import { CodexManager } from '../src/services/CodexManager';
+import type { StoryLineProject, SeriesMetadata } from '../src/models/StoryLineProject';
+import type { UniverseMetadata } from '../src/models/Universe';
 
 /**
  * Integration tests for UniverseManager using a mocked Obsidian vault.

@@ -24,26 +24,29 @@
     "outDir": "./dist",
     "paths": {
       "models/*": [
-        "models/*"
+        "src/models/*"
       ],
       "views/*": [
-        "views/*"
+        "src/views/*"
       ],
       "components/*": [
-        "components/*"
+        "src/components/*"
       ],
       "services/*": [
-        "services/*"
+        "src/services/*"
       ],
       "utils/*": [
-        "utils/*"
+        "src/utils/*"
       ]
     }
   },
   "include": [
-    "**/*.ts"
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "vitest.config.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist"
   ]
 }
