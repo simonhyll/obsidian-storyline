@@ -1,65 +1,80 @@
 # StoryLine development / Starforge integration
 
-StoryLine source: https://github.com/simonhyll/obsidian-storyline
+StoryLine plugin source: https://github.com/simonhyll/obsidian-storyline
 Starforge writing vault: https://github.com/simonhyll/author-starforge
 
-Keep plugin **source** in this repository, separate from the Obsidian **vault**. The manifest ID is **storyline**; do not change the ID just because the plugin is forked. That would cause Obsidian to treat it as a separate plugin.
+Keep this **plugin repository** separate from the **writing vault**. The Obsidian plugin manifest ID is **`storyline`**; changing it makes Obsidian treat the plugin as a different installation.
+
+## Project and distribution layout
+
+- `src/`: TypeScript application source and the current legacy stylesheet (`src/styles/legacy.css`). SCSS migration is planned separately.
+- `assets/manifest.json`: authoritative plugin manifest.
+- `dist/`: **generated** distributable plugin files (`main.js`, `manifest.json`, `styles.css`), excluded from Git.
+- `tests/`: Vitest tests and Obsidian mocks.
+- `scripts/sync-vault.mjs`: copies the three `dist/` files into the installed StoryLine plugin directory.
+
+Obsidian installs the **contents** of `dist/` flat into `.obsidian/plugins/storyline/`, **not** into `.obsidian/plugins/storyline/dist/`. Do not edit generated `dist/` files as source.
 
 ## Local prerequisites
 
-Obsidian Desktop, Git, Node.js 22 and npm. Clone both repositories side by side.
+Obsidian Desktop, Git, Node.js 22, pnpm (via Corepack) and a separate disposable Obsidian test vault. Clone plugin and writing vault repos side by side if desired.
 
-**Never test new plugin code against your only copy of a writing vault.** Obsidian plugins may modify vault files. Use an isolated testing vault, preferably a local test clone of Starforge:
+**Never test new plugin code against your only copy of a writing vault.** A plugin may modify writing files. Use a disposable test clone, for example:
 
     git clone https://github.com/simonhyll/author-starforge.git ../author-starforge-dev
 
-Open the testing vault folder in Obsidian at least once to initialize it. Do not push test edits back to author-starforge.
+Open the test vault in Obsidian once to create its `.obsidian/` directory. Do not push test-vault edits into the real writing repository.
 
 ## Initial build and installation
 
-Run from the obsidian-storyline source checkout:
+Run in the StoryLine plugin checkout:
 
-    npm ci
-    npm run build
-    npm run vault:install -- "/absolute/path/to/author-starforge-dev"
+    corepack enable
+    pnpm install --frozen-lockfile
+    pnpm build
+    pnpm vault:install -- "/absolute/path/to/author-starforge-dev"
 
-On Windows, supply a Windows directory path (for example: C:\Users\you\author-starforge-dev).
+On Windows, use an absolute Windows path. The install script checks for an existing Obsidian vault, verifies the plugin ID and copies only `dist/main.js`, `dist/manifest.json` and `dist/styles.css` into `.obsidian/plugins/storyline/`. It does not intentionally touch StoryLine's `data.json`, other vault settings or writing documents.
 
-In the test vault, enable Community plugins and StoryLine, if not already enabled.
+## Development with automatic deployment
 
-## Develop with automatic local deployment
+Start these commands in separate terminals in the plugin repository:
 
-Run these two commands in **separate terminals**, both inside the obsidian-storyline checkout.
+Terminal A — watch the TypeScript build and source assets:
 
-Terminal A (TypeScript -> built JavaScript):
+    pnpm dev
 
-    npm run dev
+Terminal B — watch `dist/` and sync changed builds into a **test** vault:
 
-Terminal B (build assets -> the **test** Obsidian vault):
+    pnpm vault:watch -- "/absolute/path/to/author-starforge-dev"
 
-    npm run vault:watch -- "/absolute/path/to/author-starforge-dev"
+The build watches TypeScript as well as `src/styles/legacy.css` and `assets/manifest.json`, copying the latter two into `dist/` on change. The vault sync script watches `dist/` and installs changes into the flat plugin directory. Reload StoryLine in Obsidian to pick up new JavaScript. A hot-reload plugin is optional and should only be used in the test vault; a manifest change may require restarting Obsidian.
 
-The sync command watches main.js, manifest.json and styles.css and copies changed files to the test vault's .obsidian/plugins/storyline/ directory. The plugin must still reload in Obsidian to pick up JavaScript changes. The optional Hot-Reload community plugin can do this automatically in your *testing* vault. If the manifest changes, a full Obsidian restart may be necessary.
+Run `pnpm build` after changing packaging or before creating a release.
 
-Ctrl+C stops each watcher.
+## Code quality and CI
 
-## Install a tested version in the real Starforge vault
+    pnpm test
+    pnpm run typecheck
+    pnpm lint
+    pnpm lint:changed
 
-After testing, stop the watchers, build a production bundle and explicitly install it:
+The full ESLint backlog has historical findings; `pnpm lint` may return nonzero. The incremental `lint:changed` gate checks new errors on changed lines relative to a Git base (in CI, based on the push/PR event). TypeScript typecheck, tests, production build and incremental lint are verified in GitHub Actions on `feat/rework`, `main` and pull requests.
 
-    npm ci
-    npm run build
-    npm run vault:install -- "/absolute/path/to/author-starforge"
+CI produces and checks `dist/`, validates the source manifest version against `package.json` and `versions.json`, and uploads the three distributable files as an artifact. Builds do not auto-release.
 
-This updates **only** main.js, manifest.json and styles.css in the existing storyline plugin folder. It leaves all writing files, Obsidian settings and StoryLine data.json untouched.
+## Install a tested build in the real Starforge vault
 
-**Repository note:** author-starforge already commits these installed plugin assets to Git. Syncing into that repository will mark those files as modified; review and commit the update there **separately** when you want to version the installed build. Do not point the live development watcher at your main writing vault.
+Only after testing in the disposable vault, explicitly build and install:
 
-## CI and release process
+    pnpm install --frozen-lockfile
+    pnpm build
+    pnpm vault:install -- "/absolute/path/to/author-starforge"
 
-- The new .github/workflows/ci.yml builds code on pull requests and main pushes, validates manifest/package/lockfile versions, checks assets and script syntax, and uploads an installable build artifact.
-- The inherited manually dispatched .github/workflows/release.yml is not changed by this setup. An ordinary CI build does not publish a GitHub release.
-- The inherited release process commits generated main.js, which is tracked in Git. Local builds can modify this file; review changes before committing.
-- Type checking and lint are **not yet added as blocking CI gates** until the large upstream baseline has been assessed and cleaned up.
+This updates the installed plugin's three files; it is not a general migration of manuscript files. The writing-vault repository may track installed StoryLine assets, so review and commit changes there separately **only when intentionally versioning the installed plugin**. Never point the active development watcher at the main writing vault.
 
-With the pipeline in place, implement and review future Starforge-specific changes here, then test them in the isolated vault before installing them in real Starforge.
+## Release workflow
+
+`.github/workflows/release.yml` is manually dispatched with an existing intended version. It verifies `assets/manifest.json`, `package.json` and `versions.json`, builds on GitHub Actions, and uploads `dist/main.js`, `dist/styles.css` and `dist/manifest.json` as **flat** release assets. It does not commit generated `dist/` files. Inspect release/version metadata and tag behavior before running this workflow, especially for versions already published.
+
+See `.junie/plans/storyline-maintainability-roadmap.md` for the upcoming modular SCSS, Cucumber and changelog work.
