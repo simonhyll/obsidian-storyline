@@ -19,7 +19,7 @@ export function registerLeafChange(p: PluginTarget): void {
     p.registerEvent(p.app.workspace.on('active-leaf-change', (leaf) => {
         if (leaf && !isStoryLineScene(leaf, p)) {
             if (!p.settings.showFormattingToolbar) {
-                document.querySelectorAll<HTMLElement>('.sl-injected-fmt-toolbar')
+                activeDocument.querySelectorAll<HTMLElement>('.sl-injected-fmt-toolbar')
                     .forEach((el: HTMLElement) => el.remove());
             }
             return;

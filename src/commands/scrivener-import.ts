@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method -- Proxy handler methods are called with correct this */
 /**
  * Scrivener import dialog flow, isolated from the main command registration
  * to keep module sizes under the architectural limits.
@@ -12,6 +11,9 @@ import type { PluginTarget } from './plugin-target';
  * Dynamically imports the ScrivenerImporter to avoid loading on mobile.
  */
 export async function importScrivener(p: PluginTarget): Promise<void> {
+    // Load the importer only when requested (desktop-only Node dependency).
+    // isAvailable() is synchronous; do not wrap it in an async Proxy.
+    const { ScrivenerImporter } = await import('../services/ScrivenerImporter');
     if (!ScrivenerImporter.isAvailable()) {
         new Notice('Scrivener import is only available on desktop.');
         return;
@@ -93,28 +95,3 @@ async function selectDestination(app: App): Promise<string | undefined> {
     }
 }
 
-// Lazy-load ScrivenerImporter type for isAvailable check
-const ScrivenerImporter = lazyScrivenerImporter();
-
-function lazyScrivenerImporter() {
-    let cached: typeof import('../services/ScrivenerImporter').ScrivenerImporter | undefined;
-    return new Proxy({}, {
-        get(_target, prop) {
-            if (prop === 'isAvailable') {
-                return async () => {
-                    const mod = await import('../services/ScrivenerImporter');
-                    cached = mod.ScrivenerImporter;
-                    return mod.ScrivenerImporter.isAvailable();
-                };
-            }
-            if (prop === Symbol.toStringTag) return 'Object';
-            return cached?.[prop as keyof typeof cached];
-        },
-        construct(_target, args) {
-            if (!cached) throw new Error('ScrivenerImporter not loaded');
-            return new cached(args[0] as App, args[1] as import('../main').default);
-        },
-    }) as unknown as typeof import('../services/ScrivenerImporter').ScrivenerImporter;
-}
-
-/* eslint-enable @typescript-eslint/unbound-method -- Proxy handlers require unbound method access */

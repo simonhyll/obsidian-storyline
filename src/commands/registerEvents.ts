@@ -83,10 +83,10 @@ function registerUndoRedoKeys(p: PluginTarget): void {
         NAVIGATOR_VIEW_TYPE,
     ]);
 
-    p.registerDomEvent(document, 'keydown', (evt: KeyboardEvent) => {
+    p.registerDomEvent(activeDocument, 'keydown', (evt: KeyboardEvent) => {
         const action = parseUndoRedoKey(evt);
         if (action === 'none') return;
-        if (isInInputField()) return;
+        if (isInInputField(activeDocument)) return;
         if (!isStoryLineViewActive(p, slViewTypes)) return;
         evt.preventDefault();
         evt.stopPropagation();
@@ -106,11 +106,11 @@ function parseUndoRedoKey(evt: KeyboardEvent): string {
 }
 
 /** Returns true if focus is inside a text input element. */
-function isInInputField(): boolean {
-    const active = document.activeElement;
+function isInInputField(doc: Document): boolean {
+    const active = doc.activeElement;
     if (!active) return false;
-    if (active instanceof HTMLInputElement) return true;
-    if (active instanceof HTMLTextAreaElement) return true;
+    // Compare tag names instead of instanceof: pop-out windows have different DOM realms.
+    if (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA') return true;
     return (active as HTMLElement).isContentEditable === true;
 }
 
