@@ -1993,19 +1993,19 @@ export class CodexView extends ItemView {
 
         for (const event of filtered) {
             const row = container.createDiv('codex-entry-row');
-            row.createEl('span', { cls: 'codex-entry-icon', text: '📅' });
-            const nameEl = row.createEl('span', { cls: 'codex-entry-name', text: event.name });
+            row.createSpan({ cls: 'codex-entry-icon', text: '📅' });
+            const nameEl = row.createSpan({ cls: 'codex-entry-name', text: event.name });
             const meta = row.createDiv('codex-entry-meta');
 
             // TimeSpan badge
             if (event.timeSpan) {
-                const timeBadge = meta.createEl('span', { cls: 'codex-entry-badge' });
+                const timeBadge = meta.createSpan({ cls: 'codex-entry-badge' });
                 timeBadge.setText(this.plugin.timeSpanService.format(event.timeSpan));
             }
 
             // Ownership scope badge — only show when relevant
             if (event.ownerId) {
-                const scopeBadge = meta.createEl('span', { cls: 'codex-entry-badge' });
+                const scopeBadge = meta.createSpan({ cls: 'codex-entry-badge' });
                 scopeBadge.setText(event.introducedIn ? 'Inherited' : 'Owned');
             }
 

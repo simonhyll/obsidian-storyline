@@ -443,13 +443,13 @@ function renderBookCard(
 
     // Title and series info
     const info = card.createDiv({ cls: 'universe-selector-card-info' });
-    info.createEl('div', {
+    info.createDiv({
         cls: 'universe-selector-card-title',
         text: book.title,
     });
 
     if (book.seriesId) {
-        info.createEl('div', {
+        info.createDiv({
             cls: 'universe-selector-card-series',
             text: book.seriesId,
         });
