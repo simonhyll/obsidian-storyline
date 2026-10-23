@@ -93,7 +93,14 @@ export class InspectorComponent {
      */
     hide(): void {
         this.currentScene = null;
+        this.clearNotesRenderComponent();
         this.container.setCssStyles({ display: 'none' });
+    }
+
+    /** Release MarkdownRenderer child components when a preview is replaced. */
+    private clearNotesRenderComponent(): void {
+        this.notesRenderComponent?.unload();
+        this.notesRenderComponent = null;
     }
 
     /**
@@ -103,6 +110,7 @@ export class InspectorComponent {
         const scene = this.currentScene;
         if (!scene) return;
 
+        this.clearNotesRenderComponent();
         this.container.empty();
         this.container.addClass('story-line-inspector');
 
@@ -1358,8 +1366,12 @@ export class InspectorComponent {
      * Checkboxes are interactive in preview mode.
      */
     private async renderInspectorNotesLive(container: HTMLElement, scene: Scene): Promise<void> {
+        this.clearNotesRenderComponent();
         container.empty();
         const notesText = await this.getCurrentSceneNotesText(scene);
+        // A newer render, scene switch, or closed leaf may have detached this
+        // container while the asynchronous Markdown read was pending.
+        if (!container.isConnected || this.currentScene?.filePath !== scene.filePath) return;
         scene.notes = notesText || undefined;
 
         if (!notesText) {
@@ -1374,7 +1386,6 @@ export class InspectorComponent {
 
         // Rendered markdown preview
         const previewEl = container.createDiv('inspector-notes-live is-preview');
-        this.notesRenderComponent?.unload();
         this.notesRenderComponent = new obsidian.Component();
         obsidian.MarkdownRenderer.render(
             this.plugin.app,
@@ -1427,6 +1438,7 @@ export class InspectorComponent {
     }
 
     private renderInspectorNotesEditor(container: HTMLElement, scene: Scene, currentNotes: string): void {
+        this.clearNotesRenderComponent();
         container.empty();
         const editorEl = container.createDiv('inspector-notes-live is-editing');
 
