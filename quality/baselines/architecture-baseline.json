@@ -1,0 +1,5011 @@
+{
+  "version": "1.0",
+  "description": "Architecture debt baseline for StoryLine Step 6A",
+  "generatedAt": "2026-10-23T15:53:44.215Z",
+  "files": {
+    "features/support/obsidian-mocks.ts": {
+      "violations": [
+        {
+          "rule": "max-params",
+          "line": 217
+        },
+        {
+          "rule": "max-lines",
+          "line": 228
+        },
+        {
+          "rule": "max-params",
+          "line": 450
+        }
+      ]
+    },
+    "src/components/AddFieldModal.ts": {
+      "violations": [
+        {
+          "rule": "max-params",
+          "line": 44
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 75
+        },
+        {
+          "rule": "complexity",
+          "line": 75
+        },
+        {
+          "rule": "max-statements",
+          "line": 75
+        },
+        {
+          "rule": "max-lines",
+          "line": 251
+        },
+        {
+          "rule": "complexity",
+          "line": 286
+        }
+      ]
+    },
+    "src/components/CodexCategoryTabs.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 23
+        }
+      ]
+    },
+    "src/components/CodexVisualGroupManager.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 16
+        },
+        {
+          "rule": "max-params",
+          "line": 16
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 96
+        },
+        {
+          "rule": "max-params",
+          "line": 96
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 116
+        },
+        {
+          "rule": "max-statements",
+          "line": 116
+        },
+        {
+          "rule": "max-lines",
+          "line": 212
+        }
+      ]
+    },
+    "src/components/CustomSectionsRenderer.ts": {
+      "violations": [
+        {
+          "rule": "max-lines",
+          "line": 339
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 347
+        },
+        {
+          "rule": "max-statements",
+          "line": 347
+        },
+        {
+          "rule": "complexity",
+          "line": 347
+        },
+        {
+          "rule": "max-depth",
+          "line": 528
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 925
+        },
+        {
+          "rule": "complexity",
+          "line": 925
+        },
+        {
+          "rule": "complexity",
+          "line": 1010
+        }
+      ]
+    },
+    "src/components/DragToPan.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 20
+        }
+      ]
+    },
+    "src/components/EventCard.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 35
+        }
+      ]
+    },
+    "src/components/EventModal.ts": {
+      "violations": [
+        {
+          "rule": "max-params",
+          "line": 38
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 80
+        },
+        {
+          "rule": "max-statements",
+          "line": 80
+        },
+        {
+          "rule": "max-lines",
+          "line": 249
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 316
+        },
+        {
+          "rule": "max-statements",
+          "line": 316
+        }
+      ]
+    },
+    "src/components/ExportModal.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 45
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 118
+        },
+        {
+          "rule": "max-lines",
+          "line": 240
+        },
+        {
+          "rule": "complexity",
+          "line": 259
+        }
+      ]
+    },
+    "src/components/Filters.ts": {
+      "violations": [
+        {
+          "rule": "max-params",
+          "line": 37
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 58
+        },
+        {
+          "rule": "max-statements",
+          "line": 58
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 183
+        },
+        {
+          "rule": "complexity",
+          "line": 183
+        },
+        {
+          "rule": "max-statements",
+          "line": 183
+        },
+        {
+          "rule": "max-lines",
+          "line": 240
+        },
+        {
+          "rule": "max-depth",
+          "line": 378
+        }
+      ]
+    },
+    "src/components/FormattingToolbar.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 15
+        },
+        {
+          "rule": "max-statements",
+          "line": 15
+        }
+      ]
+    },
+    "src/components/ImagePicker.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 47
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 103
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 104
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 226
+        },
+        {
+          "rule": "max-statements",
+          "line": 226
+        },
+        {
+          "rule": "max-lines",
+          "line": 291
+        }
+      ]
+    },
+    "src/components/InfoPanel.ts": {
+      "violations": [
+        {
+          "rule": "max-lines",
+          "line": 261
+        },
+        {
+          "rule": "complexity",
+          "line": 323
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 380
+        }
+      ]
+    },
+    "src/components/InlineSuggest.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 111
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 158
+        },
+        {
+          "rule": "complexity",
+          "line": 158
+        },
+        {
+          "rule": "max-statements",
+          "line": 158
+        },
+        {
+          "rule": "max-lines",
+          "line": 267
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 383
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 485
+        }
+      ]
+    },
+    "src/components/Inspector.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 109
+        },
+        {
+          "rule": "complexity",
+          "line": 109
+        },
+        {
+          "rule": "max-statements",
+          "line": 109
+        },
+        {
+          "rule": "max-lines",
+          "line": 264
+        },
+        {
+          "rule": "max-depth",
+          "line": 562
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 891
+        },
+        {
+          "rule": "complexity",
+          "line": 891
+        },
+        {
+          "rule": "max-statements",
+          "line": 891
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1027
+        },
+        {
+          "rule": "complexity",
+          "line": 1047
+        },
+        {
+          "rule": "max-depth",
+          "line": 1057
+        },
+        {
+          "rule": "complexity",
+          "line": 1089
+        },
+        {
+          "rule": "max-depth",
+          "line": 1099
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1182
+        },
+        {
+          "rule": "complexity",
+          "line": 1182
+        },
+        {
+          "rule": "max-statements",
+          "line": 1182
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1256
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1368
+        },
+        {
+          "rule": "complexity",
+          "line": 1479
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1513
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1530
+        }
+      ]
+    },
+    "src/components/MobileAdapter.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 81
+        },
+        {
+          "rule": "complexity",
+          "line": 181
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 308
+        },
+        {
+          "rule": "max-statements",
+          "line": 320
+        },
+        {
+          "rule": "complexity",
+          "line": 320
+        },
+        {
+          "rule": "max-lines",
+          "line": 328
+        }
+      ]
+    },
+    "src/components/ProjectSelector.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 12
+        },
+        {
+          "rule": "max-statements",
+          "line": 12
+        },
+        {
+          "rule": "complexity",
+          "line": 12
+        }
+      ]
+    },
+    "src/components/QuickAddModal.ts": {
+      "violations": [
+        {
+          "rule": "max-params",
+          "line": 21
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 38
+        },
+        {
+          "rule": "complexity",
+          "line": 38
+        },
+        {
+          "rule": "max-statements",
+          "line": 38
+        },
+        {
+          "rule": "max-lines",
+          "line": 251
+        },
+        {
+          "rule": "complexity",
+          "line": 294
+        }
+      ]
+    },
+    "src/components/RelationshipMap.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 104
+        },
+        {
+          "rule": "max-statements",
+          "line": 104
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 217
+        },
+        {
+          "rule": "complexity",
+          "line": 217
+        },
+        {
+          "rule": "max-statements",
+          "line": 217
+        },
+        {
+          "rule": "max-depth",
+          "line": 246
+        },
+        {
+          "rule": "max-lines",
+          "line": 251
+        },
+        {
+          "rule": "max-statements",
+          "line": 378
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 427
+        },
+        {
+          "rule": "complexity",
+          "line": 427
+        },
+        {
+          "rule": "max-statements",
+          "line": 427
+        }
+      ]
+    },
+    "src/components/RenameConfirmModal.ts": {
+      "violations": [
+        {
+          "rule": "max-params",
+          "line": 18
+        }
+      ]
+    },
+    "src/components/SceneCard.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 24
+        },
+        {
+          "rule": "complexity",
+          "line": 24
+        },
+        {
+          "rule": "max-statements",
+          "line": 24
+        },
+        {
+          "rule": "max-lines",
+          "line": 245
+        },
+        {
+          "rule": "complexity",
+          "line": 300
+        }
+      ]
+    },
+    "src/components/ShiftDatesModal.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 127
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 199
+        },
+        {
+          "rule": "complexity",
+          "line": 199
+        },
+        {
+          "rule": "max-statements",
+          "line": 199
+        },
+        {
+          "rule": "complexity",
+          "line": 203
+        },
+        {
+          "rule": "max-lines",
+          "line": 281
+        },
+        {
+          "rule": "complexity",
+          "line": 288
+        },
+        {
+          "rule": "complexity",
+          "line": 336
+        },
+        {
+          "rule": "max-statements",
+          "line": 336
+        }
+      ]
+    },
+    "src/components/SplitMergeModals.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 35
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 181
+        },
+        {
+          "rule": "max-lines",
+          "line": 265
+        }
+      ]
+    },
+    "src/components/StoryGraph.ts": {
+      "violations": [
+        {
+          "rule": "max-params",
+          "line": 123
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 141
+        },
+        {
+          "rule": "max-statements",
+          "line": 141
+        },
+        {
+          "rule": "max-lines",
+          "line": 271
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 298
+        },
+        {
+          "rule": "complexity",
+          "line": 298
+        },
+        {
+          "rule": "max-statements",
+          "line": 298
+        },
+        {
+          "rule": "max-depth",
+          "line": 372
+        },
+        {
+          "rule": "max-depth",
+          "line": 432
+        },
+        {
+          "rule": "max-depth",
+          "line": 435
+        },
+        {
+          "rule": "max-depth",
+          "line": 439
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 509
+        },
+        {
+          "rule": "complexity",
+          "line": 509
+        },
+        {
+          "rule": "max-statements",
+          "line": 509
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 585
+        },
+        {
+          "rule": "complexity",
+          "line": 585
+        },
+        {
+          "rule": "max-statements",
+          "line": 585
+        }
+      ]
+    },
+    "src/components/TimeSpanPicker.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 173
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 227
+        },
+        {
+          "rule": "max-lines",
+          "line": 238
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 298
+        },
+        {
+          "rule": "complexity",
+          "line": 298
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 370
+        },
+        {
+          "rule": "complexity",
+          "line": 370
+        },
+        {
+          "rule": "max-statements",
+          "line": 370
+        }
+      ]
+    },
+    "src/components/UniverseSelector.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 51
+        },
+        {
+          "rule": "max-params",
+          "line": 51
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 138
+        },
+        {
+          "rule": "max-statements",
+          "line": 138
+        },
+        {
+          "rule": "complexity",
+          "line": 138
+        },
+        {
+          "rule": "max-params",
+          "line": 286
+        },
+        {
+          "rule": "max-lines",
+          "line": 290
+        },
+        {
+          "rule": "max-params",
+          "line": 322
+        },
+        {
+          "rule": "complexity",
+          "line": 322
+        },
+        {
+          "rule": "max-params",
+          "line": 359
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 386
+        },
+        {
+          "rule": "max-params",
+          "line": 386
+        },
+        {
+          "rule": "max-statements",
+          "line": 386
+        },
+        {
+          "rule": "complexity",
+          "line": 517
+        }
+      ]
+    },
+    "src/components/ViewSwitcher.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 45
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 178
+        },
+        {
+          "rule": "max-lines",
+          "line": 279
+        },
+        {
+          "rule": "max-params",
+          "line": 286
+        }
+      ]
+    },
+    "src/components/VirtualScroller.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 138
+        },
+        {
+          "rule": "max-statements",
+          "line": 138
+        }
+      ]
+    },
+    "src/main.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 125
+        },
+        {
+          "rule": "complexity",
+          "line": 125
+        },
+        {
+          "rule": "max-statements",
+          "line": 125
+        },
+        {
+          "rule": "max-depth",
+          "line": 216
+        },
+        {
+          "rule": "max-depth",
+          "line": 220
+        },
+        {
+          "rule": "max-lines",
+          "line": 258
+        },
+        {
+          "rule": "complexity",
+          "line": 297
+        },
+        {
+          "rule": "max-statements",
+          "line": 297
+        },
+        {
+          "rule": "complexity",
+          "line": 491
+        },
+        {
+          "rule": "max-statements",
+          "line": 491
+        },
+        {
+          "rule": "complexity",
+          "line": 562
+        },
+        {
+          "rule": "complexity",
+          "line": 660
+        },
+        {
+          "rule": "max-statements",
+          "line": 660
+        },
+        {
+          "rule": "complexity",
+          "line": 734
+        },
+        {
+          "rule": "max-statements",
+          "line": 734
+        },
+        {
+          "rule": "max-depth",
+          "line": 851
+        },
+        {
+          "rule": "complexity",
+          "line": 915
+        },
+        {
+          "rule": "complexity",
+          "line": 934
+        },
+        {
+          "rule": "complexity",
+          "line": 972
+        },
+        {
+          "rule": "max-depth",
+          "line": 1033
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1048
+        },
+        {
+          "rule": "complexity",
+          "line": 1048
+        },
+        {
+          "rule": "max-statements",
+          "line": 1048
+        },
+        {
+          "rule": "max-depth",
+          "line": 1171
+        },
+        {
+          "rule": "complexity",
+          "line": 1284
+        },
+        {
+          "rule": "complexity",
+          "line": 1346
+        },
+        {
+          "rule": "max-depth",
+          "line": 1359
+        },
+        {
+          "rule": "max-depth",
+          "line": 1399
+        },
+        {
+          "rule": "max-depth",
+          "line": 1402
+        },
+        {
+          "rule": "max-statements",
+          "line": 1432
+        },
+        {
+          "rule": "max-depth",
+          "line": 1447
+        },
+        {
+          "rule": "complexity",
+          "line": 1688
+        },
+        {
+          "rule": "complexity",
+          "line": 1846
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1898
+        },
+        {
+          "rule": "complexity",
+          "line": 1932
+        },
+        {
+          "rule": "max-depth",
+          "line": 1952
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2094
+        },
+        {
+          "rule": "complexity",
+          "line": 2094
+        },
+        {
+          "rule": "max-statements",
+          "line": 2094
+        },
+        {
+          "rule": "max-depth",
+          "line": 2129
+        },
+        {
+          "rule": "max-depth",
+          "line": 2133
+        },
+        {
+          "rule": "complexity",
+          "line": 2309
+        },
+        {
+          "rule": "complexity",
+          "line": 2351
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2409
+        },
+        {
+          "rule": "complexity",
+          "line": 2409
+        },
+        {
+          "rule": "max-statements",
+          "line": 2409
+        },
+        {
+          "rule": "max-depth",
+          "line": 2506
+        },
+        {
+          "rule": "max-depth",
+          "line": 2513
+        },
+        {
+          "rule": "max-depth",
+          "line": 2514
+        },
+        {
+          "rule": "max-depth",
+          "line": 2515
+        },
+        {
+          "rule": "max-depth",
+          "line": 2516
+        },
+        {
+          "rule": "max-depth",
+          "line": 2517
+        },
+        {
+          "rule": "max-depth",
+          "line": 2518
+        },
+        {
+          "rule": "max-depth",
+          "line": 2519
+        },
+        {
+          "rule": "complexity",
+          "line": 2610
+        },
+        {
+          "rule": "max-statements",
+          "line": 2610
+        },
+        {
+          "rule": "max-depth",
+          "line": 2639
+        },
+        {
+          "rule": "max-depth",
+          "line": 2640
+        },
+        {
+          "rule": "max-depth",
+          "line": 2646
+        },
+        {
+          "rule": "max-depth",
+          "line": 2650
+        },
+        {
+          "rule": "max-depth",
+          "line": 2655
+        },
+        {
+          "rule": "max-depth",
+          "line": 2665
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2796
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3090
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3271
+        },
+        {
+          "rule": "complexity",
+          "line": 3271
+        },
+        {
+          "rule": "max-statements",
+          "line": 3271
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3417
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3493
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3642
+        },
+        {
+          "rule": "max-statements",
+          "line": 3642
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3820
+        }
+      ]
+    },
+    "src/models/Character.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 276
+        },
+        {
+          "rule": "complexity",
+          "line": 314
+        },
+        {
+          "rule": "max-depth",
+          "line": 323
+        },
+        {
+          "rule": "max-depth",
+          "line": 325
+        },
+        {
+          "rule": "max-lines",
+          "line": 371
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 561
+        },
+        {
+          "rule": "complexity",
+          "line": 561
+        },
+        {
+          "rule": "complexity",
+          "line": 893
+        },
+        {
+          "rule": "complexity",
+          "line": 914
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 975
+        },
+        {
+          "rule": "max-statements",
+          "line": 975
+        },
+        {
+          "rule": "complexity",
+          "line": 975
+        },
+        {
+          "rule": "max-depth",
+          "line": 1013
+        },
+        {
+          "rule": "max-depth",
+          "line": 1029
+        }
+      ]
+    },
+    "src/models/Codex.ts": {
+      "violations": [
+        {
+          "rule": "max-lines",
+          "line": 282
+        }
+      ]
+    },
+    "src/models/Location.ts": {
+      "violations": [
+        {
+          "rule": "max-lines",
+          "line": 295
+        }
+      ]
+    },
+    "src/models/Scene.ts": {
+      "violations": [
+        {
+          "rule": "max-lines",
+          "line": 345
+        }
+      ]
+    },
+    "src/models/TimeSpan.ts": {
+      "violations": [
+        {
+          "rule": "max-params",
+          "line": 195
+        }
+      ]
+    },
+    "src/services/CascadeRenameService.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 47
+        },
+        {
+          "rule": "max-depth",
+          "line": 65
+        }
+      ]
+    },
+    "src/services/CharacterManager.ts": {
+      "violations": [
+        {
+          "rule": "max-depth",
+          "line": 43
+        },
+        {
+          "rule": "complexity",
+          "line": 118
+        },
+        {
+          "rule": "complexity",
+          "line": 222
+        },
+        {
+          "rule": "max-statements",
+          "line": 222
+        },
+        {
+          "rule": "max-lines",
+          "line": 292
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 351
+        },
+        {
+          "rule": "complexity",
+          "line": 351
+        },
+        {
+          "rule": "complexity",
+          "line": 469
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 489
+        },
+        {
+          "rule": "max-statements",
+          "line": 489
+        }
+      ]
+    },
+    "src/services/CodexManager.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 101
+        },
+        {
+          "rule": "max-depth",
+          "line": 132
+        },
+        {
+          "rule": "max-depth",
+          "line": 135
+        },
+        {
+          "rule": "max-depth",
+          "line": 137
+        },
+        {
+          "rule": "max-depth",
+          "line": 192
+        },
+        {
+          "rule": "max-lines",
+          "line": 312
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 340
+        },
+        {
+          "rule": "complexity",
+          "line": 340
+        },
+        {
+          "rule": "max-statements",
+          "line": 340
+        },
+        {
+          "rule": "complexity",
+          "line": 469
+        }
+      ]
+    },
+    "src/services/DocxConverter.ts": {
+      "violations": [
+        {
+          "rule": "max-statements",
+          "line": 162
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 242
+        },
+        {
+          "rule": "max-statements",
+          "line": 242
+        },
+        {
+          "rule": "max-lines",
+          "line": 264
+        },
+        {
+          "rule": "max-depth",
+          "line": 345
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 489
+        },
+        {
+          "rule": "complexity",
+          "line": 682
+        },
+        {
+          "rule": "complexity",
+          "line": 785
+        },
+        {
+          "rule": "max-statements",
+          "line": 785
+        },
+        {
+          "rule": "complexity",
+          "line": 883
+        },
+        {
+          "rule": "complexity",
+          "line": 914
+        },
+        {
+          "rule": "max-depth",
+          "line": 946
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 978
+        },
+        {
+          "rule": "complexity",
+          "line": 978
+        },
+        {
+          "rule": "max-statements",
+          "line": 978
+        },
+        {
+          "rule": "max-statements",
+          "line": 1095
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1239
+        },
+        {
+          "rule": "complexity",
+          "line": 1239
+        },
+        {
+          "rule": "max-statements",
+          "line": 1239
+        },
+        {
+          "rule": "max-depth",
+          "line": 1402
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1632
+        },
+        {
+          "rule": "complexity",
+          "line": 1632
+        },
+        {
+          "rule": "max-statements",
+          "line": 1632
+        },
+        {
+          "rule": "max-depth",
+          "line": 1641
+        },
+        {
+          "rule": "max-depth",
+          "line": 1651
+        },
+        {
+          "rule": "max-depth",
+          "line": 1653
+        },
+        {
+          "rule": "max-depth",
+          "line": 1657
+        },
+        {
+          "rule": "max-depth",
+          "line": 1674
+        },
+        {
+          "rule": "max-depth",
+          "line": 1686
+        },
+        {
+          "rule": "max-depth",
+          "line": 1689
+        },
+        {
+          "rule": "max-depth",
+          "line": 1694
+        },
+        {
+          "rule": "max-depth",
+          "line": 1697
+        }
+      ]
+    },
+    "src/services/EventManager.ts": {
+      "violations": [
+        {
+          "rule": "max-depth",
+          "line": 176
+        },
+        {
+          "rule": "max-depth",
+          "line": 211
+        },
+        {
+          "rule": "complexity",
+          "line": 233
+        },
+        {
+          "rule": "max-lines",
+          "line": 330
+        },
+        {
+          "rule": "max-depth",
+          "line": 343
+        },
+        {
+          "rule": "max-depth",
+          "line": 352
+        },
+        {
+          "rule": "max-depth",
+          "line": 353
+        },
+        {
+          "rule": "complexity",
+          "line": 391
+        }
+      ]
+    },
+    "src/services/ExportService.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 213
+        },
+        {
+          "rule": "max-statements",
+          "line": 213
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 269
+        },
+        {
+          "rule": "complexity",
+          "line": 269
+        },
+        {
+          "rule": "max-statements",
+          "line": 269
+        },
+        {
+          "rule": "max-lines",
+          "line": 273
+        },
+        {
+          "rule": "max-depth",
+          "line": 326
+        },
+        {
+          "rule": "max-depth",
+          "line": 327
+        },
+        {
+          "rule": "max-depth",
+          "line": 328
+        },
+        {
+          "rule": "max-depth",
+          "line": 329
+        },
+        {
+          "rule": "max-depth",
+          "line": 330
+        },
+        {
+          "rule": "max-depth",
+          "line": 331
+        },
+        {
+          "rule": "max-depth",
+          "line": 332
+        },
+        {
+          "rule": "max-depth",
+          "line": 333
+        },
+        {
+          "rule": "max-depth",
+          "line": 334
+        },
+        {
+          "rule": "max-depth",
+          "line": 335
+        },
+        {
+          "rule": "max-depth",
+          "line": 336
+        },
+        {
+          "rule": "max-depth",
+          "line": 337
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 406
+        },
+        {
+          "rule": "complexity",
+          "line": 457
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 545
+        },
+        {
+          "rule": "complexity",
+          "line": 599
+        },
+        {
+          "rule": "max-statements",
+          "line": 599
+        },
+        {
+          "rule": "complexity",
+          "line": 655
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 689
+        },
+        {
+          "rule": "complexity",
+          "line": 689
+        },
+        {
+          "rule": "max-statements",
+          "line": 689
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1006
+        },
+        {
+          "rule": "max-statements",
+          "line": 1006
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1106
+        },
+        {
+          "rule": "complexity",
+          "line": 1106
+        },
+        {
+          "rule": "max-statements",
+          "line": 1106
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1249
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1253
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1340
+        },
+        {
+          "rule": "complexity",
+          "line": 1340
+        }
+      ]
+    },
+    "src/services/FieldTemplateService.ts": {
+      "violations": [
+        {
+          "rule": "max-params",
+          "line": 253
+        },
+        {
+          "rule": "max-params",
+          "line": 328
+        },
+        {
+          "rule": "max-lines",
+          "line": 337
+        },
+        {
+          "rule": "max-params",
+          "line": 343
+        },
+        {
+          "rule": "max-depth",
+          "line": 374
+        },
+        {
+          "rule": "complexity",
+          "line": 384
+        },
+        {
+          "rule": "complexity",
+          "line": 545
+        },
+        {
+          "rule": "complexity",
+          "line": 575
+        }
+      ]
+    },
+    "src/services/LinkScanner.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 201
+        },
+        {
+          "rule": "complexity",
+          "line": 201
+        },
+        {
+          "rule": "max-statements",
+          "line": 201
+        },
+        {
+          "rule": "max-depth",
+          "line": 332
+        },
+        {
+          "rule": "max-depth",
+          "line": 342
+        },
+        {
+          "rule": "max-lines",
+          "line": 343
+        },
+        {
+          "rule": "max-depth",
+          "line": 346
+        },
+        {
+          "rule": "max-depth",
+          "line": 353
+        },
+        {
+          "rule": "max-depth",
+          "line": 355
+        },
+        {
+          "rule": "max-depth",
+          "line": 359
+        },
+        {
+          "rule": "complexity",
+          "line": 374
+        },
+        {
+          "rule": "max-statements",
+          "line": 374
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 451
+        },
+        {
+          "rule": "complexity",
+          "line": 451
+        },
+        {
+          "rule": "max-statements",
+          "line": 451
+        },
+        {
+          "rule": "max-depth",
+          "line": 477
+        },
+        {
+          "rule": "max-depth",
+          "line": 480
+        },
+        {
+          "rule": "max-depth",
+          "line": 489
+        },
+        {
+          "rule": "max-depth",
+          "line": 497
+        },
+        {
+          "rule": "max-depth",
+          "line": 501
+        },
+        {
+          "rule": "max-depth",
+          "line": 503
+        },
+        {
+          "rule": "max-depth",
+          "line": 510
+        },
+        {
+          "rule": "max-depth",
+          "line": 512
+        },
+        {
+          "rule": "max-depth",
+          "line": 535
+        },
+        {
+          "rule": "max-depth",
+          "line": 544
+        },
+        {
+          "rule": "max-depth",
+          "line": 549
+        },
+        {
+          "rule": "complexity",
+          "line": 597
+        },
+        {
+          "rule": "max-statements",
+          "line": 597
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 667
+        },
+        {
+          "rule": "complexity",
+          "line": 667
+        },
+        {
+          "rule": "max-statements",
+          "line": 667
+        },
+        {
+          "rule": "max-params",
+          "line": 682
+        },
+        {
+          "rule": "max-depth",
+          "line": 741
+        },
+        {
+          "rule": "max-depth",
+          "line": 743
+        },
+        {
+          "rule": "max-depth",
+          "line": 772
+        },
+        {
+          "rule": "max-depth",
+          "line": 773
+        },
+        {
+          "rule": "max-depth",
+          "line": 774
+        },
+        {
+          "rule": "max-depth",
+          "line": 776
+        },
+        {
+          "rule": "max-depth",
+          "line": 778
+        },
+        {
+          "rule": "complexity",
+          "line": 796
+        }
+      ]
+    },
+    "src/services/LocationManager.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 94
+        },
+        {
+          "rule": "complexity",
+          "line": 94
+        },
+        {
+          "rule": "max-lines",
+          "line": 264
+        },
+        {
+          "rule": "complexity",
+          "line": 350
+        },
+        {
+          "rule": "max-statements",
+          "line": 350
+        }
+      ]
+    },
+    "src/services/MetadataParser.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 130
+        },
+        {
+          "rule": "complexity",
+          "line": 130
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 240
+        },
+        {
+          "rule": "complexity",
+          "line": 240
+        },
+        {
+          "rule": "max-statements",
+          "line": 240
+        },
+        {
+          "rule": "max-lines",
+          "line": 286
+        },
+        {
+          "rule": "max-depth",
+          "line": 286
+        },
+        {
+          "rule": "max-depth",
+          "line": 287
+        },
+        {
+          "rule": "max-depth",
+          "line": 288
+        },
+        {
+          "rule": "max-depth",
+          "line": 291
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 341
+        },
+        {
+          "rule": "complexity",
+          "line": 351
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 410
+        },
+        {
+          "rule": "complexity",
+          "line": 410
+        },
+        {
+          "rule": "max-statements",
+          "line": 410
+        },
+        {
+          "rule": "complexity",
+          "line": 534
+        }
+      ]
+    },
+    "src/services/PdfConverter.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 75
+        },
+        {
+          "rule": "complexity",
+          "line": 75
+        },
+        {
+          "rule": "max-statements",
+          "line": 75
+        },
+        {
+          "rule": "max-depth",
+          "line": 130
+        },
+        {
+          "rule": "max-depth",
+          "line": 143
+        },
+        {
+          "rule": "max-depth",
+          "line": 144
+        },
+        {
+          "rule": "max-depth",
+          "line": 176
+        },
+        {
+          "rule": "max-depth",
+          "line": 177
+        },
+        {
+          "rule": "max-depth",
+          "line": 186
+        },
+        {
+          "rule": "max-depth",
+          "line": 208
+        },
+        {
+          "rule": "max-lines",
+          "line": 258
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 263
+        },
+        {
+          "rule": "complexity",
+          "line": 263
+        },
+        {
+          "rule": "max-statements",
+          "line": 263
+        },
+        {
+          "rule": "max-statements",
+          "line": 369
+        },
+        {
+          "rule": "complexity",
+          "line": 498
+        },
+        {
+          "rule": "complexity",
+          "line": 527
+        },
+        {
+          "rule": "max-statements",
+          "line": 527
+        },
+        {
+          "rule": "max-depth",
+          "line": 544
+        },
+        {
+          "rule": "max-depth",
+          "line": 553
+        },
+        {
+          "rule": "max-depth",
+          "line": 559
+        }
+      ]
+    },
+    "src/services/ResearchManager.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 73
+        },
+        {
+          "rule": "max-params",
+          "line": 190
+        },
+        {
+          "rule": "max-statements",
+          "line": 236
+        },
+        {
+          "rule": "max-lines",
+          "line": 288
+        },
+        {
+          "rule": "max-depth",
+          "line": 290
+        },
+        {
+          "rule": "max-depth",
+          "line": 332
+        },
+        {
+          "rule": "max-depth",
+          "line": 334
+        },
+        {
+          "rule": "max-depth",
+          "line": 335
+        }
+      ]
+    },
+    "src/services/SceneManager.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 88
+        },
+        {
+          "rule": "max-depth",
+          "line": 98
+        },
+        {
+          "rule": "max-depth",
+          "line": 107
+        },
+        {
+          "rule": "max-depth",
+          "line": 109
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 315
+        },
+        {
+          "rule": "complexity",
+          "line": 315
+        },
+        {
+          "rule": "max-statements",
+          "line": 315
+        },
+        {
+          "rule": "max-lines",
+          "line": 318
+        },
+        {
+          "rule": "max-depth",
+          "line": 402
+        },
+        {
+          "rule": "max-depth",
+          "line": 404
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 462
+        },
+        {
+          "rule": "max-statements",
+          "line": 462
+        },
+        {
+          "rule": "max-depth",
+          "line": 518
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 606
+        },
+        {
+          "rule": "complexity",
+          "line": 606
+        },
+        {
+          "rule": "max-statements",
+          "line": 606
+        },
+        {
+          "rule": "max-depth",
+          "line": 663
+        },
+        {
+          "rule": "complexity",
+          "line": 686
+        },
+        {
+          "rule": "max-statements",
+          "line": 686
+        },
+        {
+          "rule": "complexity",
+          "line": 751
+        },
+        {
+          "rule": "complexity",
+          "line": 799
+        },
+        {
+          "rule": "complexity",
+          "line": 934
+        },
+        {
+          "rule": "complexity",
+          "line": 1025
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1109
+        },
+        {
+          "rule": "complexity",
+          "line": 1109
+        },
+        {
+          "rule": "max-statements",
+          "line": 1109
+        },
+        {
+          "rule": "complexity",
+          "line": 1205
+        },
+        {
+          "rule": "max-statements",
+          "line": 1205
+        },
+        {
+          "rule": "complexity",
+          "line": 1378
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1408
+        },
+        {
+          "rule": "complexity",
+          "line": 1408
+        },
+        {
+          "rule": "max-statements",
+          "line": 1464
+        },
+        {
+          "rule": "complexity",
+          "line": 1584
+        },
+        {
+          "rule": "max-statements",
+          "line": 1663
+        },
+        {
+          "rule": "complexity",
+          "line": 1864
+        },
+        {
+          "rule": "max-statements",
+          "line": 1864
+        },
+        {
+          "rule": "max-depth",
+          "line": 1889
+        },
+        {
+          "rule": "max-depth",
+          "line": 1892
+        },
+        {
+          "rule": "complexity",
+          "line": 2094
+        },
+        {
+          "rule": "complexity",
+          "line": 2159
+        },
+        {
+          "rule": "max-depth",
+          "line": 2433
+        },
+        {
+          "rule": "complexity",
+          "line": 2673
+        },
+        {
+          "rule": "max-statements",
+          "line": 2673
+        },
+        {
+          "rule": "max-depth",
+          "line": 2692
+        },
+        {
+          "rule": "max-depth",
+          "line": 2695
+        },
+        {
+          "rule": "complexity",
+          "line": 2710
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2748
+        },
+        {
+          "rule": "complexity",
+          "line": 2748
+        },
+        {
+          "rule": "max-statements",
+          "line": 2748
+        },
+        {
+          "rule": "complexity",
+          "line": 2955
+        },
+        {
+          "rule": "complexity",
+          "line": 2986
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3043
+        },
+        {
+          "rule": "complexity",
+          "line": 3043
+        },
+        {
+          "rule": "max-statements",
+          "line": 3043
+        }
+      ]
+    },
+    "src/services/SceneQueryService.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 72
+        },
+        {
+          "rule": "complexity",
+          "line": 72
+        },
+        {
+          "rule": "max-depth",
+          "line": 96
+        },
+        {
+          "rule": "max-params",
+          "line": 144
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 275
+        },
+        {
+          "rule": "complexity",
+          "line": 275
+        },
+        {
+          "rule": "max-statements",
+          "line": 275
+        },
+        {
+          "rule": "max-lines",
+          "line": 298
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 351
+        },
+        {
+          "rule": "complexity",
+          "line": 351
+        },
+        {
+          "rule": "max-statements",
+          "line": 351
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 419
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 421
+        },
+        {
+          "rule": "complexity",
+          "line": 421
+        },
+        {
+          "rule": "complexity",
+          "line": 485
+        }
+      ]
+    },
+    "src/services/ScrivenerImporter.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 57
+        },
+        {
+          "rule": "max-lines",
+          "line": 287
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 342
+        },
+        {
+          "rule": "max-statements",
+          "line": 342
+        },
+        {
+          "rule": "complexity",
+          "line": 342
+        },
+        {
+          "rule": "complexity",
+          "line": 367
+        },
+        {
+          "rule": "max-depth",
+          "line": 424
+        },
+        {
+          "rule": "max-depth",
+          "line": 425
+        },
+        {
+          "rule": "max-depth",
+          "line": 426
+        },
+        {
+          "rule": "max-depth",
+          "line": 427
+        },
+        {
+          "rule": "max-depth",
+          "line": 428
+        },
+        {
+          "rule": "max-depth",
+          "line": 429
+        },
+        {
+          "rule": "max-depth",
+          "line": 430
+        },
+        {
+          "rule": "max-depth",
+          "line": 433
+        },
+        {
+          "rule": "max-depth",
+          "line": 436
+        },
+        {
+          "rule": "max-depth",
+          "line": 453
+        },
+        {
+          "rule": "max-depth",
+          "line": 454
+        },
+        {
+          "rule": "max-depth",
+          "line": 456
+        },
+        {
+          "rule": "max-depth",
+          "line": 460
+        },
+        {
+          "rule": "max-depth",
+          "line": 461
+        },
+        {
+          "rule": "max-depth",
+          "line": 463
+        },
+        {
+          "rule": "max-depth",
+          "line": 470
+        },
+        {
+          "rule": "max-depth",
+          "line": 476
+        },
+        {
+          "rule": "max-depth",
+          "line": 477
+        },
+        {
+          "rule": "max-statements",
+          "line": 552
+        },
+        {
+          "rule": "complexity",
+          "line": 552
+        },
+        {
+          "rule": "max-depth",
+          "line": 568
+        },
+        {
+          "rule": "max-statements",
+          "line": 618
+        },
+        {
+          "rule": "complexity",
+          "line": 618
+        },
+        {
+          "rule": "max-statements",
+          "line": 674
+        },
+        {
+          "rule": "complexity",
+          "line": 674
+        },
+        {
+          "rule": "max-depth",
+          "line": 700
+        },
+        {
+          "rule": "max-depth",
+          "line": 712
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 727
+        },
+        {
+          "rule": "max-statements",
+          "line": 727
+        },
+        {
+          "rule": "complexity",
+          "line": 727
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 887
+        },
+        {
+          "rule": "complexity",
+          "line": 887
+        },
+        {
+          "rule": "max-statements",
+          "line": 887
+        },
+        {
+          "rule": "max-depth",
+          "line": 1209
+        },
+        {
+          "rule": "max-depth",
+          "line": 1235
+        },
+        {
+          "rule": "max-depth",
+          "line": 1243
+        },
+        {
+          "rule": "max-depth",
+          "line": 1256
+        },
+        {
+          "rule": "complexity",
+          "line": 1472
+        },
+        {
+          "rule": "max-depth",
+          "line": 1494
+        },
+        {
+          "rule": "max-depth",
+          "line": 1496
+        },
+        {
+          "rule": "complexity",
+          "line": 1528
+        },
+        {
+          "rule": "max-params",
+          "line": 1593
+        },
+        {
+          "rule": "complexity",
+          "line": 1593
+        },
+        {
+          "rule": "max-statements",
+          "line": 1593
+        },
+        {
+          "rule": "complexity",
+          "line": 1753
+        },
+        {
+          "rule": "max-params",
+          "line": 1825
+        }
+      ]
+    },
+    "src/services/SeriesManager.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 85
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 148
+        },
+        {
+          "rule": "max-statements",
+          "line": 148
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 257
+        },
+        {
+          "rule": "complexity",
+          "line": 257
+        },
+        {
+          "rule": "max-statements",
+          "line": 257
+        },
+        {
+          "rule": "max-lines",
+          "line": 323
+        },
+        {
+          "rule": "complexity",
+          "line": 334
+        },
+        {
+          "rule": "max-statements",
+          "line": 334
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 452
+        },
+        {
+          "rule": "complexity",
+          "line": 452
+        },
+        {
+          "rule": "max-statements",
+          "line": 452
+        },
+        {
+          "rule": "complexity",
+          "line": 533
+        },
+        {
+          "rule": "max-statements",
+          "line": 533
+        },
+        {
+          "rule": "complexity",
+          "line": 631
+        },
+        {
+          "rule": "max-depth",
+          "line": 649
+        },
+        {
+          "rule": "max-depth",
+          "line": 651
+        },
+        {
+          "rule": "complexity",
+          "line": 752
+        }
+      ]
+    },
+    "src/services/SnapshotManager.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 191
+        },
+        {
+          "rule": "complexity",
+          "line": 271
+        },
+        {
+          "rule": "max-statements",
+          "line": 271
+        },
+        {
+          "rule": "max-depth",
+          "line": 292
+        },
+        {
+          "rule": "max-lines",
+          "line": 318
+        }
+      ]
+    },
+    "src/services/TimeSpanService.ts": {
+      "violations": [
+        {
+          "rule": "max-depth",
+          "line": 47
+        },
+        {
+          "rule": "complexity",
+          "line": 106
+        },
+        {
+          "rule": "complexity",
+          "line": 165
+        },
+        {
+          "rule": "complexity",
+          "line": 204
+        },
+        {
+          "rule": "max-depth",
+          "line": 218
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 256
+        },
+        {
+          "rule": "complexity",
+          "line": 256
+        },
+        {
+          "rule": "max-statements",
+          "line": 256
+        },
+        {
+          "rule": "max-lines",
+          "line": 281
+        },
+        {
+          "rule": "complexity",
+          "line": 606
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 795
+        },
+        {
+          "rule": "complexity",
+          "line": 795
+        },
+        {
+          "rule": "complexity",
+          "line": 873
+        },
+        {
+          "rule": "complexity",
+          "line": 904
+        },
+        {
+          "rule": "max-depth",
+          "line": 917
+        }
+      ]
+    },
+    "src/services/TimelineNavigationService.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 283
+        },
+        {
+          "rule": "complexity",
+          "line": 283
+        },
+        {
+          "rule": "max-statements",
+          "line": 283
+        },
+        {
+          "rule": "max-lines",
+          "line": 332
+        },
+        {
+          "rule": "max-depth",
+          "line": 385
+        },
+        {
+          "rule": "complexity",
+          "line": 401
+        }
+      ]
+    },
+    "src/services/UndoManager.ts": {
+      "violations": [
+        {
+          "rule": "max-params",
+          "line": 69
+        }
+      ]
+    },
+    "src/services/UniverseManager.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 91
+        },
+        {
+          "rule": "max-lines",
+          "line": 339
+        },
+        {
+          "rule": "complexity",
+          "line": 434
+        }
+      ]
+    },
+    "src/services/Validator.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 69
+        },
+        {
+          "rule": "complexity",
+          "line": 69
+        },
+        {
+          "rule": "max-statements",
+          "line": 69
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 172
+        },
+        {
+          "rule": "complexity",
+          "line": 172
+        },
+        {
+          "rule": "max-statements",
+          "line": 172
+        },
+        {
+          "rule": "complexity",
+          "line": 241
+        },
+        {
+          "rule": "max-depth",
+          "line": 273
+        },
+        {
+          "rule": "max-lines",
+          "line": 290
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 307
+        },
+        {
+          "rule": "complexity",
+          "line": 307
+        },
+        {
+          "rule": "max-depth",
+          "line": 315
+        },
+        {
+          "rule": "max-depth",
+          "line": 329
+        },
+        {
+          "rule": "max-depth",
+          "line": 344
+        },
+        {
+          "rule": "max-depth",
+          "line": 359
+        },
+        {
+          "rule": "max-depth",
+          "line": 362
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 378
+        },
+        {
+          "rule": "complexity",
+          "line": 441
+        },
+        {
+          "rule": "complexity",
+          "line": 498
+        }
+      ]
+    },
+    "src/services/ViewSnapshotService.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 224
+        },
+        {
+          "rule": "max-statements",
+          "line": 224
+        },
+        {
+          "rule": "max-depth",
+          "line": 252
+        },
+        {
+          "rule": "max-depth",
+          "line": 254
+        },
+        {
+          "rule": "max-depth",
+          "line": 255
+        },
+        {
+          "rule": "max-depth",
+          "line": 256
+        },
+        {
+          "rule": "max-depth",
+          "line": 257
+        },
+        {
+          "rule": "max-depth",
+          "line": 258
+        },
+        {
+          "rule": "max-depth",
+          "line": 259
+        },
+        {
+          "rule": "max-lines",
+          "line": 271
+        }
+      ]
+    },
+    "src/services/WritingTracker.ts": {
+      "violations": [
+        {
+          "rule": "max-params",
+          "line": 45
+        },
+        {
+          "rule": "complexity",
+          "line": 45
+        },
+        {
+          "rule": "max-lines",
+          "line": 297
+        },
+        {
+          "rule": "complexity",
+          "line": 445
+        }
+      ]
+    },
+    "src/settings.ts": {
+      "violations": [
+        {
+          "rule": "max-lines",
+          "line": 223
+        },
+        {
+          "rule": "max-params",
+          "line": 566
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1169
+        },
+        {
+          "rule": "complexity",
+          "line": 1169
+        },
+        {
+          "rule": "max-statements",
+          "line": 1169
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1311
+        },
+        {
+          "rule": "max-params",
+          "line": 1562
+        },
+        {
+          "rule": "max-params",
+          "line": 2009
+        },
+        {
+          "rule": "complexity",
+          "line": 2145
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2180
+        },
+        {
+          "rule": "max-statements",
+          "line": 2180
+        },
+        {
+          "rule": "max-depth",
+          "line": 2257
+        },
+        {
+          "rule": "max-params",
+          "line": 2343
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2736
+        },
+        {
+          "rule": "complexity",
+          "line": 2736
+        },
+        {
+          "rule": "max-statements",
+          "line": 2736
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2857
+        },
+        {
+          "rule": "max-statements",
+          "line": 2857
+        },
+        {
+          "rule": "max-params",
+          "line": 2986
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3147
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3290
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3352
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3483
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3632
+        },
+        {
+          "rule": "complexity",
+          "line": 3632
+        },
+        {
+          "rule": "max-statements",
+          "line": 3632
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3727
+        }
+      ]
+    },
+    "src/utils/actChapter.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 142
+        }
+      ]
+    },
+    "src/utils/locale.ts": {
+      "violations": [
+        {
+          "rule": "max-lines",
+          "line": 269
+        },
+        {
+          "rule": "complexity",
+          "line": 404
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 515
+        },
+        {
+          "rule": "max-statements",
+          "line": 515
+        },
+        {
+          "rule": "complexity",
+          "line": 515
+        },
+        {
+          "rule": "max-depth",
+          "line": 553
+        },
+        {
+          "rule": "max-depth",
+          "line": 555
+        },
+        {
+          "rule": "max-depth",
+          "line": 557
+        },
+        {
+          "rule": "max-depth",
+          "line": 564
+        },
+        {
+          "rule": "max-depth",
+          "line": 566
+        },
+        {
+          "rule": "max-depth",
+          "line": 583
+        },
+        {
+          "rule": "max-depth",
+          "line": 589
+        },
+        {
+          "rule": "max-depth",
+          "line": 595
+        },
+        {
+          "rule": "max-depth",
+          "line": 600
+        },
+        {
+          "rule": "max-depth",
+          "line": 622
+        }
+      ]
+    },
+    "src/views/BoardView.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 137
+        },
+        {
+          "rule": "max-statements",
+          "line": 137
+        },
+        {
+          "rule": "max-depth",
+          "line": 184
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 238
+        },
+        {
+          "rule": "complexity",
+          "line": 238
+        },
+        {
+          "rule": "max-statements",
+          "line": 238
+        },
+        {
+          "rule": "max-lines",
+          "line": 259
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 590
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 636
+        },
+        {
+          "rule": "complexity",
+          "line": 636
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 708
+        },
+        {
+          "rule": "max-statements",
+          "line": 708
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1047
+        },
+        {
+          "rule": "complexity",
+          "line": 1121
+        },
+        {
+          "rule": "max-params",
+          "line": 1296
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1341
+        },
+        {
+          "rule": "max-statements",
+          "line": 1341
+        },
+        {
+          "rule": "max-statements",
+          "line": 1399
+        },
+        {
+          "rule": "complexity",
+          "line": 1399
+        },
+        {
+          "rule": "max-statements",
+          "line": 1457
+        },
+        {
+          "rule": "complexity",
+          "line": 1565
+        },
+        {
+          "rule": "max-statements",
+          "line": 1565
+        },
+        {
+          "rule": "complexity",
+          "line": 1605
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1673
+        },
+        {
+          "rule": "max-statements",
+          "line": 1673
+        },
+        {
+          "rule": "complexity",
+          "line": 1799
+        },
+        {
+          "rule": "max-statements",
+          "line": 1799
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1995
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2030
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2142
+        },
+        {
+          "rule": "max-params",
+          "line": 2142
+        },
+        {
+          "rule": "complexity",
+          "line": 2142
+        },
+        {
+          "rule": "max-statements",
+          "line": 2142
+        },
+        {
+          "rule": "complexity",
+          "line": 2234
+        },
+        {
+          "rule": "complexity",
+          "line": 2294
+        },
+        {
+          "rule": "complexity",
+          "line": 2377
+        },
+        {
+          "rule": "max-statements",
+          "line": 2377
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2418
+        },
+        {
+          "rule": "max-statements",
+          "line": 2418
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2516
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2683
+        },
+        {
+          "rule": "max-statements",
+          "line": 2683
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2948
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3200
+        },
+        {
+          "rule": "max-statements",
+          "line": 3200
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3320
+        },
+        {
+          "rule": "max-statements",
+          "line": 3320
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3593
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3678
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3680
+        },
+        {
+          "rule": "complexity",
+          "line": 3913
+        },
+        {
+          "rule": "complexity",
+          "line": 4038
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 4107
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 4223
+        },
+        {
+          "rule": "max-statements",
+          "line": 4223
+        },
+        {
+          "rule": "complexity",
+          "line": 4474
+        }
+      ]
+    },
+    "src/views/CharacterView.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 162
+        },
+        {
+          "rule": "complexity",
+          "line": 162
+        },
+        {
+          "rule": "max-statements",
+          "line": 162
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 271
+        },
+        {
+          "rule": "complexity",
+          "line": 271
+        },
+        {
+          "rule": "max-statements",
+          "line": 271
+        },
+        {
+          "rule": "max-lines",
+          "line": 276
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 554
+        },
+        {
+          "rule": "max-params",
+          "line": 554
+        },
+        {
+          "rule": "complexity",
+          "line": 554
+        },
+        {
+          "rule": "max-statements",
+          "line": 554
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1039
+        },
+        {
+          "rule": "max-statements",
+          "line": 1039
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1174
+        },
+        {
+          "rule": "complexity",
+          "line": 1174
+        },
+        {
+          "rule": "max-statements",
+          "line": 1174
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1357
+        },
+        {
+          "rule": "max-statements",
+          "line": 1357
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1427
+        },
+        {
+          "rule": "max-params",
+          "line": 1427
+        },
+        {
+          "rule": "complexity",
+          "line": 1427
+        },
+        {
+          "rule": "max-statements",
+          "line": 1427
+        },
+        {
+          "rule": "max-depth",
+          "line": 1499
+        },
+        {
+          "rule": "max-params",
+          "line": 1663
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1697
+        },
+        {
+          "rule": "complexity",
+          "line": 1697
+        },
+        {
+          "rule": "max-statements",
+          "line": 1697
+        },
+        {
+          "rule": "max-depth",
+          "line": 1790
+        },
+        {
+          "rule": "max-depth",
+          "line": 1791
+        },
+        {
+          "rule": "max-depth",
+          "line": 1792
+        },
+        {
+          "rule": "max-depth",
+          "line": 1889
+        },
+        {
+          "rule": "max-depth",
+          "line": 1890
+        },
+        {
+          "rule": "max-depth",
+          "line": 1891
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1972
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1986
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1989
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2078
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2129
+        },
+        {
+          "rule": "max-statements",
+          "line": 2129
+        },
+        {
+          "rule": "complexity",
+          "line": 2129
+        },
+        {
+          "rule": "max-depth",
+          "line": 2178
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2375
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2404
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2406
+        },
+        {
+          "rule": "max-statements",
+          "line": 2406
+        },
+        {
+          "rule": "complexity",
+          "line": 2406
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2592
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2617
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2718
+        },
+        {
+          "rule": "max-statements",
+          "line": 2718
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2781
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2893
+        },
+        {
+          "rule": "complexity",
+          "line": 2893
+        },
+        {
+          "rule": "max-statements",
+          "line": 2893
+        },
+        {
+          "rule": "complexity",
+          "line": 3169
+        },
+        {
+          "rule": "max-statements",
+          "line": 3169
+        },
+        {
+          "rule": "max-depth",
+          "line": 3208
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3422
+        },
+        {
+          "rule": "complexity",
+          "line": 3422
+        },
+        {
+          "rule": "max-statements",
+          "line": 3422
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3497
+        },
+        {
+          "rule": "max-statements",
+          "line": 3497
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3644
+        },
+        {
+          "rule": "complexity",
+          "line": 3644
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3807
+        },
+        {
+          "rule": "max-statements",
+          "line": 3807
+        }
+      ]
+    },
+    "src/views/CodexView.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 258
+        },
+        {
+          "rule": "complexity",
+          "line": 258
+        },
+        {
+          "rule": "max-statements",
+          "line": 258
+        },
+        {
+          "rule": "max-lines",
+          "line": 282
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 372
+        },
+        {
+          "rule": "complexity",
+          "line": 372
+        },
+        {
+          "rule": "max-statements",
+          "line": 372
+        },
+        {
+          "rule": "complexity",
+          "line": 409
+        },
+        {
+          "rule": "complexity",
+          "line": 439
+        },
+        {
+          "rule": "max-depth",
+          "line": 465
+        },
+        {
+          "rule": "max-depth",
+          "line": 478
+        },
+        {
+          "rule": "max-depth",
+          "line": 543
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 566
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 668
+        },
+        {
+          "rule": "max-statements",
+          "line": 668
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 807
+        },
+        {
+          "rule": "complexity",
+          "line": 807
+        },
+        {
+          "rule": "max-statements",
+          "line": 807
+        },
+        {
+          "rule": "max-depth",
+          "line": 918
+        },
+        {
+          "rule": "max-depth",
+          "line": 921
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 984
+        },
+        {
+          "rule": "max-statements",
+          "line": 984
+        },
+        {
+          "rule": "max-depth",
+          "line": 1038
+        },
+        {
+          "rule": "max-depth",
+          "line": 1041
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1047
+        },
+        {
+          "rule": "max-params",
+          "line": 1047
+        },
+        {
+          "rule": "complexity",
+          "line": 1047
+        },
+        {
+          "rule": "max-statements",
+          "line": 1047
+        },
+        {
+          "rule": "max-params",
+          "line": 1209
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1239
+        },
+        {
+          "rule": "complexity",
+          "line": 1239
+        },
+        {
+          "rule": "max-statements",
+          "line": 1239
+        },
+        {
+          "rule": "max-depth",
+          "line": 1327
+        },
+        {
+          "rule": "max-depth",
+          "line": 1328
+        },
+        {
+          "rule": "max-depth",
+          "line": 1329
+        },
+        {
+          "rule": "max-depth",
+          "line": 1428
+        },
+        {
+          "rule": "max-depth",
+          "line": 1429
+        },
+        {
+          "rule": "max-depth",
+          "line": 1430
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1511
+        },
+        {
+          "rule": "complexity",
+          "line": 1511
+        },
+        {
+          "rule": "max-statements",
+          "line": 1511
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1720
+        },
+        {
+          "rule": "max-statements",
+          "line": 1720
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1774
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2127
+        },
+        {
+          "rule": "max-statements",
+          "line": 2127
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2340
+        },
+        {
+          "rule": "max-statements",
+          "line": 2340
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2560
+        },
+        {
+          "rule": "max-statements",
+          "line": 2560
+        }
+      ]
+    },
+    "src/views/DetailsView.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 42
+        },
+        {
+          "rule": "complexity",
+          "line": 137
+        }
+      ]
+    },
+    "src/views/HelpView.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 113
+        },
+        {
+          "rule": "max-statements",
+          "line": 113
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 185
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 188
+        },
+        {
+          "rule": "max-lines",
+          "line": 242
+        }
+      ]
+    },
+    "src/views/LocationView.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 194
+        },
+        {
+          "rule": "complexity",
+          "line": 194
+        },
+        {
+          "rule": "max-statements",
+          "line": 194
+        },
+        {
+          "rule": "max-lines",
+          "line": 263
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 415
+        },
+        {
+          "rule": "max-params",
+          "line": 415
+        },
+        {
+          "rule": "max-statements",
+          "line": 415
+        },
+        {
+          "rule": "complexity",
+          "line": 441
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 525
+        },
+        {
+          "rule": "max-params",
+          "line": 525
+        },
+        {
+          "rule": "complexity",
+          "line": 525
+        },
+        {
+          "rule": "max-statements",
+          "line": 525
+        },
+        {
+          "rule": "complexity",
+          "line": 557
+        },
+        {
+          "rule": "complexity",
+          "line": 797
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 866
+        },
+        {
+          "rule": "complexity",
+          "line": 866
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 968
+        },
+        {
+          "rule": "complexity",
+          "line": 968
+        },
+        {
+          "rule": "max-statements",
+          "line": 968
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1125
+        },
+        {
+          "rule": "complexity",
+          "line": 1125
+        },
+        {
+          "rule": "max-statements",
+          "line": 1125
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1303
+        },
+        {
+          "rule": "max-statements",
+          "line": 1303
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1370
+        },
+        {
+          "rule": "max-params",
+          "line": 1370
+        },
+        {
+          "rule": "complexity",
+          "line": 1370
+        },
+        {
+          "rule": "max-statements",
+          "line": 1370
+        },
+        {
+          "rule": "max-depth",
+          "line": 1439
+        },
+        {
+          "rule": "max-params",
+          "line": 1555
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1585
+        },
+        {
+          "rule": "complexity",
+          "line": 1585
+        },
+        {
+          "rule": "max-statements",
+          "line": 1585
+        },
+        {
+          "rule": "max-depth",
+          "line": 1675
+        },
+        {
+          "rule": "max-depth",
+          "line": 1676
+        },
+        {
+          "rule": "max-depth",
+          "line": 1677
+        },
+        {
+          "rule": "max-depth",
+          "line": 1760
+        },
+        {
+          "rule": "max-depth",
+          "line": 1761
+        },
+        {
+          "rule": "max-depth",
+          "line": 1762
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1872
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2034
+        },
+        {
+          "rule": "complexity",
+          "line": 2034
+        },
+        {
+          "rule": "max-statements",
+          "line": 2034
+        },
+        {
+          "rule": "max-depth",
+          "line": 2120
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2184
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2557
+        },
+        {
+          "rule": "max-statements",
+          "line": 2557
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2624
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2740
+        },
+        {
+          "rule": "max-statements",
+          "line": 2740
+        }
+      ]
+    },
+    "src/views/ManuscriptView.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 207
+        },
+        {
+          "rule": "max-statements",
+          "line": 207
+        },
+        {
+          "rule": "max-lines",
+          "line": 282
+        },
+        {
+          "rule": "max-depth",
+          "line": 327
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 380
+        },
+        {
+          "rule": "complexity",
+          "line": 380
+        },
+        {
+          "rule": "max-statements",
+          "line": 380
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 560
+        },
+        {
+          "rule": "complexity",
+          "line": 560
+        },
+        {
+          "rule": "max-statements",
+          "line": 560
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 876
+        },
+        {
+          "rule": "max-statements",
+          "line": 876
+        },
+        {
+          "rule": "complexity",
+          "line": 1210
+        },
+        {
+          "rule": "max-statements",
+          "line": 1210
+        },
+        {
+          "rule": "complexity",
+          "line": 1254
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1504
+        }
+      ]
+    },
+    "src/views/NavigatorView.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 90
+        },
+        {
+          "rule": "max-statements",
+          "line": 90
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 209
+        },
+        {
+          "rule": "complexity",
+          "line": 209
+        },
+        {
+          "rule": "max-statements",
+          "line": 209
+        },
+        {
+          "rule": "max-lines",
+          "line": 267
+        },
+        {
+          "rule": "complexity",
+          "line": 325
+        },
+        {
+          "rule": "complexity",
+          "line": 373
+        },
+        {
+          "rule": "complexity",
+          "line": 424
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 474
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 532
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 600
+        },
+        {
+          "rule": "max-statements",
+          "line": 605
+        },
+        {
+          "rule": "complexity",
+          "line": 605
+        }
+      ]
+    },
+    "src/views/NotesView.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 45
+        },
+        {
+          "rule": "max-lines",
+          "line": 258
+        }
+      ]
+    },
+    "src/views/PlotgridView.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 147
+        },
+        {
+          "rule": "complexity",
+          "line": 234
+        },
+        {
+          "rule": "max-statements",
+          "line": 234
+        },
+        {
+          "rule": "max-lines",
+          "line": 282
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 360
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 429
+        },
+        {
+          "rule": "complexity",
+          "line": 429
+        },
+        {
+          "rule": "max-statements",
+          "line": 429
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 677
+        },
+        {
+          "rule": "complexity",
+          "line": 781
+        },
+        {
+          "rule": "max-statements",
+          "line": 781
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 871
+        },
+        {
+          "rule": "complexity",
+          "line": 871
+        },
+        {
+          "rule": "max-statements",
+          "line": 871
+        },
+        {
+          "rule": "complexity",
+          "line": 914
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1191
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1386
+        },
+        {
+          "rule": "max-depth",
+          "line": 1478
+        },
+        {
+          "rule": "max-depth",
+          "line": 1514
+        },
+        {
+          "rule": "max-depth",
+          "line": 1518
+        },
+        {
+          "rule": "max-depth",
+          "line": 1521
+        },
+        {
+          "rule": "max-depth",
+          "line": 1523
+        },
+        {
+          "rule": "max-depth",
+          "line": 1527
+        },
+        {
+          "rule": "max-depth",
+          "line": 1545
+        },
+        {
+          "rule": "max-depth",
+          "line": 1553
+        },
+        {
+          "rule": "max-depth",
+          "line": 1586
+        },
+        {
+          "rule": "max-depth",
+          "line": 1598
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1750
+        },
+        {
+          "rule": "max-statements",
+          "line": 1750
+        },
+        {
+          "rule": "complexity",
+          "line": 1889
+        },
+        {
+          "rule": "complexity",
+          "line": 1969
+        },
+        {
+          "rule": "complexity",
+          "line": 2056
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2184
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2196
+        },
+        {
+          "rule": "complexity",
+          "line": 2196
+        },
+        {
+          "rule": "max-statements",
+          "line": 2196
+        },
+        {
+          "rule": "complexity",
+          "line": 2459
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2485
+        },
+        {
+          "rule": "complexity",
+          "line": 2485
+        },
+        {
+          "rule": "max-statements",
+          "line": 2485
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2557
+        },
+        {
+          "rule": "complexity",
+          "line": 2557
+        },
+        {
+          "rule": "complexity",
+          "line": 2634
+        },
+        {
+          "rule": "max-statements",
+          "line": 2634
+        },
+        {
+          "rule": "max-depth",
+          "line": 2644
+        },
+        {
+          "rule": "max-depth",
+          "line": 2656
+        },
+        {
+          "rule": "max-depth",
+          "line": 2669
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2708
+        },
+        {
+          "rule": "complexity",
+          "line": 2739
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2947
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2958
+        },
+        {
+          "rule": "max-statements",
+          "line": 2958
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3062
+        },
+        {
+          "rule": "complexity",
+          "line": 3062
+        },
+        {
+          "rule": "max-statements",
+          "line": 3062
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3443
+        },
+        {
+          "rule": "complexity",
+          "line": 3443
+        },
+        {
+          "rule": "max-statements",
+          "line": 3443
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 3626
+        },
+        {
+          "rule": "complexity",
+          "line": 3626
+        },
+        {
+          "rule": "max-statements",
+          "line": 3626
+        }
+      ]
+    },
+    "src/views/ResearchView.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 85
+        },
+        {
+          "rule": "complexity",
+          "line": 85
+        },
+        {
+          "rule": "max-statements",
+          "line": 85
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 189
+        },
+        {
+          "rule": "complexity",
+          "line": 189
+        },
+        {
+          "rule": "max-statements",
+          "line": 189
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 264
+        },
+        {
+          "rule": "complexity",
+          "line": 264
+        },
+        {
+          "rule": "max-statements",
+          "line": 264
+        },
+        {
+          "rule": "max-lines",
+          "line": 265
+        },
+        {
+          "rule": "max-depth",
+          "line": 314
+        },
+        {
+          "rule": "complexity",
+          "line": 431
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 485
+        },
+        {
+          "rule": "max-statements",
+          "line": 485
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 500
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 657
+        },
+        {
+          "rule": "max-statements",
+          "line": 657
+        },
+        {
+          "rule": "max-depth",
+          "line": 761
+        }
+      ]
+    },
+    "src/views/SceneInspectorView.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 82
+        },
+        {
+          "rule": "max-statements",
+          "line": 82
+        },
+        {
+          "rule": "max-depth",
+          "line": 250
+        },
+        {
+          "rule": "max-lines",
+          "line": 273
+        },
+        {
+          "rule": "complexity",
+          "line": 304
+        },
+        {
+          "rule": "complexity",
+          "line": 374
+        },
+        {
+          "rule": "complexity",
+          "line": 410
+        }
+      ]
+    },
+    "src/views/StatsView.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 83
+        },
+        {
+          "rule": "max-statements",
+          "line": 83
+        },
+        {
+          "rule": "max-params",
+          "line": 257
+        },
+        {
+          "rule": "max-lines",
+          "line": 278
+        },
+        {
+          "rule": "max-params",
+          "line": 297
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 335
+        },
+        {
+          "rule": "complexity",
+          "line": 335
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 372
+        },
+        {
+          "rule": "max-statements",
+          "line": 372
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 458
+        },
+        {
+          "rule": "complexity",
+          "line": 458
+        },
+        {
+          "rule": "max-statements",
+          "line": 458
+        },
+        {
+          "rule": "max-statements",
+          "line": 511
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 764
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 867
+        },
+        {
+          "rule": "complexity",
+          "line": 867
+        },
+        {
+          "rule": "max-statements",
+          "line": 867
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1049
+        },
+        {
+          "rule": "complexity",
+          "line": 1049
+        },
+        {
+          "rule": "max-statements",
+          "line": 1049
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1225
+        },
+        {
+          "rule": "complexity",
+          "line": 1225
+        },
+        {
+          "rule": "max-statements",
+          "line": 1225
+        },
+        {
+          "rule": "max-depth",
+          "line": 1303
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1322
+        },
+        {
+          "rule": "complexity",
+          "line": 1322
+        },
+        {
+          "rule": "max-statements",
+          "line": 1322
+        },
+        {
+          "rule": "max-depth",
+          "line": 1335
+        },
+        {
+          "rule": "max-depth",
+          "line": 1343
+        },
+        {
+          "rule": "max-depth",
+          "line": 1348
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1471
+        },
+        {
+          "rule": "complexity",
+          "line": 1471
+        },
+        {
+          "rule": "max-statements",
+          "line": 1471
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1616
+        },
+        {
+          "rule": "complexity",
+          "line": 1616
+        },
+        {
+          "rule": "max-statements",
+          "line": 1616
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1751
+        },
+        {
+          "rule": "complexity",
+          "line": 1751
+        },
+        {
+          "rule": "max-statements",
+          "line": 1751
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1963
+        },
+        {
+          "rule": "complexity",
+          "line": 1963
+        },
+        {
+          "rule": "max-statements",
+          "line": 1963
+        },
+        {
+          "rule": "max-depth",
+          "line": 2008
+        },
+        {
+          "rule": "max-depth",
+          "line": 2011
+        },
+        {
+          "rule": "max-depth",
+          "line": 2037
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2068
+        },
+        {
+          "rule": "max-statements",
+          "line": 2068
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2134
+        },
+        {
+          "rule": "complexity",
+          "line": 2134
+        },
+        {
+          "rule": "max-statements",
+          "line": 2134
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2218
+        },
+        {
+          "rule": "complexity",
+          "line": 2218
+        },
+        {
+          "rule": "max-statements",
+          "line": 2218
+        },
+        {
+          "rule": "max-depth",
+          "line": 2254
+        },
+        {
+          "rule": "max-depth",
+          "line": 2256
+        },
+        {
+          "rule": "max-depth",
+          "line": 2258
+        },
+        {
+          "rule": "max-statements",
+          "line": 2277
+        },
+        {
+          "rule": "max-statements",
+          "line": 2397
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2494
+        },
+        {
+          "rule": "max-params",
+          "line": 2494
+        },
+        {
+          "rule": "max-statements",
+          "line": 2494
+        }
+      ]
+    },
+    "src/views/StorylineView.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 102
+        },
+        {
+          "rule": "complexity",
+          "line": 102
+        },
+        {
+          "rule": "max-statements",
+          "line": 102
+        },
+        {
+          "rule": "max-lines",
+          "line": 255
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 313
+        },
+        {
+          "rule": "max-statements",
+          "line": 313
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 386
+        },
+        {
+          "rule": "complexity",
+          "line": 386
+        },
+        {
+          "rule": "max-statements",
+          "line": 386
+        },
+        {
+          "rule": "max-depth",
+          "line": 723
+        },
+        {
+          "rule": "complexity",
+          "line": 751
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 769
+        },
+        {
+          "rule": "complexity",
+          "line": 769
+        },
+        {
+          "rule": "max-statements",
+          "line": 769
+        },
+        {
+          "rule": "complexity",
+          "line": 995
+        }
+      ]
+    },
+    "src/views/SynopsisView.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 103
+        }
+      ]
+    },
+    "src/views/TimelineView.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 137
+        },
+        {
+          "rule": "complexity",
+          "line": 137
+        },
+        {
+          "rule": "max-statements",
+          "line": 137
+        },
+        {
+          "rule": "max-lines",
+          "line": 269
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 336
+        },
+        {
+          "rule": "complexity",
+          "line": 336
+        },
+        {
+          "rule": "max-statements",
+          "line": 336
+        },
+        {
+          "rule": "complexity",
+          "line": 370
+        },
+        {
+          "rule": "complexity",
+          "line": 384
+        },
+        {
+          "rule": "complexity",
+          "line": 482
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 691
+        },
+        {
+          "rule": "complexity",
+          "line": 691
+        },
+        {
+          "rule": "max-statements",
+          "line": 691
+        },
+        {
+          "rule": "complexity",
+          "line": 1060
+        },
+        {
+          "rule": "complexity",
+          "line": 1130
+        },
+        {
+          "rule": "complexity",
+          "line": 1165
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1211
+        },
+        {
+          "rule": "complexity",
+          "line": 1211
+        },
+        {
+          "rule": "max-statements",
+          "line": 1211
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1291
+        },
+        {
+          "rule": "max-params",
+          "line": 1291
+        },
+        {
+          "rule": "complexity",
+          "line": 1291
+        },
+        {
+          "rule": "max-statements",
+          "line": 1291
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1607
+        },
+        {
+          "rule": "max-params",
+          "line": 1607
+        },
+        {
+          "rule": "complexity",
+          "line": 1607
+        },
+        {
+          "rule": "max-statements",
+          "line": 1607
+        },
+        {
+          "rule": "max-depth",
+          "line": 1746
+        },
+        {
+          "rule": "max-depth",
+          "line": 1770
+        },
+        {
+          "rule": "complexity",
+          "line": 1791
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1833
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 1975
+        },
+        {
+          "rule": "max-statements",
+          "line": 1975
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2051
+        },
+        {
+          "rule": "max-statements",
+          "line": 2051
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2173
+        },
+        {
+          "rule": "max-statements",
+          "line": 2173
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2341
+        },
+        {
+          "rule": "max-lines-per-function",
+          "line": 2649
+        },
+        {
+          "rule": "complexity",
+          "line": 2649
+        },
+        {
+          "rule": "max-statements",
+          "line": 2649
+        },
+        {
+          "rule": "max-statements",
+          "line": 2934
+        },
+        {
+          "rule": "complexity",
+          "line": 2934
+        }
+      ]
+    }
+  },
+  "summary": {
+    "totalFilesWithViolations": 77,
+    "totalViolations": 1171,
+    "byRule": {
+      "max-params": 48,
+      "max-lines": 64,
+      "max-lines-per-function": 281,
+      "complexity": 302,
+      "max-statements": 226,
+      "max-depth": 250
+    }
+  }
+}

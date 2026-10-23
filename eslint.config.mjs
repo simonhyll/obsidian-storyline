@@ -38,12 +38,17 @@ export default defineConfig([
     },
   },
   {
-    // Test files: keep structural budgets, re-enable safety rules.
-    // Narrow exceptions are handled per-file when truly unavoidable.
-    files: ["tests/**/*.ts"],
+    // Cucumber test files: keep structural budgets, relax safety rules for mocks.
+    files: ["features/**/*.ts"],
     rules: {
       "eslint-comments/disable-enable-pair": "off",
       "eslint-comments/no-unused-disable": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
     },
   },
   // ---------------------------------------------------------------------------
