@@ -162,3 +162,13 @@ Do not repeat blanket suppression as a permanent fix. Audit Obsidian ESLint pres
 9. Resume Saved Views after the architecture checkpoints are complete.
 
 **Every stage:** run build, Vitest, the applicable BDD tests, lint, typecheck and a disposable-vault smoke test where behavior or packaging may change. Report failures honestly with new-vs-existing provenance. Verify the latest two commits and remote HEAD before and after work. Commit and push actual code, not only updates to a planning checkbox.
+
+## Deferred product and ecosystem plans (planning only)
+
+The following proposals were requested as **future initiatives**, not Step 6B or Saved Views work. **No implementation, rename, sample-vault move, plugin release, website deployment or skill package starts merely because these plans exist.**
+
+1. [Example Obsidian vault + GitHub Pages](storyline-docs-example-vault-and-pages.md) — replace the root `Sample Project.zip` **eventually** with a `docs/` Obsidian example vault, then generate a marketing/documentation site from the same source. Website generator and final URLs will be chosen later.
+2. [Visible **störyline** brand + transparent fork attribution](storyline-visible-brand-fork.md) — display a new name and openly credit the original [StoryLine](https://github.com/PixeroJan/obsidian-storyline), while keeping technical `storyline` IDs, repository URLs and vault formats. Resolve independent Obsidian directory listing implications explicitly before advertising a listing.
+3. [Author-facing companion AI skills](storyline-author-companion-skills.md) — individually installable editorial assistant skills for grammar, chronology, continuity and scene rewriting; no dependence on the Junie developer agent or automatic modification of private manuscripts.
+
+Resume these **only on a later explicit request**, coordinated with Step 6B architectural hardening and the existing Saved Views roadmap. Do not preempt ongoing refactoring.
