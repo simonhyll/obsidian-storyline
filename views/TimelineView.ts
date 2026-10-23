@@ -421,6 +421,10 @@ export class TimelineView extends ItemView {
         };
 
         const handleDrop = async (fromIdx: number, toIdx: number) => {
+            // Multi-book scenes have different owning projects. The existing
+            // reorder operation writes global sequence values through the
+            // active book manager; never apply it across book boundaries.
+            if (this.selectedBookIds.size > 0) return;
             if (fromIdx === toIdx || fromIdx === toIdx - 1) return;
 
             // Save scroll position to restore after refresh
@@ -968,7 +972,9 @@ export class TimelineView extends ItemView {
         bookTitle?: string | null,
     ): void {
         const entry = track.createDiv('timeline-entry');
-        entry.setAttr('draggable', 'true');
+        // Reordering is only supported for the active book. Multi-book
+        // timelines are chronological references, not a shared manuscript.
+        entry.setAttr('draggable', this.selectedBookIds.size === 0 ? 'true' : 'false');
         entry.dataset.idx = String(i);
         entry.dataset.path = scene.filePath;
 
