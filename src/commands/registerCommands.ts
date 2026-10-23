@@ -107,6 +107,7 @@ function registerUndoRedoCommands(p: PluginTarget): void {
 /** Export-related commands. */
 function registerExportCommands(p: PluginTarget): void {
     p.addCommand({ id: 'export-project', name: 'Export project', callback: () => {
+        // ExportModal requires SceneCardsPlugin; PluginTarget is a verified subset
         new ExportModal(p as unknown as import('../main').default).open();
     }});
 }
@@ -146,8 +147,7 @@ function registerSeriesCommands(p: PluginTarget): void {
                 return;
             }
             try {
-                const plugin = p as unknown as { seriesManager?: { removeProjectFromSeries: () => Promise<void> } };
-                if (plugin.seriesManager) await plugin.seriesManager.removeProjectFromSeries();
+                await p.seriesManager.removeProjectFromSeries();
                 p.refreshOpenViews();
             } catch (e: unknown) {
                 new Notice((e instanceof Error ? e.message : String(e)), 10000);
@@ -192,8 +192,7 @@ function registerMiscCommands(p: PluginTarget): void {
         id: 'manage-view-snapshots', name: 'Manage view snapshots',
         callback: () => {
             if (!p.sceneManager.activeProject) { new Notice('No active project.'); return; }
-            const plugin = p as unknown as { viewSnapshotService: import('../services/ViewSnapshotService').ViewSnapshotService };
-            openManageSnapshotsModal(p.app, plugin.viewSnapshotService);
+            openManageSnapshotsModal(p.app, p.viewSnapshotService as import('../services/ViewSnapshotService').ViewSnapshotService);
         },
     });
     p.addCommand({

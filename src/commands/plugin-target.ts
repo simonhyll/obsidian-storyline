@@ -49,9 +49,16 @@ export interface PluginTarget {
         showFormattingToolbar: boolean;
         autoOpenNavigator?: boolean;
         storyLineRoot: string;
+        exportSceneSeparatorType?: string;
+        exportSceneSeparatorCustom?: string;
+        docxSettings?: unknown;
+        pdfSettings?: unknown;
     };
     injectFormattingToolbar(leaf: WorkspaceLeaf | null): void;
     updateFrontmatterVisibility(): void;
+    saveSettings(): Promise<void>;
+    seriesManager: PluginTargetSeriesManager;
+    viewSnapshotService: PluginTargetViewSnapshotService;
 }
 
 /** Subset of SceneManager required by registration modules. */
@@ -69,4 +76,20 @@ export interface PluginTargetSceneManager {
     handleFileDelete(path: string): void;
     handleFileRename(file: TFile, oldPath: string): Promise<void>;
     scanProjects(): Promise<StoryLineProject[]>;
+}
+
+/**
+ * Narrow interface for series management from command registration.
+ */
+export interface PluginTargetSeriesManager {
+    removeProjectFromSeries(): Promise<void>;
+}
+
+/**
+ * Narrow interface for view snapshot service from command registration.
+ *
+ * Used by openManageSnapshotsModal to access view snapshot state.
+ */
+export interface PluginTargetViewSnapshotService {
+    loadActiveState(): Promise<void>;
 }

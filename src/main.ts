@@ -27,42 +27,28 @@ import {
     DETAILS_VIEW_TYPE,
     UNIVERSE_VIEW_TYPE,
 } from './constants';
-import { PlotgridView } from './views/PlotgridView';
 import type { PlotGridData } from './models/PlotGridData';
 import type { SeriesMetadata, StoryLineProject } from './models/StoryLineProject';
-import { BoardView } from './views/BoardView';
-import { TimelineView } from './views/TimelineView';
-import { StorylineView } from './views/StorylineView';
 import { CharacterView } from './views/CharacterView';
-import { StatsView } from './views/StatsView';
 import { LocationView } from './views/LocationView';
-import { HelpView } from './views/HelpView';
-import { NavigatorView } from './views/NavigatorView';
 import { CodexView } from './views/CodexView';
-import { SceneInspectorView } from './views/SceneInspectorView';
-import { NotesView } from './views/NotesView';
-import { SynopsisView } from './views/SynopsisView';
-import { DetailsView } from './views/DetailsView';
-import { ManuscriptView } from './views/ManuscriptView';
-import { ResearchView } from './views/ResearchView';
-import { UniverseView } from './views/UniverseView';
-import { ResearchManager } from './services/ResearchManager';
-import { LocationManager } from './services/LocationManager';
-import { CharacterManager } from './services/CharacterManager';
-import { CodexManager } from './services/CodexManager';
+import type { ResearchManager } from './services/ResearchManager';
+import type { LocationManager } from './services/LocationManager';
+import type { CharacterManager } from './services/CharacterManager';
+import type { CodexManager } from './services/CodexManager';
 import { makeCustomCodexCategory } from './models/Codex';
 import { QuickAddModal } from './components/QuickAddModal';
 import { WritingTracker } from './services/WritingTracker';
-import { SnapshotManager } from './services/SnapshotManager';
-import { ViewSnapshotService } from './services/ViewSnapshotService';
-import { LinkScanner } from './services/LinkScanner';
-import { CascadeRenameService } from './services/CascadeRenameService';
-import { FieldTemplateService } from './services/FieldTemplateService';
-import { SeriesManager } from './services/SeriesManager';
-import { UniverseManager } from './services/UniverseManager';
-import { TimeSpanService } from './services/TimeSpanService';
-import { EventManager } from './services/EventManager';
-import { TimelineNavigationService } from './services/TimelineNavigationService';
+import type { SnapshotManager } from './services/SnapshotManager';
+import type { ViewSnapshotService } from './services/ViewSnapshotService';
+import type { LinkScanner } from './services/LinkScanner';
+import type { CascadeRenameService } from './services/CascadeRenameService';
+import type { FieldTemplateService } from './services/FieldTemplateService';
+import type { SeriesManager } from './services/SeriesManager';
+import type { UniverseManager } from './services/UniverseManager';
+import type { TimeSpanService } from './services/TimeSpanService';
+import type { EventManager } from './services/EventManager';
+import type { TimelineNavigationService } from './services/TimelineNavigationService';
 import { buildFormattingToolbar } from './components/FormattingToolbar';
 import { setupMobileKeyboardHandling } from './components/MobileAdapter';
 import { EditorView } from '@codemirror/view';
@@ -71,6 +57,8 @@ import { createFocusTextExtension } from './services/FocusTextExtension';
 import { registerCommands } from './commands/registerCommands';
 import { registerEvents } from './commands/registerEvents';
 import { registerLeafChange } from './commands/registerLeafChange';
+import { registerViews } from './views/registerViews';
+import { createServices, wireServiceCallbacks } from './services/initServices';
 
 /**
  * StoryLine Plugin for Obsidian
@@ -184,44 +172,26 @@ export default class SceneCardsPlugin extends Plugin {
         // into the visible (above-keyboard) region. No-op on desktop.
         this.register(setupMobileKeyboardHandling());
 
-        this.sceneManager = new SceneManager(this.app, this);
-        this.locationManager = new LocationManager(this.app);
-        this.characterManager = new CharacterManager(this.app);
-        this.codexManager = new CodexManager(this.app);
-        this.snapshotManager = new SnapshotManager(
-            this.app,
-            () => this.sceneManager?.getEffectiveLocale()
-                ?? this.settings.defaultProjectLanguage
-                ?? 'en',
-        );
-        this.viewSnapshotService = new ViewSnapshotService(this);
-        this.linkScanner = new LinkScanner(this.characterManager, this.locationManager);
-        this.linkScanner.setCodexManager(this.codexManager);
-        this.linkScanner.setSceneProvider(() => this.sceneManager.getAllScenes());
-        this.cascadeRename = new CascadeRenameService(this.app, this.sceneManager, this.characterManager, this.locationManager);
-        this.fieldTemplates = new FieldTemplateService(this.app, () => this.getProjectSystemFolder());
-        // Issue #71 — expose templates to parsers for top-level YAML mirroring
-        setActiveTemplatesProvider(() => this.fieldTemplates.getAll());
-        setTopLevelMirrorEnabled(this.settings.universalFieldsMirrorTopLevel !== false);
-        // Issue #71 follow-up — when a template's topLevelKey or folderSource
-        // changes, retro-mirror existing entities so users don't have to
-        // re-edit every record by hand.
-        this.fieldTemplates.setOnChange(async (change) => {
-            await this.migrateUniversalFieldMirror(change);
-        });
-        this.seriesManager = new SeriesManager(this.app, this);
-        this.universeManager = new UniverseManager(this.app, this);
-        this.timeSpanService = new TimeSpanService();
-        this.eventManager = new EventManager(this.app);
-        this.eventManager.setTimeSpanService(this.timeSpanService);
-        this.timelineNavigationService = new TimelineNavigationService(this.timeSpanService);
-        this.researchManager = new ResearchManager(this.app, this);
+        // Initialize all services and wire their dependencies
+        const services = createServices(this);
+        this.sceneManager = services.sceneManager;
+        this.locationManager = services.locationManager;
+        this.characterManager = services.characterManager;
+        this.codexManager = services.codexManager;
+        this.snapshotManager = services.snapshotManager;
+        this.viewSnapshotService = services.viewSnapshotService;
+        this.linkScanner = services.linkScanner;
+        this.cascadeRename = services.cascadeRename;
+        this.fieldTemplates = services.fieldTemplates;
+        this.seriesManager = services.seriesManager;
+        this.universeManager = services.universeManager;
+        this.timeSpanService = services.timeSpanService;
+        this.eventManager = services.eventManager;
+        this.timelineNavigationService = services.timelineNavigationService;
+        this.researchManager = services.researchManager;
 
-        // Wire up undo/redo to refresh views + re-index
-        this.sceneManager.undoManager.onAfterUndoRedo = async () => {
-            await this.sceneManager.initialize();
-            this.refreshOpenViews();
-        };
+        // Wire post-construction callbacks
+        wireServiceCallbacks(this.sceneManager, () => this.refreshOpenViews());
 
         // Best-effort: register file extensions so exported files are visible in the Vault.
         // We check several possible locations for an existing registration and safely
@@ -253,58 +223,12 @@ export default class SceneCardsPlugin extends Plugin {
             }
         }
 
-        // Register views
-        this.registerView(BOARD_VIEW_TYPE, (leaf) =>
-            new BoardView(leaf, this, this.sceneManager)
-        );
-        this.registerView(PLOTGRID_VIEW_TYPE, (leaf) =>
-            new PlotgridView(leaf, this)
-        );
-        this.registerView(TIMELINE_VIEW_TYPE, (leaf) =>
-            new TimelineView(leaf, this, this.sceneManager)
-        );
-        this.registerView(STORYLINE_VIEW_TYPE, (leaf) =>
-            new StorylineView(leaf, this, this.sceneManager)
-        );
-        this.registerView(CHARACTER_VIEW_TYPE, (leaf) =>
-            new CharacterView(leaf, this, this.sceneManager)
-        );
-        this.registerView(STATS_VIEW_TYPE, (leaf) =>
-            new StatsView(leaf, this, this.sceneManager)
-        );
-        this.registerView(LOCATION_VIEW_TYPE, (leaf) =>
-            new LocationView(leaf, this, this.sceneManager)
-        );
-        this.registerView(HELP_VIEW_TYPE, (leaf) =>
-            new HelpView(leaf, this)
-        );
-        this.registerView(NAVIGATOR_VIEW_TYPE, (leaf) =>
-            new NavigatorView(leaf, this, this.sceneManager)
-        );
-        this.registerView(CODEX_VIEW_TYPE, (leaf) =>
-            new CodexView(leaf, this, this.sceneManager)
-        );
-        this.registerView(SCENE_INSPECTOR_VIEW_TYPE, (leaf) =>
-            new SceneInspectorView(leaf, this, this.sceneManager)
-        );
-        this.registerView(NOTES_VIEW_TYPE, (leaf) =>
-            new NotesView(leaf, this, this.sceneManager)
-        );
-        this.registerView(SYNOPSIS_VIEW_TYPE, (leaf) =>
-            new SynopsisView(leaf, this, this.sceneManager)
-        );
-        this.registerView(DETAILS_VIEW_TYPE, (leaf) =>
-            new DetailsView(leaf, this, this.sceneManager)
-        );
-        this.registerView(MANUSCRIPT_VIEW_TYPE, (leaf) =>
-            new ManuscriptView(leaf, this, this.sceneManager)
-        );
-        this.registerView(RESEARCH_VIEW_TYPE, (leaf) =>
-            new ResearchView(leaf, this, this.researchManager)
-        );
-        this.registerView(UNIVERSE_VIEW_TYPE, (leaf) =>
-            new UniverseView(leaf, this)
-        );
+        // Register all StoryLine view types
+        registerViews(this, {
+            plugin: this,
+            sceneManager: this.sceneManager,
+            researchManager: this.researchManager,
+        });
 
 
         // Wait for the workspace layout to be ready, then bootstrap projects
