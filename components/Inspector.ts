@@ -436,7 +436,6 @@ export class InspectorComponent {
                 scene.location = value || undefined;
             },
             placeholder: 'Search locations…',
-            getDisplayLabel: this.getLocationDisplayLabel(),
         });
 
         // ── Dynamic Codex sections (categories with showInSidebar) ──
@@ -1374,12 +1373,13 @@ export class InspectorComponent {
 
         // Rendered markdown preview
         const previewEl = container.createDiv('inspector-notes-live is-preview');
+        const renderComponent = new obsidian.Component();
         obsidian.MarkdownRenderer.render(
             this.plugin.app,
             notesText,
             previewEl,
             scene.filePath,
-            this,
+            renderComponent,
         );
 
         // Click on preview → switch to editor (but not on links/checkboxes)

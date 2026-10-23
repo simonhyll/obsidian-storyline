@@ -354,13 +354,18 @@ export class TFolder {
     }
 }
 
-// TFile
+// TFile — mock accepts optional path for test convenience;
+// the real Obsidian TFile has no constructor parameters.
 export class TFile {
     path: string;
     name: string;
-    constructor(path?: string) {
-        this.path = path || '';
+    vault: any;
+    parent: any;
+    constructor(p?: string) {
+        this.path = p || '';
         this.name = this.path.split('/').pop() || this.path;
+        this.vault = null;
+        this.parent = null;
     }
 }
 

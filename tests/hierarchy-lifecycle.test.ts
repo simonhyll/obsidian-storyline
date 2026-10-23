@@ -95,7 +95,10 @@ describe('Hierarchy lifecycle', () => {
                     const normalized = normalizePath(path);
                     const val = adapter.fs.get(normalized);
                     if (val && typeof val === 'string') {
-                        return new TFile(normalized);
+                        const f = new TFile();
+                        f.path = normalized;
+                        f.name = normalized.split('/').pop() || normalized;
+                        return f;
                     }
                     for (const key of adapter.fs.keys()) {
                         if (key === normalized || key.startsWith(normalized + '/')) {
@@ -111,7 +114,10 @@ describe('Hierarchy lifecycle', () => {
                     const result: any[] = [];
                     for (const [key, val] of adapter.fs) {
                         if (typeof val === 'string' && key.endsWith('.md')) {
-                            result.push(new TFile(key));
+                            const f = new TFile();
+                            f.path = key;
+                            f.name = key.split('/').pop() || key;
+                            result.push(f);
                         }
                     }
                     return result;
@@ -120,7 +126,12 @@ describe('Hierarchy lifecycle', () => {
                 getFileByPath: (path: string) => {
                     const normalized = normalizePath(path);
                     const val = adapter.fs.get(normalized);
-                    if (val && typeof val === 'string') return new TFile(normalized);
+                    if (val && typeof val === 'string') {
+                        const f = new TFile();
+                        f.path = normalized;
+                        f.name = normalized.split('/').pop() || normalized;
+                        return f;
+                    }
                     return null;
                 },
                 getFolderByPath: (path: string) => {

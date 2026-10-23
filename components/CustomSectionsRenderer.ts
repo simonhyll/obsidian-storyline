@@ -575,7 +575,7 @@ function renderOneSection<T extends { custom?: Record<string, CustomFieldValue> 
                         suggestList.empty();
                         suggestList.removeClass('is-hidden');
                         for (const m of matches) {
-                            const item = suggestList.createDiv('codex-custom-multi-suggest-item', { text: m });
+                            const item = suggestList.createDiv({ cls: 'codex-custom-multi-suggest-item', text: m });
                             item.addEventListener('click', (ev) => {
                                 ev.stopPropagation();
                                 if (!values.includes(m)) {

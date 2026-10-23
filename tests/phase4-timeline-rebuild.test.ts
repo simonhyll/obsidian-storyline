@@ -319,7 +319,7 @@ describe('No appended Canonical Events section', () => {
             createEvent({ name: 'E1', timeSpan: createInstant(2000, 1, 1) }),
         ];
         const scenes: Scene[] = [
-            createScene({ name: 'S1', storyDate: '2000-01-05' }),
+            createScene({ title: 'S1', storyDate: '2000-01-05' }),
         ];
 
         // Both should be sortable on the same axis

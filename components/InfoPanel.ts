@@ -383,12 +383,13 @@ export class InfoPanelComponent {
 
         // Rendered markdown preview
         const previewEl = container.createDiv('sl-info-notes-live is-preview');
+        const renderComponent = new obsidian.Component();
         obsidian.MarkdownRenderer.render(
             this.plugin.app,
             scene.notes,
             previewEl,
             scene.filePath,
-            this,
+            renderComponent,
         );
 
         // Click on preview → switch to editor (but not on links/checkboxes)

@@ -779,7 +779,8 @@ export default class SceneCardsPlugin extends Plugin {
                 }
                 let destination: string | null;
                 try {
-                    destination = await pickScrivenerDestination(this.app);
+                    const result = await pickScrivenerDestination(this.app);
+                    destination = result ?? undefined;
                 } catch (err: unknown) {
                     new Notice('Import cancelled: ' + (err instanceof Error ? err.message : String(err)));
                     return;

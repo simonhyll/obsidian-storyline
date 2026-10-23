@@ -499,7 +499,7 @@ export class FiltersComponent {
     }
 
     private emitChange(): void {
-        const toggleBtn = this.container.querySelector('.story-line-filter-toggle');
+        const toggleBtn = this.container.querySelector('.story-line-filter-toggle') as HTMLElement | null;
         if (toggleBtn) this.updateFilterToggle(toggleBtn);
         this.onChange(this.currentFilter, this.currentSort);
     }

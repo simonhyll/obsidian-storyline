@@ -551,7 +551,10 @@ export class PlotgridView extends ItemView {
             boxSizing: 'border-box',
         });
         alignSelect.title = 'Alignment for selection';
-        alignSelect.createEl('option', { text: 'Align', value: '', disabled: true });
+        {
+            const opt = alignSelect.createEl('option', { text: 'Align', value: '' });
+            opt.disabled = true;
+        }
         for (const [value, label] of [['left', 'Left'], ['center', 'Center'], ['right', 'Right']] as const) {
             const option = alignSelect.createEl('option', { text: label });
             option.value = value;
@@ -789,7 +792,7 @@ export class PlotgridView extends ItemView {
 
             const requiredRowHeights = new Map<number, number>();
 
-            const cellElements = Array.from(this.canvasEl.querySelectorAll<HTMLElement>('.plot-grid-cell[data-row][data-col]'));
+            const cellElements: HTMLElement[] = Array.from(this.canvasEl.querySelectorAll<HTMLElement>('.plot-grid-cell[data-row][data-col]'));
             for (const cellEl of cellElements) {
                 const rowIndex = Number(cellEl.dataset.row);
                 if (!Number.isInteger(rowIndex)) continue;
@@ -3013,6 +3016,7 @@ export class PlotgridView extends ItemView {
                 modeSelect.createEl('option', { text: 'Replace — rebuild from scenes (manual data cleared)', value: 'replace' });
 
                 let showLinkedSceneCards = view.plugin?.settings.plotgridShowLinkedSceneCards ?? true;
+                const pluginRef = view.plugin!;
                 new obsidian.Setting(contentEl)
                     .setName('Show linked scene cards in synced cells')
                     .setDesc('When enabled, synced cells display a preview card for their linked scene.')
@@ -3020,8 +3024,8 @@ export class PlotgridView extends ItemView {
                         .setValue(showLinkedSceneCards)
                         .onChange(async value => {
                             showLinkedSceneCards = value;
-                            view.plugin.settings.plotgridShowLinkedSceneCards = value;
-                            await view.plugin.saveSettings();
+                            pluginRef.settings.plotgridShowLinkedSceneCards = value;
+                            await pluginRef.saveSettings();
                             view.renderGrid();
                         }));
 
@@ -3039,8 +3043,8 @@ export class PlotgridView extends ItemView {
                 syncBtn.addEventListener('click', async () => {
                     const colSource = colSourceSelect.value;
                     const mode = modeSelect.value as 'merge' | 'replace';
-                    view.plugin.settings.plotgridShowLinkedSceneCards = showLinkedSceneCards;
-                    await view.plugin.saveSettings();
+                    pluginRef.settings.plotgridShowLinkedSceneCards = showLinkedSceneCards;
+                    await pluginRef.saveSettings();
                     view.performSync(colSource, mode);
                     this.close();
                 });

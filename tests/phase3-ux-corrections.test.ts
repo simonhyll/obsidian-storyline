@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Timestamp, TimeSpan } from '../../models/TimeSpan';
+import type { Timestamp, TimeSpan } from '../models/TimeSpan';
 
 describe('Timeline Event marker layout', () => {
     describe('Event marker DOM structure', () => {
@@ -205,7 +205,7 @@ describe('Drag-and-drop hierarchy management', () => {
 
     describe('handleDropBook behavior', () => {
         it('detaching book clears seriesUuid and seriesId', () => {
-            const book = { seriesUuid: 'old-series', seriesId: 'Old Series', universeId: 'old-universe' };
+            const book: Record<string, string | undefined> = { seriesUuid: 'old-series', seriesId: 'Old Series', universeId: 'old-universe' };
             // After dropping on standalone:
             book.seriesUuid = undefined;
             book.seriesId = undefined;
@@ -225,7 +225,7 @@ describe('Drag-and-drop hierarchy management', () => {
         });
 
         it('adding book to universe sets universeId', () => {
-            const book = { universeId: undefined };
+            const book: Record<string, string | undefined> = { universeId: undefined };
             const universeId = 'universe-123';
             book.universeId = universeId;
             expect(book.universeId).toBe('universe-123');
