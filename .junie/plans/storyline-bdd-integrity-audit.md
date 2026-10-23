@@ -3,9 +3,22 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-23 (Step 6C.4b.2a — Eliminate false-green Scene tests)
- > Total scenarios: 61
- > Total steps: 270
+> Updated: 2026-10-23 (Step 6C.4b.3a — Production-backed hierarchy tests)
+> Total scenarios: 61
+> Total steps: 270
+
+## 6C.4b.3a Update Summary
+
+Step 6C.4b.3a hardened five hierarchy scenarios by replacing fake implementations with real UniverseManager and SeriesManager tests:
+
+1. **Vault harness extended** — Added `adapter.read()`, `adapter.write()`, and `adapter.list()` methods to the in-memory vault. The `list()` method returns only immediate children (not recursive descendants).
+2. **Hierarchy test helpers** — Created `hierarchy-test-helpers.ts` with `setupHierarchyTest()`, `createReloadedUniverseManager()`, and UUID validation.
+3. **Book belongs to universe** — Uses `UniverseManager.createUniverse()` with real UUID generation. Verifies book's `universeId` matches the generated UUID, not a name-derived slug.
+4. **Book in series in universe** — Creates universe, series, and book via production APIs. Verifies `addSeriesToUniverse()` updates both universe `seriesIds` and series `universeId`.
+5. **Series belongs to universe** — Verifies series `universeId` and `ownerId` match the universe. Checks `universe.seriesIds` includes the series UUID.
+6. **Universe isolation** — Creates two universes (Alpha/Beta) with distinct books. Uses `getBooksInUniverse()` to verify cross-universe isolation.
+7. **Universe UUID stability** — Creates a universe, then reloads via a fresh `UniverseManager` instance. Verifies the same UUID and name are restored from persisted `universe.json`.
+8. **Two scenarios deferred** — Legacy migration and project restart remain simulated (deferred to 6C.4b.3b).
 
 ## 6C.4b.2a Update Summary
 
@@ -150,16 +163,16 @@ This feature has 5 regular Scenarios and 2 Scenario Outlines (each with 3 exampl
 
 | # | Scenario | Production Module | When Invokes Production? | Assertions Observe Results? | Coverage | Risk |
 |---|---|---|---|---|---|---|
-| 1 | Book belongs to universe | `vault-fixture.ts` | **Partial** — fixture creation | **Yes** — checks `universeId` | Fixture-only | Medium |
-| 2 | Book in series in universe | `vault-fixture.ts` | **Partial** — fixture creation | **Weak** — checks book exists | Fixture-only | Medium |
-| 3 | Series belongs to universe | `vault-fixture.ts` | **Partial** — fixture creation | **Yes** — checks universe exists | Fixture-only | Medium |
-| 4 | Universe isolation | Test-only filtering | **No** — test filters `world.scenes` | **Partial** | Simulated | Medium |
-| 5 | Universe UUID stability | Test-only | **No** — no-op reload | **No** — checks stored ID | Fixture-only | Medium |
+| 1 | Book belongs to universe | `UniverseManager.ts` | **Yes** — `createUniverse()` | **Yes** — checks UUID, name, book reference | Production-backed | Low |
+| 2 | Book in series in universe | `UniverseManager.ts`, `SeriesManager.ts` | **Yes** — `createUniverse()`, `createSeries()`, `addSeriesToUniverse()` | **Yes** — checks all UUIDs match | Production-backed | Low |
+| 3 | Series belongs to universe | `UniverseManager.ts`, `SeriesManager.ts` | **Yes** — `addSeriesToUniverse()` | **Yes** — checks seriesIds, universeId | Production-backed | Low |
+| 4 | Universe isolation | `UniverseManager.ts` | **Yes** — `getBooksInUniverse()` | **Yes** — checks cross-universe isolation | Production-backed | Low |
+| 5 | Universe UUID stability | `UniverseManager.ts` | **Yes** — fresh manager reload | **Yes** — checks UUID survives reload | Production-backed | Low |
 | 6 | Legacy settings migration | Test-only | **No** — test implements migration | **Yes** — checks settings keys | Simulated | Medium |
 | 7 | Project restoration | Test-only | **No** — test implements restore | **Yes** — checks active book | Simulated | Medium |
 
-**Summary:** 0 production-backed, 0 partially backed, 3 fixture-only, 4 simulated, 0 no-op.
-**Action:** **Deferred to 6C.4.** Record findings; prioritize for next hardening step.
+**Summary:** 5 production-backed, 0 partially backed, 0 fixture-only, 2 simulated, 0 no-op.
+**Action:** **Hardened in 6C.4b.3a.** Scenarios 1–5 now exercise real UniverseManager and SeriesManager with in-memory vault. Scenarios 6–7 (legacy migration and restart) remain simulated; deferred to 6C.4b.3b.
 
 ---
 
@@ -212,16 +225,24 @@ This feature has 5 regular Scenarios and 2 Scenario Outlines (each with 3 exampl
 
 Scenario inventory: 61 scenarios across 9 feature files, 270 steps.
 
-Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) + timespan(11) + scenes(5) + hierarchy(0) + management(7) + ownership(1) + export(0) = **46 production-backed**.
+Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) + timespan(11) + scenes(5) + hierarchy(5) + management(7) + ownership(1) + export(0) = **51 production-backed**.
 
 | Coverage Level | Count | Percentage |
 |---|---|---|
-| Production-backed | 46 | 75% |
-| Partially backed | 3 | 5% |
-| Fixture-only | 3 | 5% |
-| Simulated | 6 | 10% |
+| Production-backed | 51 | 84% |
+| Partially backed | 2 | 3% |
+| Fixture-only | 0 | 0% |
+| Simulated | 5 | 8% |
 | No-op | 3 | 5% |
 | **Total** | **61** | **100%** |
+
+### Changes from 6C.4b.2a → 6C.4b.3a
+
+| Feature | Change |
+|---|---|
+| `hierarchy.feature` | 5 scenarios now production-backed (was 0) |
+| Vault harness | Added `adapter.read()`, `write()`, `list()` |
+| Test helpers | New `hierarchy-test-helpers.ts` and `hierarchy-assertions.ts` |
 
 ### Changes from 6C.4b.1 → 6C.4b.2
 
@@ -241,20 +262,21 @@ Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) 
 | `navigation.feature` | 8 | All production-backed |
 | `timespan.feature` | 11 | All production-backed |
 | `scenes.feature` | 5 | All production-backed (new in 6C.4b.2) |
+| `hierarchy.feature` | 5 | 5 production-backed (new in 6C.4b.3a) |
 | `management.feature` | 7 | All production-backed (new in 6C.4b.1) |
 | `ownership.feature` | 1 | Canonical Event persistence (new in 6C.4b.1) |
-| **Total hardened** | **48** | — |
+| **Total hardened** | **53** | — |
 
 ### Scenarios Deferred to Step 6C.4b.2 / 6C.4b.3
 
 | Feature | Scenarios | Issues |
 |---|---|---|
-| `hierarchy.feature` | 7 | Simulated migration/restore, fixture-only |
+| `hierarchy.feature` | 2 | Legacy migration and restart simulated |
 | `ownership.feature` | 2 | Scene safety fixture-based, cancellation simulated |
 | `export.feature` | 4 | All simulated or no-op |
 | `changelog.feature` | 1 | Tag protection simulates CLI error |
 | `creation.feature` | 1 | Cancellation simulates modal flag |
-| **Total deferred** | **15** | — |
+| **Total deferred** | **10** | — |
 
 ### Configuration Resolution
 

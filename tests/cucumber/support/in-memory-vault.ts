@@ -41,11 +41,23 @@ export interface InMemoryFile extends TFile {
   modifiedAt: number;
 }
 
+/** Result of listing a folder (matches Obsidian adapter.list). */
+export interface AdapterListResult {
+  files: string[];
+  folders: string[];
+}
+
 /** Minimal adapter mock for vault operations. */
 export interface VaultAdapter {
   exists(path: string): Promise<boolean>;
   mkdir(path: string): Promise<void>;
   remove(path: string): Promise<void>;
+  /** Read file content by path. */
+  read(path: string): Promise<string>;
+  /** Write content to a file path (creates or overwrites). */
+  write(path: string, content: string): Promise<void>;
+  /** List immediate children of a folder. */
+  list(path: string): Promise<AdapterListResult>;
 }
 
 /** Minimal vault mock for testing. */
@@ -71,20 +83,9 @@ export function createInMemoryVault(): TestVault {
   const files = new Map<string, InMemoryFile>();
   const folders = new Set<string>();
 
-  function ensureParentFolders(path: string): void {
-    const parts = path.split('/');
-    if (parts.length <= 1) return;
-    // Remove the file name, keep directory parts
-    parts.pop();
-    let current = '';
-    for (const part of parts) {
-      current = current ? `${current}/${part}` : part;
-      folders.add(current);
-    }
-  }
-
+  const ensureParents = (path: string) => ensureParentFolders(path, folders);
   const adapter = buildAdapter(files, folders);
-  return buildVault(files, folders, adapter, ensureParentFolders);
+  return buildVault(files, folders, adapter, ensureParents);
 }
 
 function buildAdapter(
@@ -92,22 +93,71 @@ function buildAdapter(
   folders: Set<string>,
 ): VaultAdapter {
   return {
-    /**
-     * Check if a specific file or folder exists.
-     * Only returns true for exact file or folder paths,
-     * NOT for arbitrary child paths under existing folders.
-     */
     exists: async (path: string): Promise<boolean> => {
-      if (files.has(path)) return true;
-      if (folders.has(path)) return true;
-      return false;
+      return files.has(path) || folders.has(path);
     },
     mkdir: async (path: string): Promise<void> => {
       folders.add(path);
     },
     remove: async (path: string): Promise<void> => {
       files.delete(path);
+      folders.delete(path);
     },
+    read: async (path: string): Promise<string> => {
+      const file = files.get(path);
+      if (!file) throw new Error(`File not found: ${path}`);
+      return file.content;
+    },
+    write: async (path: string, content: string): Promise<void> => {
+      const file = createInMemoryFile(path, content);
+      files.set(path, file);
+      ensureParentFolders(path, folders);
+    },
+    list: async (path: string): Promise<AdapterListResult> => {
+      return listImmediateChildren(path, files, folders);
+    },
+  };
+}
+
+/** Ensure parent folders of a file path exist. */
+function ensureParentFolders(path: string, folders: Set<string>): void {
+  const parts = path.split('/');
+  if (parts.length <= 1) return;
+  parts.pop();
+  let current = '';
+  for (const part of parts) {
+    current = current ? `${current}/${part}` : part;
+    folders.add(current);
+  }
+}
+
+/** List immediate children of a folder. */
+function listImmediateChildren(
+  path: string,
+  files: Map<string, InMemoryFile>,
+  folders: Set<string>,
+): AdapterListResult {
+  const prefix = path.endsWith('/') ? path : `${path}/`;
+  const childFolders = new Set<string>();
+  const childFiles = new Set<string>();
+
+  for (const folder of folders) {
+    if (folder.startsWith(prefix)) {
+      const remainder = folder.slice(prefix.length);
+      if (remainder.indexOf('/') < 0) childFolders.add(remainder);
+    }
+  }
+
+  for (const filePath of files.keys()) {
+    if (filePath.startsWith(prefix)) {
+      const remainder = filePath.slice(prefix.length);
+      if (remainder.indexOf('/') < 0) childFiles.add(remainder);
+    }
+  }
+
+  return {
+    folders: Array.from(childFolders).map(name => `${prefix}${name}`),
+    files: Array.from(childFiles).map(name => `${prefix}${name}`),
   };
 }
 

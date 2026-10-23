@@ -121,4 +121,30 @@ export interface TestWorld {
   sceneOriginalContent?: string;
   /** Scene UUIDs in creation order (for ordering test) */
   sceneUuidsInOrder?: string[];
+  /** UniverseManager instance for hierarchy tests */
+  universeManager?: import('../../../src/services/UniverseManager').UniverseManager;
+  /** SeriesManager instance for hierarchy tests */
+  seriesManager?: import('../../../src/services/SeriesManager').SeriesManager;
+  /** Plugin mock for hierarchy tests */
+  hierarchyPlugin?: import('../../../src/main').default;
+  /** Created universe metadata for hierarchy tests */
+  universeMetadata?: import('../../../src/models/Universe').UniverseMetadata;
+  /** Created series metadata for hierarchy tests */
+  seriesMetadata?: import('../../../src/models/StoryLineProject').SeriesMetadata;
+  /** Universe folder path for hierarchy tests */
+  universeFolder?: string;
+  /** Series folder path for hierarchy tests */
+  seriesFolder?: string;
+  /** Book in universe Alpha (for isolation test) */
+  bookAlpha?: StoryLineProject;
+  /** Book in universe Beta (for isolation test) */
+  bookBeta?: StoryLineProject;
+  /** Universe Alpha ID (for isolation test) */
+  universeAlphaId?: string;
+  /** Universe Beta ID (for isolation test) */
+  universeBetaId?: string;
+  /** Scenes from Alpha universe (for isolation test) */
+  alphaScenes?: import('../../../src/models/Scene').Scene[];
+  /** Scenes from Beta universe (for isolation test) */
+  betaScenes?: import('../../../src/models/Scene').Scene[];
 }
