@@ -3,11 +3,22 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-24 (Step 6C.4b.3b.3 — Migration data-loss paths closed)
+> Updated: 2026-10-24 (Step 6C.4b.3b.4 — Final migration integrity gate)
 > Total scenarios: 62
 > Total steps: 276
 
-## 6C.4b.3b.3 Update Summary
+## 6C.4b.3b.4 Update Summary
+
+Step 6C.4b.3b.4 closed the remaining migration data-loss paths and restored the architecture budget:
+
+1. **parseExisting() returns null on malformed JSON** — Previously returned `{}`, which could cause malformed but nonempty System files to be silently overwritten. All merge helpers now return `null` when the existing file is malformed, deferring the merge.
+2. **useProjectColors → projectColors migration** — `mergePlotlineData()` now creates the `projectColors` object from legacy `useProjectColors` flag and color defaults, matching the format that `saveProjectSystemData()` writes and `loadProjectSystemData()` reads.
+3. **migrateJsonFilesToSystem() preserves conflicting files** — Previously always deleted the old file when the new path existed. Now only deletes when contents are semantically equivalent, when the new file is empty and old has data, or after verifying the write succeeded. Different meaningful data in both files is preserved.
+4. **saveSettings() preserves unresolved legacy data** — Now loads persisted `data.json` first, then merges with `this.settings`, ensuring unresolved legacy keys survive settings save calls even if they're not in the in-memory settings object.
+5. **Architecture extraction** — Extracted `saveSettings()` into `applyMigrationStripping()`, `applyColorSettings()`, `restoreGlobalColorDefaults()`, and `captureGlobalColorSnapshot()`. Extracted `migrateJsonFilesToSystem()` into `migrateOneJsonFile()`, `handleExistingDestination()`, `hasUsableData()`, `contentsEqual()`, and `trashFileIfExists()`.
+6. **Architecture baseline reduced** — From 1,170 to 1,164 violations (-6), below the 1,166 target.
+
+## 6C.4b.3b.3 Historical Summary
 
 Step 6C.4b.3b.3 closed remaining migration data-loss paths and corrected KEY_TO_SYSTEM_FILE mappings:
 

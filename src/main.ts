@@ -686,52 +686,70 @@ export default class SceneCardsPlugin extends Plugin {
             checklists: this.settings.excludeChecklistFromWordcount === true,
         });
         setWordcountLocale(normalizeStoryLineLocale(this.sceneManager?.getEffectiveLocale() ?? this.settings.defaultProjectLanguage));
-        const toSave: Record<string, unknown> = { ...this.settings };
+
+        const persisted = await this.loadData();
+        const toSave: Record<string, unknown> = {
+            ...(persisted && typeof persisted === 'object' ? persisted : {}),
+            ...this.settings,
+        };
+
         if (this._systemMigrationDone) {
-            // Only strip per-project data keys that were actually migrated.
-            // Keys that failed to migrate must remain in data.json for retry.
-            for (const key of this._migratedKeys) {
-                delete toSave[key];
-            }
-            // When using per-project colours, restore global defaults into
-            // data.json so the global values are not overwritten by the
-            // project-specific ones currently in memory.
-            if (this.settings.useProjectColors && Object.keys(this._globalColorDefaults).length > 0) {
-                const g = this._globalColorDefaults;
-                toSave.colorScheme = g.colorScheme;
-                toSave.plotlineHue = g.plotlineHue;
-                toSave.plotlineSaturation = g.plotlineSaturation;
-                toSave.plotlineLightness = g.plotlineLightness;
-                toSave.stickyNoteTheme = g.stickyNoteTheme;
-                toSave.stickyNoteHue = g.stickyNoteHue;
-                toSave.stickyNoteSaturation = g.stickyNoteSaturation;
-                toSave.stickyNoteLightness = g.stickyNoteLightness;
-                toSave.stickyNoteOverrides = g.stickyNoteOverrides ?? {};
-                toSave.stickyNoteFontColorLight = g.stickyNoteFontColorLight;
-                toSave.stickyNoteFontColorDark = g.stickyNoteFontColorDark;
-            } else {
-                // Keep global colour snapshot in sync so toggling
-                // useProjectColors later doesn't revert to stale values.
-                this._globalColorDefaults = {
-                    colorScheme: this.settings.colorScheme,
-                    plotlineHue: this.settings.plotlineHue,
-                    plotlineSaturation: this.settings.plotlineSaturation,
-                    plotlineLightness: this.settings.plotlineLightness,
-                    stickyNoteTheme: this.settings.stickyNoteTheme,
-                    stickyNoteHue: this.settings.stickyNoteHue,
-                    stickyNoteSaturation: this.settings.stickyNoteSaturation,
-                    stickyNoteLightness: this.settings.stickyNoteLightness,
-                    stickyNoteOverrides: { ...(this.settings.stickyNoteOverrides || {}) },
-                    stickyNoteFontColorLight: this.settings.stickyNoteFontColorLight,
-                    stickyNoteFontColorDark: this.settings.stickyNoteFontColorDark,
-                };
-            }
+            this.applyMigrationStripping(toSave);
+            this.applyColorSettings(toSave);
         }
         await this.saveData(toSave);
-        // Persist per-project data to System/ files (only after migration)
         if (this._systemMigrationDone) {
             await this.saveProjectSystemData();
         }
+    }
+
+    /** Strip only successfully migrated keys from the settings payload. */
+    private applyMigrationStripping(toSave: Record<string, unknown>): void {
+        for (const key of this._migratedKeys) {
+            delete toSave[key];
+        }
+    }
+
+    /** Apply per-project color settings to the settings payload. */
+    private applyColorSettings(toSave: Record<string, unknown>): void {
+        if (this.settings.useProjectColors && Object.keys(this._globalColorDefaults).length > 0) {
+            this.restoreGlobalColorDefaults(toSave);
+        } else {
+            this.captureGlobalColorSnapshot();
+        }
+    }
+
+    /** Restore global color defaults into data.json when per-project colors are active. */
+    private restoreGlobalColorDefaults(toSave: Record<string, unknown>): void {
+        const g = this._globalColorDefaults;
+        toSave.colorScheme = g.colorScheme;
+        toSave.plotlineHue = g.plotlineHue;
+        toSave.plotlineSaturation = g.plotlineSaturation;
+        toSave.plotlineLightness = g.plotlineLightness;
+        toSave.stickyNoteTheme = g.stickyNoteTheme;
+        toSave.stickyNoteHue = g.stickyNoteHue;
+        toSave.stickyNoteSaturation = g.stickyNoteSaturation;
+        toSave.stickyNoteLightness = g.stickyNoteLightness;
+        toSave.stickyNoteOverrides = g.stickyNoteOverrides ?? {};
+        toSave.stickyNoteFontColorLight = g.stickyNoteFontColorLight;
+        toSave.stickyNoteFontColorDark = g.stickyNoteFontColorDark;
+    }
+
+    /** Capture current global color settings for later restoration. */
+    private captureGlobalColorSnapshot(): void {
+        this._globalColorDefaults = {
+            colorScheme: this.settings.colorScheme,
+            plotlineHue: this.settings.plotlineHue,
+            plotlineSaturation: this.settings.plotlineSaturation,
+            plotlineLightness: this.settings.plotlineLightness,
+            stickyNoteTheme: this.settings.stickyNoteTheme,
+            stickyNoteHue: this.settings.stickyNoteHue,
+            stickyNoteSaturation: this.settings.stickyNoteSaturation,
+            stickyNoteLightness: this.settings.stickyNoteLightness,
+            stickyNoteOverrides: { ...(this.settings.stickyNoteOverrides || {}) },
+            stickyNoteFontColorLight: this.settings.stickyNoteFontColorLight,
+            stickyNoteFontColorDark: this.settings.stickyNoteFontColorDark,
+        };
     }
 
     private applyImageSizingVariables(): void {
@@ -2646,21 +2664,6 @@ export default class SceneCardsPlugin extends Plugin {
         const adapter = this.app.vault.adapter;
         const jsonFiles = ['plotgrid.json', 'timeline.json', 'board.json', 'plotlines.json', 'stats.json'];
 
-        const hasUsableData = (filename: string, content: string): boolean => {
-            try {
-                const parsed: unknown = JSON.parse(content);
-                if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
-                const record = parsed as Record<string, unknown>;
-                if (filename === 'board.json') {
-                    const positions = record.corkboardPositions;
-                    return !!positions && typeof positions === 'object' && Object.keys(positions as object).length > 0;
-                }
-                return Object.keys(record).length > 0;
-            } catch {
-                return false;
-            }
-        };
-
         for (const project of this.sceneManager.getProjects()) {
             const baseFolder = project.sceneFolder
                 .replace(/\\/g, '/').replace(/\/Scenes\/?$/, '');
@@ -2669,43 +2672,97 @@ export default class SceneCardsPlugin extends Plugin {
             for (const filename of jsonFiles) {
                 const oldPath = `${baseFolder}/${filename}`;
                 const newPath = `${sysFolder}/${filename}`;
-
-                try {
-                    if (!await adapter.exists(oldPath)) continue;
-                    if (await adapter.exists(newPath)) {
-                        // An empty System file can have been created before the
-                        // legacy file was migrated. Preserve usable legacy data
-                        // before removing the old file.
-                        const oldContent = await adapter.read(oldPath);
-                        const newContent = await adapter.read(newPath);
-                        if (!hasUsableData(filename, newContent) && hasUsableData(filename, oldContent)) {
-                            await adapter.write(newPath, oldContent);
-                        }
-                        const oldFile = this.app.vault.getAbstractFileByPath(oldPath);
-                        if (oldFile) await this.app.fileManager.trashFile(oldFile);
-                        continue;
-                    }
-
-                    // Ensure System/ folder exists
-                    if (!await adapter.exists(sysFolder)) {
-                        await this.app.vault.createFolder(sysFolder);
-                    }
-
-                    // Read old file content and write to new location
-                    const content = await adapter.read(oldPath);
-                    await adapter.write(newPath, content);
-
-                    // Delete old file
-                    const oldFile = this.app.vault.getAbstractFileByPath(oldPath);
-                    if (oldFile) await this.app.fileManager.trashFile(oldFile);
-
-                    // Migrated oldPath → newPath successfully
-                } catch (e) {
-                    // Migration failed for this file — continue with remaining files
-                    void e;
-                }
+                await this.migrateOneJsonFile(adapter, filename, oldPath, newPath, sysFolder);
             }
         }
+    }
+
+    /** Migrate a single JSON file from project root to System/ folder. */
+    private async migrateOneJsonFile(
+        adapter: typeof this.app.vault.adapter,
+        filename: string,
+        oldPath: string,
+        newPath: string,
+        sysFolder: string,
+    ): Promise<void> {
+        try {
+            if (!await adapter.exists(oldPath)) return;
+
+            const oldContent = await adapter.read(oldPath);
+            const oldHasData = this.hasUsableData(filename, oldContent);
+
+            if (await adapter.exists(newPath)) {
+                await this.handleExistingDestination(adapter, filename, oldPath, newPath, oldContent, oldHasData);
+                return;
+            }
+
+            if (!await adapter.exists(sysFolder)) {
+                await this.app.vault.createFolder(sysFolder);
+            }
+            await adapter.write(newPath, oldContent);
+
+            // Verify the write succeeded before deleting the source
+            const verifyContent = await adapter.read(newPath);
+            if (verifyContent === oldContent) {
+                await this.trashFileIfExists(oldPath);
+            }
+        } catch {
+            // Migration failed for this file — continue with remaining files
+        }
+    }
+
+    /** Handle the case where the destination System file already exists. */
+    private async handleExistingDestination(
+        adapter: typeof this.app.vault.adapter,
+        filename: string,
+        oldPath: string,
+        newPath: string,
+        oldContent: string,
+        oldHasData: boolean,
+    ): Promise<void> {
+        const newContent = await adapter.read(newPath);
+        const newHasData = this.hasUsableData(filename, newContent);
+
+        if (this.contentsEqual(oldContent, newContent)) {
+            await this.trashFileIfExists(oldPath);
+        } else if (!newHasData && oldHasData) {
+            await adapter.write(newPath, oldContent);
+            await this.trashFileIfExists(oldPath);
+        }
+        // Both have different meaningful data — preserve both.
+    }
+
+    /** Check if a JSON file has usable data. */
+    private hasUsableData(filename: string, content: string): boolean {
+        try {
+            const parsed: unknown = JSON.parse(content);
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
+            const record = parsed as Record<string, unknown>;
+            if (filename === 'board.json') {
+                const positions = record.corkboardPositions;
+                return !!positions && typeof positions === 'object' && Object.keys(positions as object).length > 0;
+            }
+            return Object.keys(record).length > 0;
+        } catch {
+            return false;
+        }
+    }
+
+    /** Compare two JSON files for semantic equality. */
+    private contentsEqual(a: string, b: string): boolean {
+        try {
+            const parsedA = JSON.parse(a);
+            const parsedB = JSON.parse(b);
+            return JSON.stringify(parsedA) === JSON.stringify(parsedB);
+        } catch {
+            return a === b;
+        }
+    }
+
+    /** Trash a file if it exists in the vault. */
+    private async trashFileIfExists(path: string): Promise<void> {
+        const file = this.app.vault.getAbstractFileByPath(path);
+        if (file) await this.app.fileManager.trashFile(file);
     }
 
     /**
