@@ -45,8 +45,7 @@ function createBook(title: string, bookId: string, universeId: string): StoryLin
   };
 }
 
-Given(/(\\d+) Books belong to the same Universe/, function (this: TestWorld, count: string) {
-  const bookCount = Number.parseInt(count, 10);
+Given('{int} Books belong to the same Universe', function (this: TestWorld, bookCount: number) {
   this.universeId = 'universe-123';
   for (let i = 0; i < bookCount; i++) {
     this.books.push(createBook(`Book ${i + 1}`, `book-${i + 1}`, this.universeId));
