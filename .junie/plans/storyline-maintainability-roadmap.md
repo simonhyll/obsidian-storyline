@@ -97,6 +97,8 @@ versions.json
 
 **Step 2 implementation report (2026-10-23):** Commits `50f5915` and `6ab211e` moved 97 TS source files to `src/`, `manifest.json` to `assets/`, CSS source to `src/styles/legacy.css` and generated plugin artifacts to `dist/`. The GitHub CI run for `6ab211e` initially failed incremental lint due to newly modified source-read lines in two test files; typed `node:fs` imports were added in subsequent fixes. The dev-mode `esbuild` asset watcher and `DEVELOPMENT.md` were also corrected subsequently. Preserve these fixes before Step 3. **CI/test success does not establish an actual Obsidian desktop smoke test** unless separately reported.
 
+**Step 3 implementation report (2026-10-23):** Commit `ea66591` replaced the 14,680-line `src/styles/legacy.css` with 31 modular SCSS files compiled via Sass to `dist/styles.css`. The CSS regression check verifies 2,159 selectors, 8,150 declarations, and 11 at-rules match the baseline exactly. Build pipeline updated to compile SCSS with watch support. ESLint postinstall patch added for `assets/manifest.json` path. **An actual Obsidian desktop smoke test is still needed** to verify visual parity.
+
 ### 3. Adopt modular SCSS with one output file
 
 - Add Sass tooling and compile `src/styles/main.scss` (or chosen canonical SCSS entry) to **`dist/styles.css`**, never the repository root.
