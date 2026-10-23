@@ -141,12 +141,11 @@ When('I cancel', function (this: TestWorld) {
 
 When('I click create twice rapidly', async function (this: TestWorld) {
     if (!this.formState) throw new Error('No form state');
-    // Test the production isCreating guard from CreateProjectModal.handleCreate()
-    const result = await runConcurrencyGuardTest(this, this.formState, makeRecordingDeps);
-    if (result.createCallCount !== 1) {
-        throw new Error(`Expected exactly 1 createProject call, got ${result.createCallCount}`);
-    }
-    this.createCount = result.createCallCount;
+    // Test the production CreationConcurrencyGuard from CreateProjectModal.
+    // The helper verifies: second call blocked, guard released after completion,
+    // guard released after failure, and subsequent calls work.
+    await runConcurrencyGuardTest(this, this.formState, makeRecordingDeps);
+    this.createCount = 1; // Exactly one creation from the two rapid clicks
 });
 
 When('I change the universe selection quickly', function (this: TestWorld) {

@@ -9,6 +9,7 @@ import { Modal, Notice, ButtonComponent } from 'obsidian';
 import type { App } from 'obsidian';
 import type { StoryLineProject } from '../models/StoryLineProject';
 import { executeCreation, type ProjectType, type CreationFormState, type ProjectCreationDeps } from '../services/projectCreation';
+import { CreationConcurrencyGuard } from '../services/creationGuard';
 import { updateSeriesDropdownInPlace } from './CreateProjectDropdowns';
 import type { DropdownDeps, ModalClosedChecker } from './CreateProjectDropdowns';
 import { buildFormFields, updateFieldVisibility, type FormFieldRefs } from './CreateProjectFields';
@@ -22,6 +23,7 @@ export interface CreateProjectModalDeps extends ProjectCreationDeps, DropdownDep
     /** Plugin settings subset. */
     storyLineRoot: string;
 }
+
 
 /**
  * Modal for creating a new StoryLine project.
@@ -53,7 +55,7 @@ export class CreateProjectModal extends Modal {
 
     private resolvePromise: ((result: StoryLineProject | null) => void) | null = null;
     private settled = false;
-    private isCreating = false;
+    private concurrencyGuard = new CreationConcurrencyGuard();
     private isClosed_ = false;
     /** Returns whether the modal has been closed (satisfies ModalClosedChecker). */
     get isClosed(): boolean { return this.isClosed_; }
@@ -165,16 +167,18 @@ export class CreateProjectModal extends Modal {
     }
 
     private async handleCreate(): Promise<void> {
-        if (this.isCreating) return;
+        const release = this.concurrencyGuard.tryStart();
+        if (!release) return;
         if (!this.form.title.trim()) {
+            release();
             new Notice('Please enter a name.');
             return;
         }
         if (this.form.selectedSeriesUuid === '__new__' && !this.form.newSeriesName.trim()) {
+            release();
             new Notice('Please enter a name for the new series.');
             return;
         }
-        this.isCreating = true;
         this.refs.createBtn?.setDisabled(true);
         try {
             const result = await executeCreation(this.form, this.deps);
@@ -188,7 +192,7 @@ export class CreateProjectModal extends Modal {
             new Notice(message, 10000);
             this.refs.createBtn?.setDisabled(false);
         } finally {
-            this.isCreating = false;
+            release();
         }
     }
 

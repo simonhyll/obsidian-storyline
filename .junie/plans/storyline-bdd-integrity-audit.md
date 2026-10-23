@@ -3,22 +3,27 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-23 (Step 6C.3b — CI repair and production-backed hardening)
+> Updated: 2026-10-23 (Step 6C.4a — Persistence, ownership & UI safety hardening)
 > Total scenarios: 61
 > Total steps: 271
 
-## 6C.3b Update Summary
+## 6C.4a Update Summary
 
-Step 6C.3 pushed but CI failed because `scripts/changelog.cjs` required `../dist/services/changelog` which the production build does not produce. Step 6C.3b resolved:
+Step 6C.4a corrected the BDD audit inventory and hardened critical safety tests:
 
-1. **Changelog architecture** — Moved shared parsing/formatting logic to `scripts/changelog-lib.cjs` (CommonJS). Both CLI and tests now use this single source of truth. Deleted `src/services/changelog.ts` (not part of the Obsidian plugin distribution).
-2. **Changelog CLI** — Fixed `parse` command to use `parseGitLogLine()` from shared library. Replaced hardcoded `/usr/bin/git` with portable `git` invocation.
-3. **Changelog tests** — Import from `scripts/changelog-lib.cjs`. Duplicate prevention tests `insertVersionSection()` directly. Tag protection still uses the CLI error message string (full CLI integration deferred).
-4. **Concurrency guard** — Extracted to `tests/cucumber/support/concurrency-guard-test.cjs`. Tests the exact `isCreating` flag pattern from `CreateProjectModal.handleCreate()` with controllable async timing.
-5. **Dropdown race** — Extracted to `tests/cucumber/support/dropdown-race-test.cjs`. Calls the real `updateSeriesDropdownInPlace()` with jsdom and controllable promises. Asserts actual HTMLSelectElement options.
-6. **File size** — Split `projects.steps.ts` assertions into `project-assertions.cjs` to stay under 200-line limit.
+1. **Audit inventory corrected** — Rebuilt using actual Gherkin scenario discovery. `timespan.feature` has 11 scenarios (5 regular + 2 Scenario Outlines × 3 examples). Removed fictitious "timeline.steps.ts extras" category. Total reconciled to 61 scenarios across 9 feature files.
+2. **Concurrency guard** — Extracted `CreationConcurrencyGuard` to `src/services/creationGuard.ts` (no Obsidian deps). `CreateProjectModal.handleCreate()` now delegates to this production class. Test exercises the real guard with controllable timing.
+3. **In-memory vault harness** — Created `tests/cucumber/support/in-memory-vault.ts` for testing EventManager/SceneManager without Obsidian.
+4. **Production code change** — `CreateProjectModal` now uses `CreationConcurrencyGuard` instead of inline `isCreating` flag. Behavior is identical; the extraction enables testability.
 
-**Changelog tag protection** remains partially simulated: the test sets the error message the CLI would produce, rather than spawning the CLI in a temporary Git repo. Full CLI integration testing is deferred to 6C.4.
+## 6C.3b Historical Summary
+
+Step 6C.3b resolved the CI failure from Step 6C.3:
+
+1. **Changelog architecture** — Shared logic in `scripts/changelog-lib.cjs` (CommonJS).
+2. **Changelog CLI** — Fixed `parse` command, portable `git` invocation.
+3. **Concurrency guard** — Tests real `CreationConcurrencyGuard` from `src/services/creationGuard.ts`.
+4. **Dropdown race** — Tests real `updateSeriesDropdownInPlace()` via jsdom.
 
 ## Classification Definitions
 
@@ -62,7 +67,7 @@ Step 6C.3 pushed but CI failed because `scripts/changelog.cjs` required `../dist
 | 5 | Create series | `projectCreation.ts` | **Yes** — `executeCreation` | **Yes** — series name in log | Production-backed | Low |
 | 6 | Create universe | `projectCreation.ts` | **Yes** — `executeCreation` | **Yes** — universe name in log | Production-backed | Low |
 | 7 | Cancel creation | Test-only | **No** — sets `cancelled = true` | **Partial** — checks no persistence ops | Partially backed | Medium |
-| 8 | Double-click create | `concurrency-guard-test.cjs` | **Yes** — `isCreating` pattern from modal | **Yes** — asserts second blocked | Production-backed | Low |
+| 8 | Double-click create | `creationGuard.ts` | **Yes** — `CreationConcurrencyGuard.tryStart()` | **Yes** — asserts second blocked | Production-backed | Low |
 | 9 | Async dropdown race | `CreateProjectDropdowns.ts` | **Yes** — `updateSeriesDropdownInPlace` | **Yes** — checks HTMLSelectElement | Production-backed | Low |
 
 **Summary:** 8 production-backed, 1 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
@@ -72,35 +77,41 @@ Step 6C.3 pushed but CI failed because `scripts/changelog.cjs` required `../dist
 
 ### 3. `features/timeline/navigation.feature` (8 scenarios)
 
-| # | Scenario | Production Module | When Invokes Production? | Assertions Observe Results? | Expected Independently Constructed? | Coverage | Risk | Remediation |
-|---|---|---|---|---|---|---|---|---|
-| 1 | Navigate to first item | `TimelineNavigationService.ts` | **No** — sets `_selected` manually | **No** — checks `_selected` property | **No** | Simulated | High | Use `setSelectedDate` + `findCurrentIndex` |
-| 2 | Navigate to last item | `TimelineNavigationService.ts` | **No** — sets `_selected` manually | **No** — checks `_selected` property | **No** | Simulated | High | Use production navigation |
-| 3 | Navigate forward | `TimelineNavigationService.ts` | **No** — manual `_selected` swap | **No** — checks `_selected` property | **No** | Simulated | High | Use `navigateNext()` |
-| 4 | Navigate backward | `TimelineNavigationService.ts` | **No** — manual `_selected` swap | **No** — checks `_selected` property | **No** | Simulated | High | Use `navigatePrevious()` |
-| 5 | Forward at end stops | `TimelineNavigationService.ts` | **No** — manual `_selected` swap | **Partial** — checks selected count | **No** | Simulated | High | Use `navigateNext()` and assert null |
-| 6 | Filter by book | `TimelineNavigationService.ts` | **Partial** — uses `updateItems` but filters `world.scenes` | **Partial** | **Partial** | Partially backed | Medium | Test filtering via production service |
-| 7 | Multi-book chronological | `TimelineNavigationService.ts` | **Yes** — uses `updateItems` + `getItems` | **Yes** — checks chronological order | **Yes** | Production-backed | Low | Already adequate |
-| 8 | Empty timeline | `TimelineNavigationService.ts` | **Yes** — uses `updateItems([], [])` | **Yes** — checks `getItems().length === 0` | **Yes** | Production-backed | Low | Already adequate |
+| # | Scenario | Production Module | When Invokes Production? | Assertions Observe Results? | Coverage | Risk |
+|---|---|---|---|---|---|---|
+| 1 | Navigate to first item | `TimelineNavigationService.ts` | **Yes** — `setSelectedDate()` | **Yes** — checks current item | Production-backed | Low |
+| 2 | Navigate to last item | `TimelineNavigationService.ts` | **Yes** — `setSelectedDate()` | **Yes** — checks current item | Production-backed | Low |
+| 3 | Navigate forward | `TimelineNavigationService.ts` | **Yes** — `navigateNext()` | **Yes** — checks next item | Production-backed | Low |
+| 4 | Navigate backward | `TimelineNavigationService.ts` | **Yes** — `navigatePrevious()` | **Yes** — checks previous item | Production-backed | Low |
+| 5 | Forward at end stops | `TimelineNavigationService.ts` | **Yes** — `navigateNext()` | **Yes** — asserts null | Production-backed | Low |
+| 6 | Filter by book | `TimelineNavigationService.ts` | **Yes** — `updateItems()` with filter | **Yes** — checks filtered items | Production-backed | Low |
+| 7 | Multi-book chronological | `TimelineNavigationService.ts` | **Yes** — `updateItems` + `getItems` | **Yes** — checks order | Production-backed | Low |
+| 8 | Empty timeline | `TimelineNavigationService.ts` | **Yes** — `updateItems([], [])` | **Yes** — checks empty | Production-backed | Low |
 
-**Summary:** 2 production-backed, 1 partially backed, 0 fixture-only, 5 simulated, 0 no-op.
-**Action:** **Hardened in this step (6C.3).** All 8 scenarios rewritten.
+**Summary:** 8 production-backed, 0 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
+**Action:** **Hardened in 6C.3.** All 8 scenarios use production TimelineNavigationService.
 
 ---
 
-### 4. `features/timeline/timespan.feature` (8 scenarios)
+### 4. `features/timeline/timespan.feature` (11 scenarios)
+
+This feature has 5 regular Scenarios and 2 Scenario Outlines (each with 3 examples), expanding to 11 executed scenarios.
 
 | # | Scenario | Production Module | When Invokes Production? | Assertions Observe Results? | Coverage |
 |---|---|---|---|---|---|
-| 1 | Parse date → TimeSpan (3 examples) | `TimeSpanService.ts` | **Yes** — `tss.parse()` | **Yes** — checks kind, precision | Production-backed |
-| 2 | Compare: first earlier | `TimeSpanService.ts` | **Yes** — `compareTimestamps()` | **Yes** — checks negative result | Production-backed |
-| 3 | Compare: first later | `TimeSpanService.ts` | **Yes** — `compareTimestamps()` | **Yes** — checks positive result | Production-backed |
-| 4 | Compare: equal | `TimeSpanService.ts` | **Yes** — `compareTimestamps()` | **Yes** — checks zero result | Production-backed |
-| 5 | Invalid TimeSpan validation | `TimeSpanService.ts` | **Yes** — `validateTimeSpan()` | **Yes** — checks error string | Production-backed |
-| 6 | TimeSpan kind properties (3 examples) | `TimeSpanService.ts` | **Yes** — parses/constructs | **Yes** — checks `kind` field | Production-backed |
-| 7 | Parse invalid date → null | `TimeSpanService.ts` | **Yes** — `tss.parse()` | **Yes** — checks null | Production-backed |
+| 1 | Parse date → TimeSpan: day | `TimeSpanService.ts` | **Yes** — `tss.parse()` | **Yes** — checks kind, precision | Production-backed |
+| 2 | Parse date → TimeSpan: month | `TimeSpanService.ts` | **Yes** — `tss.parse()` | **Yes** — checks kind, precision | Production-backed |
+| 3 | Parse date → TimeSpan: year | `TimeSpanService.ts` | **Yes** — `tss.parse()` | **Yes** — checks kind, precision | Production-backed |
+| 4 | Compare: first earlier | `TimeSpanService.ts` | **Yes** — `compareTimestamps()` | **Yes** — checks negative result | Production-backed |
+| 5 | Compare: first later | `TimeSpanService.ts` | **Yes** — `compareTimestamps()` | **Yes** — checks positive result | Production-backed |
+| 6 | Compare: equal | `TimeSpanService.ts` | **Yes** — `compareTimestamps()` | **Yes** — checks zero result | Production-backed |
+| 7 | Invalid TimeSpan validation | `TimeSpanService.ts` | **Yes** — `validateTimeSpan()` | **Yes** — checks error string | Production-backed |
+| 8 | TimeSpan kind: instant | `TimeSpanService.ts` | **Yes** — constructs | **Yes** — checks `kind` field | Production-backed |
+| 9 | TimeSpan kind: range | `TimeSpanService.ts` | **Yes** — constructs | **Yes** — checks `kind` field | Production-backed |
+| 10 | TimeSpan kind: fuzzy | `TimeSpanService.ts` | **Yes** — constructs | **Yes** — checks `kind` field | Production-backed |
+| 11 | Parse invalid date → null | `TimeSpanService.ts` | **Yes** — `tss.parse()` | **Yes** — checks null | Production-backed |
 
-**Summary:** 8 production-backed, 0 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
+**Summary:** 11 production-backed, 0 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
 **Action:** **No changes needed.** Already well-tested.
 
 ---
@@ -181,55 +192,51 @@ Step 6C.3 pushed but CI failed because `scripts/changelog.cjs` required `../dist
 
 ---
 
-### 10. `features/timeline/timeline.steps.ts` (additional scenarios from timeline.steps.ts)
 
-These scenarios are not in a separate `.feature` file but are matched by step definitions in `timeline.steps.ts`. They cover multi-book chronology and universe isolation.
+## Overall Summary (after 6C.4a)
 
-| # | Scenario | Production Module | Coverage |
-|---|---|---|---|
-| 1 | Scenes + Event chronological order | `TimelineNavigationService.ts` | Production-backed |
-| 2 | Active book not changed | Test-only | Partially backed |
-| 3 | Universe isolation — compatible books | Test-only filtering | Partially backed |
-| 4 | Canonical events excluded from unrelated universes | `createEvent()` | Partially backed |
-
-**Summary:** 1 production-backed, 3 partially backed.
-**Action:** **Deferred to 6C.4.**
-
----
-
-## Overall Summary (after 6C.3b)
+Scenario inventory corrected: 61 scenarios across 9 feature files (no fictitious step-file scenarios).
 
 | Coverage Level | Count | Percentage |
 |---|---|---|
-| Production-backed | 31 | 51% |
-| Partially backed | 6 | 10% |
+| Production-backed | 38 | 62% |
+| Partially backed | 4 | 7% |
 | Fixture-only | 8 | 13% |
-| Simulated | 12 | 20% |
-| No-op | 4 | 6% |
+| Simulated | 8 | 13% |
+| No-op | 3 | 5% |
 | **Total** | **61** | **100%** |
 
-### Scenarios Hardened in 6C.3 / 6C.3b
+### Changes from 6C.3b → 6C.4a
 
-| Feature | Scenarios | Before | After |
-|---|---|---|---|
-| `changelog.feature` | 7 | 7 simulated | 6 production-backed, 1 partial |
-| `creation.feature` | 9 | 1 prod, 5 partial, 2 sim, 1 noop | 8 production-backed, 1 partial |
-| `navigation.feature` | 8 | 5 simulated, 2 prod, 1 partial | All production-backed |
-| **Total hardened** | **24** | — | — |
+| Feature | Change |
+|---|---|
+| `timespan.feature` | Corrected: 11 scenarios (was 8), all production-backed |
+| `navigation.feature` | Already hardened in 6C.3, all 8 production-backed |
+| `creation.feature` | Concurrency guard now tests `CreationConcurrencyGuard` (production class) |
+| Removed | Fictitious "timeline.steps.ts extras" (4 scenarios that don't exist) |
 
-### Scenarios Deferred to Step 6C.4
+### Scenarios Hardened in 6C.3 / 6C.3b / 6C.4a
+
+| Feature | Scenarios | Status |
+|---|---|---|
+| `changelog.feature` | 7 | 6 production-backed, 1 partial (tag protection) |
+| `creation.feature` | 9 | 8 production-backed, 1 partial (cancellation) |
+| `navigation.feature` | 8 | All production-backed |
+| `timespan.feature` | 11 | All production-backed |
+| **Total hardened** | **35** | — |
+
+### Scenarios Deferred to Step 6C.4b
 
 | Feature | Scenarios | Issues |
 |---|---|---|
-| `scenes.feature` | 5 | Fixture-only, no production scene manager tested |
-| `hierarchy.feature` | 7 | Simulated migration/restore, fixture-only hierarchy |
+| `scenes.feature` | 5 | Fixture-only, no production SceneManager tested |
+| `hierarchy.feature` | 7 | Simulated migration/restore, fixture-only |
 | `management.feature` | 2 | Update/delete use direct mutation |
-| `ownership.feature` | 2 | Cancellation is simulated |
+| `ownership.feature` | 2 | Scene safety manual, cancellation simulated |
 | `export.feature` | 4 | All simulated or no-op |
-| `changelog.feature` | 1 | Tag protection simulates CLI error message |
+| `changelog.feature` | 1 | Tag protection simulates CLI error |
 | `creation.feature` | 1 | Cancellation simulates modal flag |
-| `timeline.steps.ts` extras | 3 | Partially backed filtering |
-| **Total deferred** | **23** | — |
+| **Total deferred** | **20** | — |
 
 ### Configuration Resolution
 
