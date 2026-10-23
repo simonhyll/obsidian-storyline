@@ -6994,35 +6994,44 @@ body.sl-auto-hide-tab-labels .story-line-view-switcher.sl-collapsed .story-line-
    Horizontal marker style: date/title above a thin line, description below
    ============================================ */
 
-/* Event marker entry — non-draggable, visually distinct from Scene cards */
+/* Event marker entry — uses .timeline-entry flex layout (seq + dot + card columns) */
 .timeline-entry-event-marker {
     cursor: pointer;
-    padding: 8px 12px;
-    margin: 4px 0;
-    border-radius: 4px;
-    background: color-mix(in srgb, var(--text-accent) 3%, var(--background-secondary));
-    border-left: 2px solid var(--text-accent);
+    background: transparent;
     transition: background 0.15s ease;
 }
 
 .timeline-entry-event-marker:hover {
-    background: color-mix(in srgb, var(--text-accent) 8%, var(--background-secondary));
+    background: color-mix(in srgb, var(--text-accent) 4%, var(--background-secondary));
 }
 
-/* Top row: date + title */
+/* Event dot — accent color */
+.timeline-dot-event {
+    background: var(--text-accent);
+    border-radius: 50%;
+    width: 10px;
+    height: 10px;
+    opacity: 0.8;
+}
+
+/* Vertical content column inside .timeline-entry-card */
+.timeline-event-content {
+    display: flex;
+    flex-direction: column;
+    padding: 6px 12px;
+    max-width: 480px;
+    border-left: 2px solid var(--text-accent);
+    margin-left: 4px;
+    background: color-mix(in srgb, var(--text-accent) 2%, var(--background-secondary));
+    border-radius: 0 4px 4px 0;
+}
+
+/* Top row: event title only (date is in left column) */
 .timeline-event-top {
     display: flex;
     align-items: baseline;
     gap: 8px;
-    margin-bottom: 4px;
-}
-
-.timeline-event-date {
-    font-size: 0.8em;
-    font-weight: 600;
-    color: var(--text-accent);
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
+    margin-bottom: 3px;
 }
 
 .timeline-event-title {
@@ -7031,20 +7040,24 @@ body.sl-auto-hide-tab-labels .story-line-view-switcher.sl-collapsed .story-line-
     color: var(--text-normal);
 }
 
-/* Horizontal marker line */
+/* Horizontal marker line — thin, not a box */
 .timeline-event-marker-line {
     height: 1px;
     background: var(--text-accent);
-    opacity: 0.4;
-    margin: 4px 0;
+    opacity: 0.35;
+    margin: 3px 0;
 }
 
 /* Description below the line */
 .timeline-event-description {
-    font-size: 0.85em;
+    font-size: 0.82em;
     color: var(--text-muted);
     line-height: 1.4;
     margin-top: 2px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 /* Event icon (for swimlane cards) */
@@ -7075,6 +7088,17 @@ body.sl-auto-hide-tab-labels .story-line-view-switcher.sl-collapsed .story-line-
 
 .swimlane-event-card:hover {
     box-shadow: var(--sl-shadow-sm);
+}
+
+/* Mobile / narrow window adjustments */
+@media (max-width: 600px) {
+    .timeline-event-content {
+        max-width: 260px;
+        padding: 4px 8px;
+    }
+    .timeline-event-description {
+        -webkit-line-clamp: 2;
+    }
 }
 
 /* ============================================
@@ -14330,5 +14354,93 @@ body.sl-focus-active-global.sl-focus-dim-text .markdown-source-view.mod-cm6 .cm-
     margin-top: 4px;
     font-size: 12px;
     padding: 2px 8px;
+}
+
+/* ── Project Modal Advanced Section ── */
+
+.project-modal-advanced-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    margin: 8px 0 0;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-muted);
+    user-select: none;
+}
+
+.project-modal-advanced-header:hover {
+    background: var(--background-modifier-hover);
+}
+
+.project-modal-advanced-content {
+    padding: 4px 0 0 8px;
+}
+
+/* ── Drag and Drop in Project Library ── */
+
+.universe-selector-card {
+    position: relative;
+}
+
+.universe-selector-card.dragging {
+    opacity: 0.4;
+    transform: scale(0.95);
+}
+
+.universe-selector-card.drag-over {
+    outline: 2px dashed var(--text-accent);
+    outline-offset: 2px;
+}
+
+.universe-selector-section.drag-over {
+    background: color-mix(in srgb, var(--text-accent) 6%, var(--background-secondary));
+    border-radius: 4px;
+}
+
+.universe-selector-section.drag-over-standalone {
+    background: color-mix(in srgb, var(--text-accent) 3%, var(--background-secondary));
+    border-radius: 4px;
+}
+
+/* Drag handle on book cards */
+.universe-selector-drag-handle {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    z-index: 5;
+    cursor: grab;
+    opacity: 0.3;
+    padding: 2px;
+    border-radius: 3px;
+    color: var(--text-muted);
+}
+
+.universe-selector-drag-handle:hover {
+    opacity: 0.8;
+    background: var(--background-modifier-hover);
+}
+
+.universe-selector-drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Standalone drop zone */
+.universe-selector-standalone-zone {
+    border: 2px dashed var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 12px;
+    margin: 8px 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.universe-selector-standalone-zone.drag-over {
+    border-color: var(--text-accent);
+    background: color-mix(in srgb, var(--text-accent) 4%, var(--background-secondary));
 }
 

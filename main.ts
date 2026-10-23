@@ -2156,16 +2156,35 @@ export default class SceneCardsPlugin extends Plugin {
     }
 
     /**
-     * Activate a view type in the workspace
+     * Activate a view type in the workspace.
+     * For StoryLine working views (Board, Timeline, Plotgrid, etc.), prefers
+     * reusing an already-open leaf to avoid creating duplicate tabs.
+     * The Project Library (UniverseView) is treated as a navigational view,
+     * separate from working views.
      */
     async activateView(viewType: string): Promise<void> {
         const { workspace } = this.app;
+
+        // Project Library is navigational — always reuse or create a single instance
+        if (viewType === UNIVERSE_VIEW_TYPE) {
+            const leaves = workspace.getLeavesOfType(UNIVERSE_VIEW_TYPE);
+            if (leaves.length > 0) {
+                workspace.revealLeaf(leaves[0]);
+                return;
+            }
+            const leaf = workspace.getRightLeaf(false) ?? workspace.getLeaf(false);
+            if (leaf) {
+                await leaf.setViewState({ type: UNIVERSE_VIEW_TYPE, active: true });
+                workspace.revealLeaf(leaf);
+            }
+            return;
+        }
 
         let leaf: WorkspaceLeaf | null = null;
         const leaves = workspace.getLeavesOfType(viewType);
 
         if (leaves.length > 0) {
-            // View already open, focus it
+            // View already open, focus the first instance
             leaf = leaves[0];
         } else {
             // Create new leaf
@@ -2177,6 +2196,52 @@ export default class SceneCardsPlugin extends Plugin {
 
         if (leaf) {
             workspace.revealLeaf(leaf);
+        }
+    }
+
+    /**
+     * Navigate to a book by activating the project and opening a StoryLine
+     * working view. Reuses an existing working leaf for that book rather than
+     * creating a duplicate tab.
+     *
+     * The active project is global, so we cannot have independent per-leaf
+     * book contexts. This helper ensures we don't create redundant tabs when
+     * the user clicks a book card in the Project Library.
+     */
+    async navigateToBook(book: StoryLineProject): Promise<void> {
+        // Set the active project
+        await this.sceneManager.setActiveProject(book);
+
+        // Refresh scenes and inherited entities
+        await this.refreshOpenViews(true);
+
+        // Check if there's already a StoryLine working view open
+        const workingViewTypes = [
+            BOARD_VIEW_TYPE,
+            TIMELINE_VIEW_TYPE,
+            STORYLINE_VIEW_TYPE,
+            PLOTGRID_VIEW_TYPE,
+            MANUSCRIPT_VIEW_TYPE,
+            CHARACTER_VIEW_TYPE,
+            LOCATION_VIEW_TYPE,
+            CODEX_VIEW_TYPE,
+            STATS_VIEW_TYPE,
+        ];
+
+        for (const viewType of workingViewTypes) {
+            const leaves = this.app.workspace.getLeavesOfType(viewType);
+            if (leaves.length > 0) {
+                // Found an existing working view — reuse it
+                this.app.workspace.revealLeaf(leaves[0]);
+                return;
+            }
+        }
+
+        // No working view open — default to BoardView
+        try {
+            await this.activateView(BOARD_VIEW_TYPE);
+        } catch {
+            // Non-critical fallback
         }
     }
 
@@ -3392,9 +3457,16 @@ export default class SceneCardsPlugin extends Plugin {
 
     /**
      * Open a modal to create a new StoryLine project.
+     * Hierarchy-aware: supports creating Books, Series, and Universes.
      * Safe against concurrent invocations — returns null if a modal is already open.
+     *
+     * @param defaultUniverseId - Pre-select this Universe when creating a Book/Series
+     * @param defaultSeriesUuid - Pre-select this Series when creating a Book
      */
-    async openNewProjectModal(): Promise<StoryLineProject | null> {
+    async openNewProjectModal(
+        defaultUniverseId?: string,
+        defaultSeriesUuid?: string
+    ): Promise<StoryLineProject | null> {
         if (this._newProjectModalOpen) {
             // Modal already open — ignore concurrent call
             return null;
@@ -3404,97 +3476,264 @@ export default class SceneCardsPlugin extends Plugin {
             return await new Promise<StoryLineProject | null>((resolve) => {
                 const modal = new Modal(this.app);
                 modal.titleEl.setText('New StoryLine project');
+
+                // ── Type selector: Book / Series / Universe ──
+                type ProjectType = 'book' | 'series' | 'universe';
+                let projectType: ProjectType = 'book';
+
+                const typeSetting = new Setting(modal.contentEl)
+                    .setName('Project type')
+                    .setDesc('What are you creating?')
+                    .addDropdown((dropdown: obsidian.DropdownComponent) => {
+                        dropdown
+                            .addOption('book', 'Book')
+                            .addOption('series', 'Series')
+                            .addOption('universe', 'Universe')
+                            .setValue('book')
+                            .onChange((v: ProjectType) => {
+                                projectType = v;
+                                renderFields();
+                            });
+                    });
+
+                // ── Fields ──
                 let title = '';
                 let customFolder = '';
-                let createAsSeries = false;
-                let seriesName = '';
+                let selectedUniverseId = defaultUniverseId || '';
+                let selectedSeriesUuid = defaultSeriesUuid || '';
 
-            // Series toggle at the top
-            const seriesNameSetting = new Setting(modal.contentEl)
-                .setName('Series name')
-                .setDesc('Characters, locations, and codex entries will be shared across all books in this series.')
-                .addText((text: TextComponent) => {
-                    text.setPlaceholder('My trilogy');
-                    text.onChange((v: string) => (seriesName = v));
-                });
-            seriesNameSetting.settingEl.setCssStyles({ display: 'none' });
-
-            new Setting(modal.contentEl)
-                .setName('Create as series')
-                .setDesc('Wrap this book in a series folder with a shared codex.')
-                .addToggle((toggle: ToggleComponent) => {
-                    toggle.setValue(false);
-                    toggle.onChange((v: boolean) => {
-                        createAsSeries = v;
-                        seriesNameSetting.settingEl.setCssStyles({ display: v ? '' : 'none' });
-                    });
-                });
-
-            // Book title
-            new Setting(modal.contentEl)
-                .setName('Book title')
-                .setDesc('The title of this book. Each book gets its own scenes folder.')
-                .addText((text: TextComponent) => {
-                    text.setPlaceholder('My novel');
-                    text.onChange((v: string) => (title = v));
-                });
-
-            new Setting(modal.contentEl)
-                .setName('Location')
-                .setDesc(`Leave empty to use default (${this.settings.storyLineRoot}). Or enter a vault folder path like "Writing/Novels".`)
-                .addText((text: TextComponent) => {
-                    text.setPlaceholder(this.settings.storyLineRoot);
-                    text.onChange((v: string) => (customFolder = v.trim()));
-                });
-
-            // Disable button while creating to prevent double submission
-            let createBtn: ButtonComponent | null = null;
-
-            new Setting(modal.contentEl)
-                .addButton((btn: ButtonComponent) => {
-                    createBtn = btn;
-                    btn.setButtonText('Create').setCta().onClick(async () => {
-                        if (!title.trim()) return;
-                        if (createAsSeries && !seriesName.trim()) {
-                            new Notice('Please enter a series name.');
-                            return;
+                // Universe dropdown (for Books and Series)
+                const universeSetting = new Setting(modal.contentEl)
+                    .setName('Universe')
+                    .setDesc('Optional: place this inside an existing Universe.')
+                    .addDropdown((dropdown: obsidian.DropdownComponent) => {
+                        dropdown.addOption('', '— None —');
+                        const universes = this.universeManager.getUniverses();
+                        for (const u of universes) {
+                            dropdown.addOption(u.id, u.name);
                         }
-                        // Disable button to prevent double submission
-                        createBtn?.setDisabled(true);
-                        try {
-                            const basePath = customFolder || undefined;
-                            const project = await this.sceneManager.createProject(title.trim(), '', basePath);
-                            await this.sceneManager.setActiveProject(project);
+                        if (defaultUniverseId) dropdown.setValue(defaultUniverseId);
+                        dropdown.onChange((v: string) => {
+                            selectedUniverseId = v;
+                            updateSeriesDropdown();
+                        });
+                    });
 
-                            if (createAsSeries) {
-                                await this.seriesManager.createSeriesFromProject(seriesName.trim());
+                // Series dropdown (for Books only)
+                const seriesSetting = new Setting(modal.contentEl)
+                    .setName('Series')
+                    .setDesc('Optional: place this book inside an existing Series.')
+                    .addDropdown((dropdown: obsidian.DropdownComponent) => {
+                        dropdown.addOption('', '— None —');
+                        dropdown.addOption('__new__', '+ Create new series…');
+                        if (defaultSeriesUuid) dropdown.setValue(defaultSeriesUuid);
+                        dropdown.onChange((v: string) => {
+                            selectedSeriesUuid = v;
+                            // Show/hide new series name field
+                            newSeriesNameSetting.settingEl.style.display = v === '__new__' ? '' : 'none';
+                        });
+                    });
+
+                // New series name field (hidden by default)
+                let newSeriesName = '';
+                const newSeriesNameSetting = new Setting(modal.contentEl)
+                    .setName('New series name')
+                    .setDesc('Name for the new series within the selected Universe.')
+                    .addText((text: TextComponent) => {
+                        text.setPlaceholder('My new series');
+                        text.onChange((v: string) => (newSeriesName = v));
+                    });
+                newSeriesNameSetting.settingEl.setCssStyles({ display: 'none' });
+
+                // Book title / Series name / Universe name
+                const titleSetting = new Setting(modal.contentEl)
+                    .setName('Book title')
+                    .setDesc('The title of this book.')
+                    .addText((text: TextComponent) => {
+                        text.setPlaceholder('My novel');
+                        text.onChange((v: string) => (title = v));
+                    });
+
+                // Custom location (advanced, collapsed by default)
+                const advancedContainer = modal.contentEl.createDiv({ cls: 'project-modal-advanced' });
+                const advancedHeader = advancedContainer.createDiv({ cls: 'project-modal-advanced-header' });
+                advancedHeader.createSpan({ text: '⚙ Advanced' });
+                const advancedContent = advancedContainer.createDiv({ cls: 'project-modal-advanced-content' });
+                advancedContent.setCssStyles({ display: 'none' });
+                let advancedOpen = false;
+                advancedHeader.addEventListener('click', () => {
+                    advancedOpen = !advancedOpen;
+                    advancedContent.setCssStyles({ display: advancedOpen ? '' : 'none' });
+                });
+
+                new Setting(advancedContent)
+                    .setName('Location')
+                    .setDesc(`Leave empty to use default (${this.settings.storyLineRoot}). Or enter a vault folder path like "Writing/Novels".`)
+                    .addText((text: TextComponent) => {
+                        text.setPlaceholder(this.settings.storyLineRoot);
+                        text.onChange((v: string) => (customFolder = v.trim()));
+                    });
+
+                // ── Render logic ──
+                const updateSeriesDropdown = () => {
+                    const dropdownEl = seriesSetting.controlEl.querySelector('select') as HTMLSelectElement;
+                    if (!dropdownEl) return;
+                    const currentVal = dropdownEl.value;
+                    dropdownEl.innerHTML = '';
+                    const optNone = document.createElement('option');
+                    optNone.value = '';
+                    optNone.text = '— None —';
+                    dropdownEl.add(optNone);
+                    const optNew = document.createElement('option');
+                    optNew.value = '__new__';
+                    optNew.text = '+ Create new series…';
+                    dropdownEl.add(optNew);
+
+                    // Filter series by selected universe
+                    const allSeries = this.seriesManager.discoverSeries();
+                    const universeSeriesUuids = new Set<string>();
+                    if (selectedUniverseId) {
+                        const hierarchy = this.universeManager.discoverHierarchy();
+                        for (const { universe, series: seriesList } of hierarchy) {
+                            if (universe.id === selectedUniverseId) {
+                                for (const { meta } of seriesList) {
+                                    if (meta.seriesUuid) universeSeriesUuids.add(meta.seriesUuid);
+                                }
                             }
-
-                            this.refreshOpenViews();
-                            if (this.settings.autoOpenNavigator) this.openNavigator();
-                            try { await this.activateView(BOARD_VIEW_TYPE); } catch { /* non-critical */ }
-                            modal.close();
-                            resolve(project);
-                        } catch (err: unknown) {
-                            new Notice((err instanceof Error ? err.message : String(err)), 10000);
-                            resolve(null);
                         }
-                    });
-                })
-                .addButton((btn: ButtonComponent) => {
-                    btn.setButtonText('Cancel').onClick(() => {
-                        modal.close();
-                        resolve(null);
-                    });
-                });
+                    }
+                    // Also add standalone series if no universe selected
+                    const allSeriesList = this.seriesManager.discoverSeries();
+                    for (const { meta } of allSeriesList) {
+                        if (selectedUniverseId && !universeSeriesUuids.has(meta.seriesUuid || '')) continue;
+                        if (!meta.seriesUuid) continue;
+                        const opt = document.createElement('option');
+                        opt.value = meta.seriesUuid;
+                        opt.text = meta.name;
+                        dropdownEl.add(opt);
+                    }
+                    dropdownEl.value = currentVal;
+                };
 
-            modal.open();
+                const renderFields = () => {
+                    // Show/hide fields based on project type
+                    universeSetting.settingEl.style.display = projectType === 'universe' ? 'none' : '';
+                    seriesSetting.settingEl.style.display = projectType === 'book' ? '' : 'none';
+                    newSeriesNameSetting.settingEl.style.display = 'none';
+                    titleSetting.settingEl.style.display = '';
+                    advancedContainer.style.display = '';
 
-            // Clean up guard on close
-            modal.onClose = (() => {
-                this._newProjectModalOpen = false;
-            }).bind(modal);
-        });
+                    if (projectType === 'book') {
+                        titleSetting.nameEl.setText('Book title');
+                        titleSetting.descEl.setText('The title of this book. Each book gets its own scenes folder.');
+                        titleSetting.controlEl.querySelector('input')?.setAttribute('placeholder', 'My novel');
+                    } else if (projectType === 'series') {
+                        titleSetting.nameEl.setText('Series name');
+                        titleSetting.descEl.setText('Name for the new series.');
+                        titleSetting.controlEl.querySelector('input')?.setAttribute('placeholder', 'My trilogy');
+                    } else {
+                        titleSetting.nameEl.setText('Universe name');
+                        titleSetting.descEl.setText('Name for the new universe.');
+                        titleSetting.controlEl.querySelector('input')?.setAttribute('placeholder', 'My fictional universe');
+                    }
+                };
+
+                // ── Create button ──
+                let createBtn: ButtonComponent | null = null;
+
+                new Setting(modal.contentEl)
+                    .addButton((btn: ButtonComponent) => {
+                        createBtn = btn;
+                        btn.setButtonText('Create').setCta().onClick(async () => {
+                            if (!title.trim()) {
+                                new Notice('Please enter a name.');
+                                return;
+                            }
+                            createBtn?.setDisabled(true);
+                            try {
+                                let result: StoryLineProject | null = null;
+
+                                if (projectType === 'universe') {
+                                    // Create Universe
+                                    await this.universeManager.createUniverse(title.trim());
+                                    this.refreshOpenViews();
+                                    new Notice(`Universe "${title.trim()}" created.`);
+                                } else if (projectType === 'series') {
+                                    // Create Series
+                                    const meta = await this.seriesManager.createSeries(title.trim(), customFolder || undefined);
+
+                                    // Optionally add to universe
+                                    if (selectedUniverseId && meta.seriesUuid) {
+                                        await this.universeManager.addSeriesToUniverse(selectedUniverseId, meta.seriesUuid);
+                                    }
+
+                                    this.refreshOpenViews();
+                                    new Notice(`Series "${title.trim()}" created.`);
+                                } else {
+                                    // Create Book
+                                    const basePath = customFolder || undefined;
+                                    const project = await this.sceneManager.createProject(title.trim(), '', basePath);
+                                    result = project;
+
+                                    // If series selected, wrap in series
+                                    if (selectedSeriesUuid && selectedSeriesUuid !== '__new__') {
+                                        // Add book to existing series
+                                        const seriesMeta = await this.seriesManager.getSeriesByUuid(selectedSeriesUuid);
+                                        if (seriesMeta) {
+                                            await this.seriesManager.addBookToSeries(selectedSeriesUuid, project);
+                                        }
+                                    } else if (selectedSeriesUuid === '__new__') {
+                                        // Create new series and add book
+                                        if (!newSeriesName.trim()) {
+                                            new Notice('Please enter a series name.');
+                                            createBtn?.setDisabled(false);
+                                            return;
+                                        }
+                                        const meta = await this.seriesManager.createSeries(newSeriesName.trim(), basePath);
+                                        if (meta.seriesUuid) {
+                                            await this.seriesManager.addBookToSeries(meta.seriesUuid, project);
+                                        }
+                                        // Add series to universe
+                                        if (selectedUniverseId) {
+                                            await this.universeManager.addSeriesToUniverse(selectedUniverseId, meta.seriesUuid);
+                                        }
+                                    } else if (selectedUniverseId && !selectedSeriesUuid) {
+                                        // Book directly in universe (no series) — set universeId on project
+                                        project.universeId = selectedUniverseId;
+                                        await this.sceneManager.saveProjectFrontmatter(project);
+                                    }
+
+                                    await this.sceneManager.setActiveProject(project);
+                                    this.refreshOpenViews();
+                                    if (this.settings.autoOpenNavigator) this.openNavigator();
+                                    try { await this.activateView(BOARD_VIEW_TYPE); } catch { /* non-critical */ }
+                                }
+
+                                modal.close();
+                                resolve(result);
+                            } catch (err: unknown) {
+                                new Notice((err instanceof Error ? err.message : String(err)), 10000);
+                                resolve(null);
+                            }
+                        });
+                    })
+                    .addButton((btn: ButtonComponent) => {
+                        btn.setButtonText('Cancel').onClick(() => {
+                            modal.close();
+                            resolve(null);
+                        });
+                    });
+
+                // Initial render
+                renderFields();
+
+                modal.open();
+
+                // Clean up guard on close
+                modal.onClose = (() => {
+                    this._newProjectModalOpen = false;
+                }).bind(modal);
+            });
         } finally {
             // Always clear the guard, even if something went wrong
             this._newProjectModalOpen = false;

@@ -1157,21 +1157,26 @@ export class TimelineView extends ItemView {
      *   ─────────────────────
      *   Description...
      * Events are non-draggable and visually distinct from Scene cards.
+     *
+     * IMPORTANT: .timeline-entry uses display:flex (row). To keep the Event
+     * marker vertically stacked, we insert the three required flex children
+     * (.timeline-entry-seq, .timeline-entry-dot-col, .timeline-entry-card)
+     * so the entry participates in the same layout as Scenes, with all Event
+     * content inside a single vertical column (.timeline-event-content).
      */
     private renderTimelineEvent(track: HTMLElement, event: Event): void {
         const entry = track.createDiv('timeline-entry timeline-entry-event-marker');
         entry.dataset.path = event.filePath;
         entry.dataset.eventId = event.id;
 
-        // Format the date
+        // Left column (required by .timeline-entry flex layout)
+        const seqCol = entry.createDiv('timeline-entry-seq');
+        // Format the date for the left column badge
         const dateText = event.timeSpan
             ? this.plugin.timeSpanService.format(event.timeSpan)
             : '?';
-
-        // Top row: date badge + event title
-        const topRow = entry.createDiv('timeline-event-top');
-        const dateBadge = topRow.createSpan({
-            cls: 'timeline-event-date',
+        const dateBadge = seqCol.createSpan({
+            cls: 'timeline-date-badge',
             text: dateText
         });
         if (event.timeSpan) {
@@ -1183,17 +1188,28 @@ export class TimelineView extends ItemView {
                 dateBadge.setAttr('title', 'Unknown date');
             }
         }
+
+        // Center dot column (required by .timeline-entry flex layout)
+        const dotCol = entry.createDiv('timeline-entry-dot-col');
+        const dot = dotCol.createDiv('timeline-dot timeline-dot-event');
+
+        // Right column: vertical Event content
+        const cardCol = entry.createDiv('timeline-entry-card');
+        const content = cardCol.createDiv('timeline-event-content');
+
+        // Top row: event title
+        const topRow = content.createDiv('timeline-event-top');
         const titleSpan = topRow.createSpan({
             cls: 'timeline-event-title',
             text: event.name || 'Untitled Event'
         });
 
         // Horizontal marker line
-        entry.createDiv('timeline-event-marker-line');
+        content.createDiv('timeline-event-marker-line');
 
         // Bottom: description
         if (event.description) {
-            const desc = entry.createDiv('timeline-event-description');
+            const desc = content.createDiv('timeline-event-description');
             desc.setText(event.description);
         }
 

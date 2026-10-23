@@ -1326,3 +1326,16 @@ Implement the shared TimeSpan model, Event entities, Scene-Event references, Eve
 - ✓ Test verification — 204/204 tests pass (180 existing + 24 new)
 - ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
 - ✓ Committed to feat/rework branch
+
+### * Step 12: Phase 3 UX Corrections — Timeline, Workspace Tabs, Project Hierarchy, Drag-and-Drop
+Fix four concrete UX issues: Timeline Event marker layout, workspace tab reuse, project creation redesign, and drag-and-drop hierarchy management.
+
+- ✓ Fix Event marker CSS layout — replaced flat children with proper .timeline-entry flex columns (seq, dot, card), vertical .timeline-event-content column, thin 1px marker line, and mobile-responsive max-width
+- ✓ Fix workspace tab reuse — added navigateToBook() that reuses existing StoryLine working views instead of creating duplicate tabs; Project Library treated as navigational view
+- ✓ Redesign project creation — replaced openNewProjectModal with hierarchy-aware version supporting Book/Series/Universe creation, Universe/Series dropdowns, new series inline creation, and collapsed Advanced section for custom location
+- ✓ Drag-and-drop hierarchy — added drag handles on book cards, drop targets on Universe/Series headers and standalone zone, book reorder within series, book-to-series/universe moves, and detach-to-standalone
+- ✓ CSS additions — project-modal-advanced, drag-and-drop visual feedback (dragging, drag-over, standalone-zone), and mobile breakpoints for event markers
+- ✓ 37 behavioral tests: Timeline sorting (5), Event marker CSS (3), workspace tab reuse (4), project creation (8), drag-and-drop (12), timeline ordering (4), project guard (1)
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 316/316 tests pass (279 existing + 37 new)
+- ✓ Typecheck verification — no new errors in changed files; pre-existing baseline errors unchanged

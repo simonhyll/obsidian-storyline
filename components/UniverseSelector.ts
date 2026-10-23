@@ -147,16 +147,24 @@ export async function refreshUniverseSelector(
     // Render universes
     for (const { universe, series: seriesList } of hierarchy) {
         const universeSection = groupsContainer.createDiv({ cls: 'universe-selector-section' });
+        universeSection.dataset.universeId = universe.id;
 
         const childrenEl = universeSection.createDiv({ cls: 'universe-selector-children' });
-        createExpandableHeader(universeSection, universe.name, 'globe', childrenEl);
+        const header = createExpandableHeader(universeSection, universe.name, 'globe', childrenEl);
+
+        // Universe header is a drop target for Series and Books
+        setupDropTarget(header, 'universe', universe.id, plugin, onSwitch);
 
         let universeBooks = 0;
         // Render series
         for (const { meta, books } of seriesList) {
             const seriesSection = childrenEl.createDiv({ cls: 'universe-selector-section' });
+            seriesSection.dataset.seriesUuid = meta.seriesUuid || '';
             const seriesChildren = seriesSection.createDiv({ cls: 'universe-selector-children' });
-            createExpandableHeader(seriesSection, meta.name, 'library', seriesChildren);
+            const seriesHeader = createExpandableHeader(seriesSection, meta.name, 'library', seriesChildren);
+
+            // Series header is a drop target for Books
+            setupDropTarget(seriesHeader, 'series', meta.seriesUuid || '', plugin, onSwitch);
 
             // Book cards grid
             const cardsGrid = seriesChildren.createDiv({ cls: 'universe-selector-cards' });
@@ -168,11 +176,13 @@ export async function refreshUniverseSelector(
             }
         }
 
-        // If universe has no series, show empty state
+        // If universe has no series, show empty state with drop target
         if (seriesList.length === 0) {
-            childrenEl.createDiv({ cls: 'universe-selector-empty' }).createSpan({
+            const emptyEl = childrenEl.createDiv({ cls: 'universe-selector-empty' });
+            emptyEl.createSpan({
                 text: 'No series in this universe yet.',
             });
+            setupDropTarget(emptyEl, 'universe', universe.id, plugin, onSwitch);
         }
     }
 
@@ -191,8 +201,12 @@ export async function refreshUniverseSelector(
         if (universeSeriesUuids.has(meta.seriesUuid || '')) continue;
 
         const seriesSection = groupsContainer.createDiv({ cls: 'universe-selector-section' });
+        seriesSection.dataset.seriesUuid = meta.seriesUuid || '';
         const seriesChildren = seriesSection.createDiv({ cls: 'universe-selector-children' });
-        createExpandableHeader(seriesSection, meta.name, 'library', seriesChildren);
+        const seriesHeader = createExpandableHeader(seriesSection, meta.name, 'library', seriesChildren);
+
+        // Standalone series can receive books via drag
+        setupDropTarget(seriesHeader, 'series', meta.seriesUuid || '', plugin, onSwitch);
 
         const books = projects.filter(p =>
             p.seriesUuid === meta.seriesUuid || p.seriesId === meta.name
@@ -206,7 +220,7 @@ export async function refreshUniverseSelector(
         }
     }
 
-    // Render standalone books
+    // Render standalone books section with drop target for detaching
     const standaloneBooks = projects.filter(p => !hierarchyProjectPaths.has(p.filePath));
     if (standaloneBooks.length > 0) {
         const standaloneSection = groupsContainer.createDiv({ cls: 'universe-selector-section' });
@@ -220,6 +234,11 @@ export async function refreshUniverseSelector(
         }
     }
 
+    // Standalone drop zone — for detaching books/series
+    const standaloneZone = groupsContainer.createDiv({ cls: 'universe-selector-standalone-zone' });
+    standaloneZone.createSpan({ text: 'Drag here to detach from Universe/Series' });
+    setupDropTarget(standaloneZone, 'standalone', '', plugin, onSwitch);
+
     // Empty state — no projects at all
     if (totalBooks === 0) {
         const emptyState = wrapper.createDiv({ cls: 'universe-selector-empty-state' });
@@ -231,7 +250,113 @@ export async function refreshUniverseSelector(
 }
 
 /**
+ * Set up a drop target element for drag-and-drop hierarchy management.
+ * Supports dropping books onto universes, series, or standalone zones.
+ */
+function setupDropTarget(
+    element: HTMLElement,
+    targetType: 'universe' | 'series' | 'standalone',
+    targetId: string,
+    plugin: SceneCardsPlugin,
+    onSwitch: () => void
+): void {
+    element.addEventListener('dragover', (e: DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer!.dropEffect = 'move';
+        element.addClass('drag-over');
+    });
+
+    element.addEventListener('dragleave', () => {
+        element.removeClass('drag-over');
+    });
+
+    element.addEventListener('drop', async (e: DragEvent) => {
+        e.preventDefault();
+        element.removeClass('drag-over');
+        try {
+            const data = JSON.parse(e.dataTransfer?.getData('text/plain') || '{}');
+
+            if (data.type === 'book') {
+                await handleDropBook(plugin, data.filePath, targetType, targetId, onSwitch);
+            }
+        } catch {
+            // Ignore invalid drag data
+        }
+    });
+}
+
+/**
+ * Handle dropping a book onto a universe, series, or standalone zone.
+ */
+async function handleDropBook(
+    plugin: SceneCardsPlugin,
+    bookPath: string,
+    targetType: 'universe' | 'series' | 'standalone',
+    targetId: string,
+    onSwitch: () => void
+): Promise<void> {
+    const book = plugin.sceneManager.getProjects().find(p => p.filePath === bookPath);
+    if (!book) return;
+
+    if (targetType === 'standalone') {
+        // Detach book from series/universe
+        if (book.seriesUuid) {
+            const meta = await plugin.seriesManager.getSeriesByUuid(book.seriesUuid);
+            if (meta && meta.bookIds) {
+                const idx = meta.bookIds.indexOf(book.bookId || '');
+                if (idx !== -1) {
+                    meta.bookIds.splice(idx, 1);
+                    await plugin.seriesManager.saveSeriesMetadata(meta);
+                }
+            }
+        }
+        book.seriesUuid = undefined;
+        book.seriesId = undefined;
+        book.universeId = undefined;
+        await plugin.sceneManager.saveProjectFrontmatter(book);
+        onSwitch();
+    } else if (targetType === 'series' && targetId) {
+        // Add book to series
+        const meta = await plugin.seriesManager.getSeriesByUuid(targetId);
+        if (meta) {
+            // Remove from old series first
+            if (book.seriesUuid && book.seriesUuid !== targetId) {
+                const oldMeta = await plugin.seriesManager.getSeriesByUuid(book.seriesUuid);
+                if (oldMeta && oldMeta.bookIds) {
+                    const idx = oldMeta.bookIds.indexOf(book.bookId || '');
+                    if (idx !== -1) {
+                        oldMeta.bookIds.splice(idx, 1);
+                        await plugin.seriesManager.saveSeriesMetadata(oldMeta);
+                    }
+                }
+            }
+            await plugin.seriesManager.addBookToSeries(targetId, book);
+            onSwitch();
+        }
+    } else if (targetType === 'universe' && targetId) {
+        // Add book directly to universe (no series)
+        book.universeId = targetId;
+        // Remove from old series if any
+        if (book.seriesUuid) {
+            const oldMeta = await plugin.seriesManager.getSeriesByUuid(book.seriesUuid);
+            if (oldMeta && oldMeta.bookIds) {
+                const idx = oldMeta.bookIds.indexOf(book.bookId || '');
+                if (idx !== -1) {
+                    oldMeta.bookIds.splice(idx, 1);
+                    await plugin.seriesManager.saveSeriesMetadata(oldMeta);
+                }
+            }
+            book.seriesUuid = undefined;
+            book.seriesId = undefined;
+        }
+        await plugin.sceneManager.saveProjectFrontmatter(book);
+        onSwitch();
+    }
+}
+
+/**
  * Render a book card with portrait-oriented cover and title.
+ * Supports drag-and-drop for hierarchy management.
  */
 function renderBookCard(
     parent: HTMLElement,
@@ -239,13 +364,22 @@ function renderBookCard(
     activeProject: StoryLineProject | null,
     plugin: SceneCardsPlugin,
     onSwitch: () => void
-): void {
+): HTMLElement {
     const isActive = activeProject && book.filePath === activeProject.filePath;
 
     const card = parent.createDiv({ cls: 'universe-selector-card' });
     if (isActive) {
         card.addClass('universe-selector-card-active');
     }
+    card.dataset.bookId = book.bookId || '';
+    card.dataset.bookPath = book.filePath;
+
+    // Drag handle
+    const dragHandle = card.createEl('button', {
+        cls: 'universe-selector-drag-handle',
+        attr: { 'aria-label': `Drag to move "${book.title}"` },
+    });
+    obsidian.setIcon(dragHandle, 'grip-vertical');
 
     // Cover area (portrait 2:3 aspect ratio)
     const cover = card.createDiv({ cls: 'universe-selector-cover' });
@@ -298,19 +432,86 @@ function renderBookCard(
 
     attachTooltip(card, isActive ? 'Active project' : `Switch to ${book.title}`);
 
-    card.addEventListener('click', async () => {
-        await plugin.sceneManager.setActiveProject(book);
-        // Refresh scenes and inherited entities for the selected project
-        await plugin.refreshOpenViews(true);
-        // Open StoryLine Board view, reusing existing leaf if available
+    // ── Drag and Drop ──
+    card.setAttribute('draggable', 'true');
+
+    card.addEventListener('dragstart', (e: DragEvent) => {
+        if (!e.dataTransfer) return;
+        e.dataTransfer.setData('text/plain', JSON.stringify({
+            type: 'book',
+            bookId: book.bookId,
+            filePath: book.filePath,
+        }));
+        card.addClass('dragging');
+    });
+
+    card.addEventListener('dragend', () => {
+        card.removeClass('dragging');
+    });
+
+    card.addEventListener('dragover', (e: DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer?.dropEffect === 'move' && card.addClass('drag-over');
+    });
+
+    card.addEventListener('dragleave', () => {
+        card.removeClass('drag-over');
+    });
+
+    card.addEventListener('drop', async (e: DragEvent) => {
+        e.preventDefault();
+        card.removeClass('drag-over');
         try {
-            const { BOARD_VIEW_TYPE } = await import('../constants');
-            await plugin.activateView(BOARD_VIEW_TYPE);
+            const data = JSON.parse(e.dataTransfer?.getData('text/plain') || '{}');
+            if (data.type === 'book' && data.filePath !== book.filePath) {
+                // Drop book on book — reorder within same series
+                await handleBookReorder(plugin, data.filePath, book.filePath, onSwitch);
+            }
         } catch {
-            // Fallback: just refresh the library
-            onSwitch();
+            // Ignore invalid drag data
         }
     });
+
+    // Click to open book — but not when dragging
+    let isDragging = false;
+    dragHandle.addEventListener('mousedown', () => { isDragging = true; });
+    card.addEventListener('click', async (e) => {
+        if (isDragging) {
+            isDragging = false;
+            return;
+        }
+        await plugin.navigateToBook(book);
+    });
+
+    return card;
+}
+
+/**
+ * Handle reordering a book when dropped on another book in the same series.
+ */
+async function handleBookReorder(
+    plugin: SceneCardsPlugin,
+    sourcePath: string,
+    targetPath: string,
+    onSwitch: () => void
+): Promise<void> {
+    const source = plugin.sceneManager.getProjects().find(p => p.filePath === sourcePath);
+    const target = plugin.sceneManager.getProjects().find(p => p.filePath === targetPath);
+    if (!source || !target || source.seriesUuid !== target.seriesUuid || !source.seriesUuid) {
+        return; // Different series or no series — no reorder
+    }
+    const meta = await plugin.seriesManager.getSeriesByUuid(source.seriesUuid);
+    if (!meta || !meta.bookIds) return;
+
+    const sourceIdx = meta.bookIds.indexOf(source.bookId || '');
+    const targetIdx = meta.bookIds.indexOf(target.bookId || '');
+    if (sourceIdx === -1 || targetIdx === -1) return;
+
+    // Move source to target position
+    meta.bookIds.splice(sourceIdx, 1);
+    meta.bookIds.splice(targetIdx, 0, source.bookId || '');
+    await plugin.seriesManager.saveSeriesMetadata(meta);
+    onSwitch();
 }
 
 /**
