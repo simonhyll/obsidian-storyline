@@ -561,6 +561,46 @@ export class UniverseManager {
     }
 
     /**
+     * Get ALL Events folder paths belonging to a universe.
+     * This includes:
+     * - Universe-level Events folder
+     * - All Series-level Events folders within the universe
+     * - All Book-level Events folders for books in the universe
+     *
+     * Used by TimelineView to display universe-wide canonical Events
+     * regardless of which book is currently active.
+     */
+    async getAllUniverseEventFolders(universeId: string): Promise<string[]> {
+        const folders: string[] = [];
+        const universe = await this.getUniverse(universeId);
+        if (!universe) return folders;
+
+        // Universe-level Events folder
+        const universeFolder = this.findUniverseFolder(universeId);
+        if (universeFolder) {
+            folders.push(normalizePath(`${universeFolder}/Events`));
+        }
+
+        // All series-level Events folders
+        const allSeries = await this.plugin.seriesManager.discoverSeries();
+        for (const { folder, meta } of allSeries) {
+            if (meta.universeId === universeId || universe.seriesIds?.includes(meta.seriesUuid || '')) {
+                folders.push(normalizePath(`${folder}/Events`));
+            }
+        }
+
+        // All book-level Events folders
+        const books = await this.getBooksInUniverse(universeId);
+        for (const book of books) {
+            const bookFolders = this.deriveProjectFolders(book.filePath);
+            const bookEvents = normalizePath(`${bookFolders.baseFolder}/Events`);
+            folders.push(bookEvents);
+        }
+
+        return folders;
+    }
+
+    /**
      * Get the owner ID for an entity based on its file path.
      * Determines which Universe, Series, or Book owns the entity.
      */

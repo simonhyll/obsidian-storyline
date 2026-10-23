@@ -58,6 +58,11 @@ export class TimelineView extends ItemView {
     private timelineOrder: TimelineOrder = 'reading';
     /** Book IDs selected for multi-book timeline. Empty means "active book only". */
     private selectedBookIds: Set<string> = new Set();
+    /** Render generation counter for async cancellation */
+    private renderGeneration = 0;
+    /** Popover element for the book selector dropdown */
+    private bookSelectorPopover: HTMLElement | null = null;
+    private bookSelectorButton: HTMLElement | null = null;
 
     constructor(leaf: WorkspaceLeaf, plugin: SceneCardsPlugin, sceneManager: SceneManager) {
         super(leaf);
@@ -263,7 +268,7 @@ export class TimelineView extends ItemView {
 
         // Timeline content (async for multi-book support)
         if (this.swimlaneMode) {
-            this.renderSwimlaneTimeline(mainArea);
+            void this.renderSwimlaneTimeline(mainArea);
         } else {
             void this.renderTimelineAsync(mainArea);
         }
@@ -288,6 +293,9 @@ export class TimelineView extends ItemView {
     }
 
     private async renderTimelineAsync(container: HTMLElement): Promise<void> {
+        // Render generation token — increment to cancel stale renders
+        const generation = ++this.renderGeneration;
+
         // Remove old timeline if exists
         const existing = container.querySelector('.story-line-timeline');
         if (existing) existing.remove();
@@ -297,11 +305,14 @@ export class TimelineView extends ItemView {
         // Load scenes (single or multi-book)
         const scenes = await this.getTimelineScenes();
 
-        // Load Events from EventManager (already includes inherited events)
-        const events = this.getTimelineEvents();
+        // Load Events — universe-wide for multi-book, cached for single-book
+        const events = await this.getTimelineEvents();
+
+        // Cancel if a newer render started while we were loading
+        if (this.renderGeneration !== generation) return;
 
         // In multi-book reading order, force chronological
-        const effectiveOrder = this.selectedBookIds.size > 0 ? 'chronological' : this.timelineOrder;
+        const effectiveOrder = this.isMultiBookMode() ? 'chronological' : this.timelineOrder;
 
         // Precompute date/time validation flags for each scene index so rendering is consistent
         // Scenes with non-linear timeline modes (flashback, dream, mythic, etc.) are exempt from
@@ -364,7 +375,7 @@ export class TimelineView extends ItemView {
         }
 
         // Multi-book mode indicator
-        const isMultiBook = this.selectedBookIds.size > 0;
+        const isMultiBook = this.isMultiBookMode();
 
         // ── Vertical timeline with scene cards ──
         const track = timelineEl.createDiv('timeline-track');
@@ -424,7 +435,7 @@ export class TimelineView extends ItemView {
             // Multi-book scenes have different owning projects. The existing
             // reorder operation writes global sequence values through the
             // active book manager; never apply it across book boundaries.
-            if (this.selectedBookIds.size > 0) return;
+            if (this.isMultiBookMode()) return;
             if (fromIdx === toIdx || fromIdx === toIdx - 1) return;
 
             // Save scroll position to restore after refresh
@@ -629,21 +640,23 @@ export class TimelineView extends ItemView {
      * Render the swimlane timeline: multiple vertical lanes side-by-side,
      * each with the same dot-line-card look as the linear mode.
      */
-    private renderSwimlaneTimeline(container: HTMLElement): void {
+    private async renderSwimlaneTimeline(container: HTMLElement): Promise<void> {
+        // Render generation token — increment to cancel stale renders
+        const generation = ++this.renderGeneration;
+
         // Remove old timeline if exists
         const existing = container.querySelector('.story-line-timeline');
         if (existing) existing.remove();
 
         const timelineEl = container.createDiv('story-line-timeline swimlane-timeline');
         enableDragToPan(timelineEl);
-        const sortField = this.timelineOrder === 'chronological' ? 'chronologicalOrder' : 'chapter';
-        const scenes = this.sceneManager.queryService.getFilteredScenes(
-            undefined,
-            { field: sortField, direction: 'asc' }
-        ).filter(scene => !this.isNoteScene(scene));
 
-        // Load Events for swimlane mode
-        const events = this.plugin.eventManager.getAllEvents();
+        // Use multi-book scene/event projection, same as linear mode
+        const scenes = await this.getTimelineScenes();
+        const events = await this.getTimelineEvents();
+
+        // Cancel if a newer render started while we were loading
+        if (this.renderGeneration !== generation) return;
 
         if (scenes.length === 0 && events.length === 0) {
             const empty = timelineEl.createDiv('story-line-empty');
@@ -974,7 +987,7 @@ export class TimelineView extends ItemView {
         const entry = track.createDiv('timeline-entry');
         // Reordering is only supported for the active book. Multi-book
         // timelines are chronological references, not a shared manuscript.
-        entry.setAttr('draggable', this.selectedBookIds.size === 0 ? 'true' : 'false');
+        entry.setAttr('draggable', !this.isMultiBookMode() ? 'true' : 'false');
         entry.dataset.idx = String(i);
         entry.dataset.path = scene.filePath;
 
@@ -2180,64 +2193,180 @@ export class TimelineView extends ItemView {
     // ────────────────────────────────────────────────────────────
 
     /**
-     * Render the book selector dropdown in the toolbar.
+     * Check if we are in multi-book mode (at least one book explicitly selected).
+     */
+    private isMultiBookMode(): boolean {
+        return this.selectedBookIds.size > 0;
+    }
+
+    /**
+     * Render the compact book selector button in the toolbar.
+     * Uses a popover dropdown instead of inline toolbar sprawl.
      */
     private renderBookSelector(controls: HTMLElement): void {
-        const wrapper = controls.createDiv('story-line-book-selector');
-        const dropdown = wrapper.createDiv('story-line-book-dropdown');
+        const allProjects = this.sceneManager.getProjects();
+        if (allProjects.length <= 1) return;
 
-        // "Active Book only" button
-        const activeOnlyBtn = dropdown.createEl('button', {
+        const wrapper = controls.createDiv('story-line-book-selector');
+
+        // Compact button that opens a popover
+        const btn = wrapper.createEl('button', {
+            cls: 'story-line-book-selector-btn',
+            attr: { 'aria-haspopup': 'true', 'aria-expanded': 'false' }
+        });
+        this.bookSelectorButton = btn;
+        this.updateBookSelectorButton(btn);
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleBookSelectorPopover(btn);
+        });
+
+        // Close popover on outside click
+        document.addEventListener('click', (e) => {
+            if (this.bookSelectorPopover && !this.bookSelectorPopover.contains(e.target as Node) && !btn.contains(e.target as Node)) {
+                this.closeBookSelectorPopover();
+            }
+        });
+    }
+
+    /**
+     * Update the book selector button text to show selection count.
+     */
+    private updateBookSelectorButton(btn: HTMLElement): void {
+        if (this.selectedBookIds.size === 0) {
+            btn.textContent = '📚 Active Book';
+        } else {
+            btn.textContent = `📚 ${this.selectedBookIds.size} book${this.selectedBookIds.size > 1 ? 's' : ''}`;
+        }
+    }
+
+    /**
+     * Toggle the book selector popover dropdown.
+     */
+    private toggleBookSelectorPopover(btn: HTMLElement): void {
+        if (this.bookSelectorPopover) {
+            this.closeBookSelectorPopover();
+            return;
+        }
+
+        // Create popover
+        const popover = document.createElement('div');
+        popover.className = 'story-line-book-selector-popover';
+        popover.style.position = 'absolute';
+        popover.style.zIndex = '1000';
+
+        // Position below the button
+        const rect = btn.getBoundingClientRect();
+        popover.style.top = `${rect.bottom + 4}px`;
+        popover.style.left = `${rect.left}px`;
+        popover.style.minWidth = '250px';
+        popover.style.maxHeight = '400px';
+        popover.style.overflowY = 'auto';
+
+        // "Active Book only" reset button
+        const resetBtn = popover.createEl('button', {
             cls: 'story-line-book-active-only',
             text: 'Active Book only'
         });
-        activeOnlyBtn.addEventListener('click', () => {
+        resetBtn.style.width = '100%';
+        resetBtn.style.marginBottom = '8px';
+        resetBtn.addEventListener('click', () => {
             this.selectedBookIds.clear();
+            this.updateBookSelectorButton(this.bookSelectorButton!);
+            this.closeBookSelectorPopover();
             this.refresh();
         });
 
-        // Group books by Universe/Series
+        // Build hierarchy tree
+        this.populateBookSelectorPopover(popover);
+        document.body.appendChild(popover);
+        this.bookSelectorPopover = popover;
+        btn.setAttribute('aria-expanded', 'true');
+    }
+
+    /**
+     * Close the book selector popover.
+     */
+    private closeBookSelectorPopover(): void {
+        if (this.bookSelectorPopover) {
+            this.bookSelectorPopover.remove();
+            this.bookSelectorPopover = null;
+        }
+        if (this.bookSelectorButton) {
+            this.bookSelectorButton.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    /**
+     * Populate the popover with hierarchy-grouped book checkboxes.
+     */
+    private populateBookSelectorPopover(popover: HTMLElement): void {
         const allProjects = this.sceneManager.getProjects();
         const activeBookId = this.sceneManager.activeProject?.bookId;
 
-        interface BookGroup { books: StoryLineProject[]; }
-        interface SeriesGroup { series: { id: string; name: string }; books: StoryLineProject[]; }
-        interface UniverseGroup { universe: { id: string; name: string }; series: Map<string, SeriesGroup>; }
+        // Get universe names from UniverseManager (async, but we cache results)
+        this.populateBookSelectorPopoverAsync(popover, allProjects, activeBookId);
+    }
 
+    /**
+     * Async version that resolves universe/series names.
+     */
+    private async populateBookSelectorPopoverAsync(popover: HTMLElement, allProjects: StoryLineProject[], activeBookId: string | undefined): Promise<void> {
         // Build hierarchy: Universe → Series → Books
-        const universeMap = new Map<string, UniverseGroup>();
-        const standaloneSeries: SeriesGroup[] = [];
+        const universeMap = new Map<string, { name: string; series: Map<string, { name: string; books: StoryLineProject[] }> }>();
+        const standaloneSeries = new Map<string, { name: string; books: StoryLineProject[] }>();
         const standaloneBooks: StoryLineProject[] = [];
 
-        // Group projects by universe
+        // Resolve universe names
+        const universeNames = new Map<string, string>();
+        try {
+            const universes = await this.plugin.universeManager.getAllUniverses();
+            for (const u of universes) {
+                universeNames.set(u.id, u.name);
+            }
+        } catch { /* fallback to UUID */ }
+
+        // Resolve series names
+        const seriesNames = new Map<string, string>();
+        try {
+            const seriesList = await this.plugin.seriesManager.discoverSeries();
+            for (const { meta } of seriesList) {
+                if (meta.seriesUuid) seriesNames.set(meta.seriesUuid, meta.name);
+            }
+        } catch { /* fallback to UUID */ }
+
         for (const project of allProjects) {
-            if (project.universeId) {
-                let uni = universeMap.get(project.universeId);
+            const uniId = project.universeId;
+            const serUuid = project.seriesUuid;
+
+            if (uniId) {
+                let uni = universeMap.get(uniId);
                 if (!uni) {
-                    uni = { universe: { id: project.universeId, name: project.universeId }, series: new Map() };
-                    universeMap.set(project.universeId, uni);
+                    uni = { name: universeNames.get(uniId) || uniId, series: new Map() };
+                    universeMap.set(uniId, uni);
                 }
-                if (project.seriesUuid) {
-                    let ser = uni.series.get(project.seriesUuid);
+                if (serUuid) {
+                    let ser = uni.series.get(serUuid);
                     if (!ser) {
-                        ser = { series: { id: project.seriesUuid, name: project.seriesUuid }, books: [] };
-                        uni.series.set(project.seriesUuid, ser);
+                        ser = { name: seriesNames.get(serUuid) || serUuid, books: [] };
+                        uni.series.set(serUuid, ser);
                     }
                     ser.books.push(project);
                 } else {
-                    // Direct universe book — put in a virtual "(Direct)" group
+                    // Direct universe book
                     let ser = uni.series.get('__direct__');
                     if (!ser) {
-                        ser = { series: { id: '__direct__', name: '(Direct)' }, books: [] };
+                        ser = { name: '(Direct)', books: [] };
                         uni.series.set('__direct__', ser);
                     }
                     ser.books.push(project);
                 }
-            } else if (project.seriesUuid) {
-                let ser = standaloneSeries.find(s => s.series.id === project.seriesUuid);
+            } else if (serUuid) {
+                let ser = standaloneSeries.get(serUuid);
                 if (!ser) {
-                    ser = { series: { id: project.seriesUuid, name: project.seriesUuid }, books: [] };
-                    standaloneSeries.push(ser);
+                    ser = { name: seriesNames.get(serUuid) || serUuid, books: [] };
+                    standaloneSeries.set(serUuid, ser);
                 }
                 ser.books.push(project);
             } else {
@@ -2245,57 +2374,62 @@ export class TimelineView extends ItemView {
             }
         }
 
-        // Resolve universe names from UniverseManager (best-effort, sync)
-        // Note: getUniverse is async but we're in a sync render; use cached names
-        // The universe name fallback (universeId) is acceptable for the selector
+        // Clear loading state
+        popover.empty();
 
-        // Render book checkboxes
+        // "Active Book only" reset button
+        const resetBtn = popover.createEl('button', {
+            cls: 'story-line-book-active-only',
+            text: 'Active Book only'
+        });
+        resetBtn.style.width = '100%';
+        resetBtn.style.marginBottom = '8px';
+        resetBtn.addEventListener('click', () => {
+            this.selectedBookIds.clear();
+            this.updateBookSelectorButton(this.bookSelectorButton!);
+            this.closeBookSelectorPopover();
+            this.refresh();
+        });
+
         const renderBooks = (books: StoryLineProject[]) => {
             for (const book of books) {
-                this.renderBookCheckbox(dropdown, book, activeBookId);
+                this.renderBookCheckboxInPopover(popover, book, activeBookId);
             }
         };
 
         // Render universes
         for (const [, uni] of universeMap) {
-            const uniHeader = dropdown.createSpan({ cls: 'story-line-book-universe', text: uni.universe.name });
+            const uniHeader = popover.createDiv({ cls: 'story-line-book-universe', text: uni.name });
             for (const [, ser] of uni.series) {
-                if (ser.series.id !== '__direct__') {
-                    const serHeader = dropdown.createSpan({ cls: 'story-line-book-series', text: ser.series.name });
+                if (ser.name !== '(Direct)') {
+                    const serHeader = popover.createDiv({ cls: 'story-line-book-series', text: ser.name });
                 }
                 renderBooks(ser.books);
             }
         }
 
         // Standalone series
-        for (const ser of standaloneSeries) {
-            const serHeader = dropdown.createSpan({ cls: 'story-line-book-series', text: ser.series.name });
+        for (const [, ser] of standaloneSeries) {
+            const serHeader = popover.createDiv({ cls: 'story-line-book-series', text: ser.name });
             renderBooks(ser.books);
         }
 
         // Standalone books
         if (standaloneBooks.length > 0) {
-            const label = dropdown.createSpan({ cls: 'story-line-book-group', text: 'Standalone' });
+            const label = popover.createDiv({ cls: 'story-line-book-group', text: 'Standalone' });
             renderBooks(standaloneBooks);
-        }
-
-        // If only one project, hide the selector
-        if (allProjects.length <= 1) {
-            wrapper.style.display = 'none';
         }
     }
 
     /**
-     * Render a single book checkbox in the selector.
+     * Render a single book checkbox inside the popover.
      */
-    private renderBookCheckbox(container: HTMLElement, project: StoryLineProject, activeBookId?: string | null): void {
+    private renderBookCheckboxInPopover(container: HTMLElement, project: StoryLineProject, activeBookId?: string | null): void {
         const row = container.createDiv('story-line-book-row');
         const isActive = project.bookId === activeBookId;
         const isSelected = this.selectedBookIds.has(project.bookId!);
 
-        const checkbox = row.createEl('input', {
-            type: 'checkbox',
-        });
+        const checkbox = row.createEl('input', { type: 'checkbox' });
         checkbox.checked = isSelected;
         checkbox.addEventListener('change', () => {
             if (checkbox.checked) {
@@ -2303,6 +2437,7 @@ export class TimelineView extends ItemView {
             } else {
                 this.selectedBookIds.delete(project.bookId!);
             }
+            this.updateBookSelectorButton(this.bookSelectorButton!);
             this.refresh();
         });
 
@@ -2318,6 +2453,8 @@ export class TimelineView extends ItemView {
     /**
      * Get all scenes for the currently selected books.
      * If no books are selected, returns the active project's scenes.
+     * 
+     * Fix: Does NOT force-include active book — respects user selection.
      */
     private async getTimelineScenes(): Promise<Scene[]> {
         const activeProject = this.sceneManager.activeProject;
@@ -2331,13 +2468,8 @@ export class TimelineView extends ItemView {
             ).filter(s => !this.isNoteScene(s));
         }
 
-        // Multi-book mode: load scenes for selected + active book
+        // Multi-book mode: load scenes ONLY for explicitly selected books
         const bookIds = Array.from(this.selectedBookIds);
-        // Always include active book
-        if (!bookIds.includes(activeProject.bookId!)) {
-            bookIds.unshift(activeProject.bookId!);
-        }
-
         const scenesMap = await this.sceneManager.loadScenesForBooks(bookIds);
         const allScenes: Scene[] = [];
         for (const scenes of scenesMap.values()) {
@@ -2362,10 +2494,37 @@ export class TimelineView extends ItemView {
 
     /**
      * Get all canonical events for the shared universe of selected books.
+     * Uses universe-wide event discovery to include sibling book/series events.
      * Deduplicates by event ID.
+     * 
+     * Fix: Loads ALL events in the universe, not just active book's inherited events.
      */
-    private getTimelineEvents(): Event[] {
-        // Use EventManager's getAllEvents which already includes inherited events
+    private async getTimelineEvents(): Promise<Event[]> {
+        const activeProject = this.sceneManager.activeProject;
+        if (!activeProject) return [];
+
+        // Determine the universe ID for the active project
+        let universeId: string | null = null;
+        if (activeProject.universeId) {
+            universeId = activeProject.universeId;
+        } else if (activeProject.seriesUuid) {
+            try {
+                const uniForSeries = await this.plugin.universeManager.getUniverseForSeries(activeProject.seriesUuid);
+                universeId = uniForSeries;
+            } catch { /* no universe */ }
+        }
+
+        // If the project belongs to a universe, load ALL universe events
+        if (universeId) {
+            try {
+                const allFolders = await this.plugin.universeManager.getAllUniverseEventFolders(universeId);
+                if (allFolders.length > 0) {
+                    return await this.plugin.eventManager.loadEventsFromFolders(allFolders);
+                }
+            } catch { /* fallback to cached events */ }
+        }
+
+        // Fallback: use cached events (for standalone books or errors)
         return this.plugin.eventManager.getAllEvents();
     }
 

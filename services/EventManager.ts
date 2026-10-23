@@ -153,6 +153,44 @@ export class EventManager {
     }
 
     /**
+     * Load events from multiple folders into a standalone map without mutating
+     * the working collection. Used by TimelineView for universe-wide Event queries
+     * that must not affect the active book's Event state.
+     *
+     * @param folderPaths - Array of Events/ folder paths to scan
+     * @returns Array of events found, deduplicated by UUID
+     */
+    async loadEventsFromFolders(folderPaths: string[]): Promise<Event[]> {
+        const vault = this.app.vault;
+        const tempEvents = new Map<string, Event>();
+
+        for (const folder of folderPaths) {
+            if (!(await vault.adapter.exists(folder))) {
+                continue;
+            }
+            const files = vault.getMarkdownFiles().filter(f => f.path.startsWith(folder + '/'));
+            for (const file of files) {
+                try {
+                    const content = await vault.read(file);
+                    const event = this.parseEvent(content, file.path);
+                    if (event && !tempEvents.has(event.id)) {
+                        tempEvents.set(event.id, event);
+                    } else if (event && tempEvents.has(event.id)) {
+                        console.warn(
+                            `EventManager: Duplicate UUID conflict for event "${event.name}" ` +
+                            `(ID: ${event.id}) in ${file.path}`
+                        );
+                    }
+                } catch (e) {
+                    console.warn(`EventManager: Failed to parse event from folder ${folder}/${file.path}`, e);
+                }
+            }
+        }
+
+        return Array.from(tempEvents.values());
+    }
+
+    /**
      * Load events from multiple folders (for inherited collections).
      * Book-level events take precedence; duplicate UUIDs are reported as conflicts.
      */

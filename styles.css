@@ -14447,29 +14447,40 @@ body.sl-focus-active-global.sl-focus-dim-text .markdown-source-view.mod-cm6 .cm-
 
 /* ── Multi-book Timeline ───────────────────────────────────── */
 
-/* Book selector dropdown */
+/* Compact book selector button in toolbar */
 .story-line-book-selector {
     display: inline-flex;
     align-items: center;
     gap: 6px;
 }
 
-.story-line-book-dropdown {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 8px;
+.story-line-book-selector-btn {
+    font-size: 12px;
+    padding: 4px 10px;
     background: var(--background-secondary);
     border: 1px solid var(--background-modifier-border);
     border-radius: 4px;
-    font-size: 12px;
-    max-width: 400px;
+    cursor: pointer;
+    color: var(--text-normal);
+    white-space: nowrap;
+}
+
+.story-line-book-selector-btn:hover {
+    background: var(--background-modifier-hover);
+}
+
+/* Popover dropdown */
+.story-line-book-selector-popover {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .story-line-book-active-only {
     font-size: 11px;
-    padding: 2px 6px;
+    padding: 4px 8px;
     background: var(--interactive-accent);
     color: var(--text-on-accent);
     border: none;
@@ -14483,31 +14494,30 @@ body.sl-focus-active-global.sl-focus-dim-text .markdown-source-view.mod-cm6 .cm-
     text-transform: uppercase;
     font-size: 10px;
     letter-spacing: 0.5px;
-    padding: 2px 0;
-    width: 100%;
+    padding: 4px 0 2px 0;
+    margin-top: 4px;
 }
 
 .story-line-book-series {
     font-weight: 500;
     color: var(--text-muted);
     font-size: 11px;
-    padding: 2px 0;
-    width: 100%;
+    padding: 2px 0 2px 8px;
 }
 
 .story-line-book-group {
     font-weight: 500;
     color: var(--text-muted);
     font-size: 11px;
-    padding: 2px 0;
-    width: 100%;
+    padding: 4px 0 2px 0;
+    margin-top: 4px;
 }
 
 .story-line-book-row {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 3px;
-    padding: 2px 4px;
+    gap: 6px;
+    padding: 3px 4px;
     border-radius: 3px;
 }
 
@@ -14518,6 +14528,7 @@ body.sl-focus-active-global.sl-focus-dim-text .markdown-source-view.mod-cm6 .cm-
 .story-line-book-label {
     cursor: pointer;
     font-size: 12px;
+    flex: 1;
 }
 
 .story-line-book-label.is-active {
