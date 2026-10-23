@@ -468,6 +468,7 @@ export class SeriesManager {
         }
 
         const oldFilePath = project.filePath;
+        const wasActive = this.plugin.sceneManager.activeProject === project;
         if (normalizePath(bookFolders.baseFolder) !== targetBookFolder) {
             await this.moveFolderRecursive(bookFolders.baseFolder, targetBookFolder);
             await this.removeDuplicateLegacyFolder(bookFolders.baseFolder, targetBookFolder);
@@ -497,9 +498,15 @@ export class SeriesManager {
         // Save frontmatter using the UPDATED project.filePath
         await this.plugin.sceneManager.saveProjectFrontmatter(project);
 
-        // If the active project file changed, update the plugin's reference
-        if (this.plugin.sceneManager.activeProject?.filePath === oldFilePath) {
-            this.plugin.sceneManager.activeProject.filePath = project.filePath;
+        // CRITICAL: Update SceneManager project registry key if file path changed
+        if (oldFilePath !== project.filePath) {
+            this.plugin.sceneManager.updateProjectPath(oldFilePath, project.filePath, project);
+        }
+
+        // If the active project file changed, update settings and active reference
+        if (wasActive) {
+            this.plugin.settings.activeProjectFile = project.filePath;
+            await this.plugin.saveSettings();
         }
 
         new Notice(`Book "${project.title}" added to series "${meta.name}"`);
@@ -523,7 +530,15 @@ export class SeriesManager {
         const root = this.plugin.settings.storyLineRoot;
         const targetBookFolder = normalizePath(`${root}/${bookBaseName}`);
 
+        // Preflight: check for destination collision before moving anything
+        if (normalizePath(bookFolders.baseFolder) !== targetBookFolder) {
+            if (await this.app.vault.adapter.exists(targetBookFolder)) {
+                throw new Error(`A folder named "${bookBaseName}" already exists in the StoryLine root.`);
+            }
+        }
+
         const oldFilePath = project.filePath;
+        const wasActive = this.plugin.sceneManager.activeProject === project;
         if (normalizePath(bookFolders.baseFolder) !== targetBookFolder) {
             await this.moveFolderRecursive(bookFolders.baseFolder, targetBookFolder);
             // CRITICAL: Update project.filePath to reflect the new location
@@ -547,9 +562,15 @@ export class SeriesManager {
         // Save frontmatter using the UPDATED project.filePath
         await this.plugin.sceneManager.saveProjectFrontmatter(project);
 
-        // If the active project file changed, update the plugin's reference
-        if (this.plugin.sceneManager.activeProject?.filePath === oldFilePath) {
-            this.plugin.sceneManager.activeProject.filePath = project.filePath;
+        // CRITICAL: Update SceneManager project registry key if file path changed
+        if (oldFilePath !== project.filePath) {
+            this.plugin.sceneManager.updateProjectPath(oldFilePath, project.filePath, project);
+        }
+
+        // If the active project file changed, update settings and active reference
+        if (wasActive) {
+            this.plugin.settings.activeProjectFile = project.filePath;
+            await this.plugin.saveSettings();
         }
 
         new Notice(`Book "${project.title}" removed from series "${meta.name}"`);

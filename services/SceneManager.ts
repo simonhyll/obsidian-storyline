@@ -137,6 +137,38 @@ export class SceneManager implements ISceneStore {
         return Array.from(this.projects.values());
     }
 
+    /**
+     * Update the file path of a project in the registry.
+     * Called after a book is physically moved (e.g., added to or removed from a series).
+     * This updates the Map key, re-derives folder paths, and keeps the active project
+     * reference consistent.
+     *
+     * @param oldPath - The old file path (current Map key)
+     * @param newPath - The new file path (new Map key)
+     * @param project - The project object (already updated with new filePath)
+     */
+    updateProjectPath(oldPath: string, newPath: string, project: StoryLineProject): void {
+        // Remove old key and add new key
+        this.projects.delete(oldPath);
+        this.projects.set(newPath, project);
+
+        // Re-derive folder paths from the new file path
+        const newFolders = deriveProjectFoldersFromFilePath(newPath);
+        project.sceneFolder = newFolders.sceneFolder;
+        project.characterFolder = newFolders.characterFolder;
+        project.locationFolder = newFolders.locationFolder;
+        project.codexFolder = newFolders.codexFolder;
+        project.notesFolder = newFolders.notesFolder;
+        project.archiveFolder = newFolders.archiveFolder;
+        project.researchFolder = newFolders.researchFolder;
+
+        // If this is the active project, update the reference
+        if (this._activeProject === project) {
+            // The object reference is the same, so _activeProject is already correct
+            // But we need to ensure the settings are updated by the caller
+        }
+    }
+
     /** Get the currently active project (may be null) */
     get activeProject(): StoryLineProject | null {
         return this._activeProject;

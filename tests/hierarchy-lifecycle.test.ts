@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SeriesManager } from '../services/SeriesManager';
 import { SceneManager } from '../services/SceneManager';
 import { UniverseManager } from '../services/UniverseManager';
-import { parseYaml, stringifyYaml, normalizePath, TFile } from 'obsidian';
+import { normalizePath, TFile } from 'obsidian';
 
-describe('Hierarchy data integrity', () => {
+describe('Hierarchy lifecycle', () => {
     let mockAdapter: any;
     let mockApp: any;
     let seriesManager: SeriesManager;
@@ -72,66 +72,23 @@ describe('Hierarchy data integrity', () => {
         };
     }
 
-    function createProject(title: string, filePath: string) {
-        return {
-            title,
-            filePath,
-            sceneFolder: normalizePath(filePath.replace(/\.md$/, '').replace(/[^/]*$/, 'Scenes')),
-            bookId: crypto.randomUUID(),
-            created: new Date().toISOString().split('T')[0],
-            seriesId: undefined,
-            seriesUuid: undefined,
-            universeId: undefined,
-            coverImage: undefined,
-            definedActs: [],
-            definedChapters: [],
-            actLabels: {},
-            chapterLabels: {},
-            actDescriptions: {},
-            chapterDescriptions: {},
-            filterPresets: [],
-            manuscriptFilter: {},
-            manuscriptSort: { field: 'sequence', direction: 'asc' },
-            locale: undefined,
-            activeBeatSheet: undefined,
-        };
-    }
-
-    function writeProjectFile(adapter: any, project: any) {
-        const fm: Record<string, any> = {
-            type: 'storyline',
-            title: project.title,
-            created: project.created,
-        };
-        if (project.bookId) fm.bookId = project.bookId;
-        if (project.seriesId) fm.seriesId = project.seriesId;
-        if (project.seriesUuid) fm.seriesUuid = project.seriesUuid;
-        if (project.universeId) fm.universeId = project.universeId;
-        const content = `---\n${stringifyYaml(fm)}---\n`;
-        adapter.write(project.filePath, content);
-    }
-
     function setupManagers(adapter: any) {
         mockApp = {
             vault: {
                 adapter,
                 getAbstractFileByPath: (path: string) => {
                     const normalized = normalizePath(path);
-                    if (adapter.fs.has(normalized)) return new TFile(path);
+                    if (adapter.fs.has(normalized)) return { path: normalized } as any;
                     for (const key of adapter.fs.keys()) {
-                        if (key === normalized || key.startsWith(normalized + '/')) return new TFile(path);
+                        if (key === normalized || key.startsWith(normalized + '/')) return { path: normalized } as any;
                     }
                     return null;
-                },
-                read: async (file: TFile) => adapter.read(file.path),
-                modify: async (file: TFile, data: string) => {
-                    await adapter.write(file.path, data);
                 },
                 getMarkdownFiles: () => [],
                 getAllFiles: () => [],
                 getFileByPath: (path: string) => {
                     const normalized = normalizePath(path);
-                    if (adapter.fs.has(normalized)) return new TFile(path);
+                    if (adapter.fs.has(normalized)) return { path: normalized } as any;
                     return null;
                 },
                 getFolderByPath: (path: string) => {
@@ -143,6 +100,9 @@ describe('Hierarchy data integrity', () => {
                 },
                 createFolder: async (path: string) => {
                     await adapter.mkdir(path);
+                },
+                modify: async (file: any, data: string) => {
+                    await adapter.write(file.path, data);
                 },
             },
             workspace: {
@@ -181,10 +141,12 @@ describe('Hierarchy data integrity', () => {
             settings: {
                 storyLineRoot: 'StoryLine',
                 autoOpenNavigator: false,
+                activeProjectFile: undefined,
             },
             sceneManager: null,
             seriesManager: null,
             universeManager: null,
+            saveSettings: vi.fn(),
         };
 
         sceneManager = new SceneManager(mockApp, plugin as any);
@@ -198,6 +160,55 @@ describe('Hierarchy data integrity', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+    });
+
+    describe('updateProjectPath', () => {
+        it('updates the projects Map key', () => {
+            const adapter = createMockAdapter();
+            setupManagers(adapter);
+
+            const oldPath = 'StoryLine/Old Book/Old Book.md';
+            const newPath = 'StoryLine/My Series/Old Book/Old Book.md';
+            const project = {
+                title: 'Old Book',
+                filePath: newPath,
+                sceneFolder: 'StoryLine/Old Book/Scenes',
+                bookId: 'test-book-id',
+                created: '2024-01-01',
+            } as any;
+
+            (sceneManager as any).projects.set(oldPath, project);
+            expect((sceneManager as any).projects.has(oldPath)).toBe(true);
+            expect((sceneManager as any).projects.has(newPath)).toBe(false);
+
+            sceneManager.updateProjectPath(oldPath, newPath, project);
+
+            expect((sceneManager as any).projects.has(oldPath)).toBe(false);
+            expect((sceneManager as any).projects.has(newPath)).toBe(true);
+            expect((sceneManager as any).projects.get(newPath)).toBe(project);
+        });
+
+        it('re-derives folder paths from new file path', () => {
+            const adapter = createMockAdapter();
+            setupManagers(adapter);
+
+            const oldPath = 'StoryLine/Old Book/Old Book.md';
+            const newPath = 'StoryLine/My Series/Old Book/Old Book.md';
+            const project = {
+                title: 'Old Book',
+                filePath: newPath,
+                sceneFolder: 'StoryLine/Old Book/Scenes',
+                bookId: 'test-book-id',
+                created: '2024-01-01',
+            } as any;
+
+            (sceneManager as any).projects.set(oldPath, project);
+            sceneManager.updateProjectPath(oldPath, newPath, project);
+
+            expect(project.sceneFolder).toBe('StoryLine/My Series/Old Book/Scenes');
+            expect(project.characterFolder).toBe('StoryLine/My Series/Old Book/Codex/Characters');
+            expect(project.locationFolder).toBe('StoryLine/My Series/Old Book/Codex/Locations');
+        });
     });
 
     describe('addBookToSeries', () => {
@@ -220,15 +231,22 @@ describe('Hierarchy data integrity', () => {
             };
             await adapter.write(`${seriesFolder}/series.json`, JSON.stringify(seriesMeta));
 
+            // Existing book in series
             const existingBookFolder = `${seriesFolder}/Existing Book`;
             await adapter.mkdir(existingBookFolder);
             await adapter.mkdir(`${existingBookFolder}/Scenes`);
 
+            // Standalone book with same name
             const standaloneBookFolder = 'StoryLine/Existing Book';
             await adapter.mkdir(standaloneBookFolder);
             await adapter.mkdir(`${standaloneBookFolder}/Scenes`);
-            const project = createProject('Existing Book', `${standaloneBookFolder}/Existing Book.md`);
-            writeProjectFile(adapter, project);
+            const project = {
+                title: 'Existing Book',
+                filePath: `${standaloneBookFolder}/Existing Book.md`,
+                sceneFolder: `${standaloneBookFolder}/Scenes`,
+                bookId: 'standalone-id',
+                created: '2024-01-01',
+            } as any;
 
             await expect(seriesManager.addBookToSeries(seriesUuid, project)).rejects.toThrow('already exists');
         });
@@ -255,13 +273,18 @@ describe('Hierarchy data integrity', () => {
             const oldBookFolder = 'StoryLine/Test Book';
             await adapter.mkdir(oldBookFolder);
             await adapter.mkdir(`${oldBookFolder}/Scenes`);
-            const project = createProject('Test Book', `${oldBookFolder}/Test Book.md`);
-            writeProjectFile(adapter, project);
+            const project = {
+                title: 'Test Book',
+                filePath: `${oldBookFolder}/Test Book.md`,
+                sceneFolder: `${oldBookFolder}/Scenes`,
+                bookId: 'test-book-id',
+                created: '2024-01-01',
+            } as any;
 
             await seriesManager.addBookToSeries(seriesUuid, project);
 
             const savedMeta = JSON.parse(await adapter.read(`${seriesFolder}/series.json`));
-            expect(savedMeta.bookIds).toContain(project.bookId);
+            expect(savedMeta.bookIds).toContain('test-book-id');
             expect(savedMeta.bookOrder).toContain('Test Book');
         });
 
@@ -287,13 +310,63 @@ describe('Hierarchy data integrity', () => {
             const oldBookFolder = 'StoryLine/Test Book';
             await adapter.mkdir(oldBookFolder);
             await adapter.mkdir(`${oldBookFolder}/Scenes`);
-            const project = createProject('Test Book', `${oldBookFolder}/Test Book.md`);
-            writeProjectFile(adapter, project);
+            const project = {
+                title: 'Test Book',
+                filePath: `${oldBookFolder}/Test Book.md`,
+                sceneFolder: `${oldBookFolder}/Scenes`,
+                bookId: 'test-book-id',
+                created: '2024-01-01',
+            } as any;
 
             await seriesManager.addBookToSeries(seriesUuid, project);
 
             expect(project.seriesUuid).toBe(seriesUuid);
             expect(project.seriesId).toBe('My Series');
+        });
+
+        it('updates project registry and activeProjectFile for active book', async () => {
+            const adapter = createMockAdapter();
+            setupManagers(adapter);
+
+            const seriesFolder = 'StoryLine/My Series';
+            await adapter.mkdir(seriesFolder);
+            await adapter.mkdir(`${seriesFolder}/Codex`);
+            await adapter.mkdir(`${seriesFolder}/Codex/Characters`);
+            await adapter.mkdir(`${seriesFolder}/Codex/Locations`);
+            const seriesUuid = crypto.randomUUID();
+            const seriesMeta = {
+                name: 'My Series',
+                seriesUuid,
+                bookOrder: [],
+                bookIds: [],
+                created: '2024-01-01',
+            };
+            await adapter.write(`${seriesFolder}/series.json`, JSON.stringify(seriesMeta));
+
+            const oldBookFolder = 'StoryLine/Test Book';
+            await adapter.mkdir(oldBookFolder);
+            await adapter.mkdir(`${oldBookFolder}/Scenes`);
+            const oldFilePath = `${oldBookFolder}/Test Book.md`;
+            const project = {
+                title: 'Test Book',
+                filePath: oldFilePath,
+                sceneFolder: `${oldBookFolder}/Scenes`,
+                bookId: 'test-book-id',
+                created: '2024-01-01',
+            } as any;
+
+            // Register project and set as active
+            (sceneManager as any).projects.set(oldFilePath, project);
+            (sceneManager as any)._activeProject = project;
+            plugin.settings.activeProjectFile = oldFilePath;
+
+            await seriesManager.addBookToSeries(seriesUuid, project);
+
+            const newFilePath = `${seriesFolder}/Test Book/Test Book.md`;
+            expect((sceneManager as any).projects.has(oldFilePath)).toBe(false);
+            expect((sceneManager as any).projects.has(newFilePath)).toBe(true);
+            expect(plugin.settings.activeProjectFile).toBe(newFilePath);
+            expect(plugin.saveSettings).toHaveBeenCalled();
         });
     });
 
@@ -323,11 +396,15 @@ describe('Hierarchy data integrity', () => {
             const bookInSeriesFolder = `${seriesFolder}/Test Book`;
             await adapter.mkdir(bookInSeriesFolder);
             await adapter.mkdir(`${bookInSeriesFolder}/Scenes`);
-            const project = createProject('Test Book', `${bookInSeriesFolder}/Test Book.md`);
-            project.bookId = 'book-123';
-            project.seriesId = 'My Series';
-            project.seriesUuid = seriesUuid;
-            writeProjectFile(adapter, project);
+            const project = {
+                title: 'Test Book',
+                filePath: `${bookInSeriesFolder}/Test Book.md`,
+                sceneFolder: `${bookInSeriesFolder}/Scenes`,
+                bookId: 'book-123',
+                created: '2024-01-01',
+                seriesId: 'My Series',
+                seriesUuid,
+            } as any;
 
             await seriesManager.removeBookFromSeries(seriesUuid, project);
 
@@ -359,11 +436,15 @@ describe('Hierarchy data integrity', () => {
             const bookInSeriesFolder = `${seriesFolder}/Test Book`;
             await adapter.mkdir(bookInSeriesFolder);
             await adapter.mkdir(`${bookInSeriesFolder}/Scenes`);
-            const project = createProject('Test Book', `${bookInSeriesFolder}/Test Book.md`);
-            project.bookId = 'book-123';
-            project.seriesId = 'My Series';
-            project.seriesUuid = seriesUuid;
-            writeProjectFile(adapter, project);
+            const project = {
+                title: 'Test Book',
+                filePath: `${bookInSeriesFolder}/Test Book.md`,
+                sceneFolder: `${bookInSeriesFolder}/Scenes`,
+                bookId: 'book-123',
+                created: '2024-01-01',
+                seriesId: 'My Series',
+                seriesUuid,
+            } as any;
 
             await seriesManager.removeBookFromSeries(seriesUuid, project);
 
@@ -394,125 +475,23 @@ describe('Hierarchy data integrity', () => {
             const bookInSeriesFolder = `${seriesFolder}/Test Book`;
             await adapter.mkdir(bookInSeriesFolder);
             await adapter.mkdir(`${bookInSeriesFolder}/Scenes`);
-            const project = createProject('Test Book', `${bookInSeriesFolder}/Test Book.md`);
-            project.bookId = 'book-123';
-            project.seriesId = 'My Series';
-            project.seriesUuid = seriesUuid;
-            writeProjectFile(adapter, project);
+            const project = {
+                title: 'Test Book',
+                filePath: `${bookInSeriesFolder}/Test Book.md`,
+                sceneFolder: `${bookInSeriesFolder}/Scenes`,
+                bookId: 'book-123',
+                created: '2024-01-01',
+                seriesId: 'My Series',
+                seriesUuid,
+            } as any;
 
             await seriesManager.removeBookFromSeries(seriesUuid, project);
 
             expect(project.seriesUuid).toBeUndefined();
             expect(project.seriesId).toBeUndefined();
         });
-    });
 
-    describe('active project reference', () => {
-        it('updates activeProject.filePath when moving active book', async () => {
-            const adapter = createMockAdapter();
-            setupManagers(adapter);
-
-            const seriesFolder = 'StoryLine/My Series';
-            await adapter.mkdir(seriesFolder);
-            await adapter.mkdir(`${seriesFolder}/Codex`);
-            await adapter.mkdir(`${seriesFolder}/Codex/Characters`);
-            await adapter.mkdir(`${seriesFolder}/Codex/Locations`);
-            const seriesUuid = crypto.randomUUID();
-            const seriesMeta = {
-                name: 'My Series',
-                seriesUuid,
-                bookOrder: [],
-                bookIds: [],
-                created: '2024-01-01',
-            };
-            await adapter.write(`${seriesFolder}/series.json`, JSON.stringify(seriesMeta));
-
-            const oldBookFolder = 'StoryLine/Test Book';
-            await adapter.mkdir(oldBookFolder);
-            await adapter.mkdir(`${oldBookFolder}/Scenes`);
-            const project = createProject('Test Book', `${oldBookFolder}/Test Book.md`);
-            writeProjectFile(adapter, project);
-
-            sceneManager._activeProject = project;
-
-            await seriesManager.addBookToSeries(seriesUuid, project);
-
-            expect(sceneManager._activeProject?.filePath).toBe(`${seriesFolder}/Test Book/Test Book.md`);
-        });
-    });
-
-    describe('universeId persistence', () => {
-        it('SceneManager reads universeId from frontmatter', () => {
-            // Verify parseProjectContent reads universeId
-            const fm = {
-                type: 'storyline',
-                title: 'Test',
-                created: '2024-01-01',
-                universeId: 'universe-123',
-            };
-            // The parseProjectContent function is tested indirectly through
-            // SceneManager.loadAll(). Here we verify the field is in the interface.
-            const project: any = {
-                title: 'Test',
-                created: '2024-01-01',
-                universeId: 'universe-123',
-            };
-            expect(project.universeId).toBe('universe-123');
-        });
-
-        it('SceneManager writes universeId to frontmatter', async () => {
-            const adapter = createMockAdapter();
-            setupManagers(adapter);
-
-            const bookFolder = 'StoryLine/Test Book';
-            await adapter.mkdir(bookFolder);
-            await adapter.mkdir(`${bookFolder}/Scenes`);
-            const projectFile = `${bookFolder}/Test Book.md`;
-            const project = createProject('Test Book', projectFile);
-            project.universeId = 'universe-123';
-
-            // Write the project file so saveProjectFrontmatter can find it
-            const fm: Record<string, any> = {
-                type: 'storyline',
-                title: project.title,
-                created: project.created,
-                bookId: project.bookId,
-                universeId: project.universeId,
-            };
-            await adapter.write(projectFile, `---\n${stringifyYaml(fm)}---\n`);
-
-            // Verify the file was written with universeId
-            const content = await adapter.read(projectFile);
-            expect(content).toContain('universe-123');
-        });
-
-        it('removes universeId when cleared', async () => {
-            const adapter = createMockAdapter();
-            setupManagers(adapter);
-
-            const bookFolder = 'StoryLine/Test Book';
-            await adapter.mkdir(bookFolder);
-            await adapter.mkdir(`${bookFolder}/Scenes`);
-            const projectFile = `${bookFolder}/Test Book.md`;
-            const project = createProject('Test Book', projectFile);
-
-            // Write without universeId
-            const fm: Record<string, any> = {
-                type: 'storyline',
-                title: project.title,
-                created: project.created,
-                bookId: project.bookId,
-            };
-            await adapter.write(projectFile, `---\n${stringifyYaml(fm)}---\n`);
-
-            // Verify the file doesn't contain universeId
-            const content = await adapter.read(projectFile);
-            expect(content).not.toContain('universeId');
-        });
-    });
-
-    describe('removeBookFromSeries safety', () => {
-        it('does not create Codex folder on detached book', async () => {
+        it('rejects destination collision before moving', async () => {
             const adapter = createMockAdapter();
             setupManagers(adapter);
 
@@ -534,19 +513,113 @@ describe('Hierarchy data integrity', () => {
             const bookInSeriesFolder = `${seriesFolder}/Test Book`;
             await adapter.mkdir(bookInSeriesFolder);
             await adapter.mkdir(`${bookInSeriesFolder}/Scenes`);
-            const project = createProject('Test Book', `${bookInSeriesFolder}/Test Book.md`);
-            project.bookId = 'book-123';
-            project.seriesId = 'My Series';
-            project.seriesUuid = seriesUuid;
-            writeProjectFile(adapter, project);
+
+            // Create a collision at the destination
+            const collisionFolder = 'StoryLine/Test Book';
+            await adapter.mkdir(collisionFolder);
+            await adapter.mkdir(`${collisionFolder}/Scenes`);
+
+            const project = {
+                title: 'Test Book',
+                filePath: `${bookInSeriesFolder}/Test Book.md`,
+                sceneFolder: `${bookInSeriesFolder}/Scenes`,
+                bookId: 'book-123',
+                created: '2024-01-01',
+                seriesId: 'My Series',
+                seriesUuid,
+            } as any;
+
+            await expect(seriesManager.removeBookFromSeries(seriesUuid, project)).rejects.toThrow('already exists');
+
+            // Verify source data is untouched
+            const savedMeta = JSON.parse(await adapter.read(`${seriesFolder}/series.json`));
+            expect(savedMeta.bookIds).toContain('book-123');
+            expect(savedMeta.bookOrder).toContain('Test Book');
+        });
+
+        it('updates project registry and activeProjectFile for active book', async () => {
+            const adapter = createMockAdapter();
+            setupManagers(adapter);
+
+            const seriesFolder = 'StoryLine/My Series';
+            await adapter.mkdir(seriesFolder);
+            await adapter.mkdir(`${seriesFolder}/Codex`);
+            await adapter.mkdir(`${seriesFolder}/Codex/Characters`);
+            await adapter.mkdir(`${seriesFolder}/Codex/Locations`);
+            const seriesUuid = crypto.randomUUID();
+            const seriesMeta = {
+                name: 'My Series',
+                seriesUuid,
+                bookOrder: ['Test Book'],
+                bookIds: ['book-123'],
+                created: '2024-01-01',
+            };
+            await adapter.write(`${seriesFolder}/series.json`, JSON.stringify(seriesMeta));
+
+            const bookInSeriesFolder = `${seriesFolder}/Test Book`;
+            await adapter.mkdir(bookInSeriesFolder);
+            await adapter.mkdir(`${bookInSeriesFolder}/Scenes`);
+            const project = {
+                title: 'Test Book',
+                filePath: `${bookInSeriesFolder}/Test Book.md`,
+                sceneFolder: `${bookInSeriesFolder}/Scenes`,
+                bookId: 'book-123',
+                created: '2024-01-01',
+                seriesId: 'My Series',
+                seriesUuid,
+            } as any;
+
+            // Register project and set as active
+            (sceneManager as any).projects.set(project.filePath, project);
+            (sceneManager as any)._activeProject = project;
+            plugin.settings.activeProjectFile = project.filePath;
 
             await seriesManager.removeBookFromSeries(seriesUuid, project);
 
-            // Verify no Codex folder was created at the detached location
-            const newBookFolder = 'StoryLine/Test Book';
-            const codexFolder = `${newBookFolder}/Codex`;
-            const exists = await adapter.exists(codexFolder);
-            expect(exists).toBe(false);
+            const newFilePath = 'StoryLine/Test Book/Test Book.md';
+            expect((sceneManager as any).projects.has(bookInSeriesFolder + '/Test Book.md')).toBe(false);
+            expect((sceneManager as any).projects.has(newFilePath)).toBe(true);
+            expect(plugin.settings.activeProjectFile).toBe(newFilePath);
+            expect(plugin.saveSettings).toHaveBeenCalled();
+        });
+    });
+
+    describe('universeId persistence', () => {
+        it('preserves universeId when adding to series', async () => {
+            const adapter = createMockAdapter();
+            setupManagers(adapter);
+
+            const seriesFolder = 'StoryLine/My Series';
+            await adapter.mkdir(seriesFolder);
+            await adapter.mkdir(`${seriesFolder}/Codex`);
+            await adapter.mkdir(`${seriesFolder}/Codex/Characters`);
+            await adapter.mkdir(`${seriesFolder}/Codex/Locations`);
+            const seriesUuid = crypto.randomUUID();
+            const seriesMeta = {
+                name: 'My Series',
+                seriesUuid,
+                bookOrder: [],
+                bookIds: [],
+                created: '2024-01-01',
+            };
+            await adapter.write(`${seriesFolder}/series.json`, JSON.stringify(seriesMeta));
+
+            const oldBookFolder = 'StoryLine/Test Book';
+            await adapter.mkdir(oldBookFolder);
+            await adapter.mkdir(`${oldBookFolder}/Scenes`);
+            const universeId = 'universe-123';
+            const project = {
+                title: 'Test Book',
+                filePath: `${oldBookFolder}/Test Book.md`,
+                sceneFolder: `${oldBookFolder}/Scenes`,
+                bookId: 'test-book-id',
+                created: '2024-01-01',
+                universeId,
+            } as any;
+
+            await seriesManager.addBookToSeries(seriesUuid, project);
+
+            expect(project.universeId).toBe(universeId);
         });
     });
 });

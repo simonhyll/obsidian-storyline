@@ -3599,27 +3599,7 @@ export default class SceneCardsPlugin extends Plugin {
                     });
 
                 // ── Render logic ──
-                let updateSeriesDropdown: (requestId?: number) => Promise<void>;
-                updateSeriesDropdown = async (requestId?: number) => {
-
-                // Populate universe dropdown asynchronously after updateSeriesDropdown is defined
-                (async () => {
-                    try {
-                        const universes = await this.universeManager.getAllUniverses();
-                        const dropdownEl = universeSetting.controlEl.querySelector('select') as HTMLSelectElement;
-                        if (!dropdownEl) return;
-                        for (const u of universes) {
-                            const opt = document.createElement('option');
-                            opt.value = u.id;
-                            opt.text = u.name;
-                            dropdownEl.add(opt);
-                        }
-                        if (defaultUniverseId) dropdownEl.value = defaultUniverseId;
-                        universeDropdownInitialized = true;
-                        // After universe dropdown is ready, populate series dropdown
-                        await updateSeriesDropdown(++seriesDropdownRequestId);
-                    } catch { /* no universes yet */ }
-                })();
+                const updateSeriesDropdown = async (requestId?: number) => {
                     const dropdownEl = seriesSetting.controlEl.querySelector('select') as HTMLSelectElement;
                     if (!dropdownEl) return;
                     const currentVal = dropdownEl.value;
@@ -3661,6 +3641,25 @@ export default class SceneCardsPlugin extends Plugin {
                         dropdownEl.value = currentVal;
                     }
                 };
+
+                // Populate universe dropdown asynchronously, then populate series dropdown
+                (async () => {
+                    try {
+                        const universes = await this.universeManager.getAllUniverses();
+                        const dropdownEl = universeSetting.controlEl.querySelector('select') as HTMLSelectElement;
+                        if (!dropdownEl) return;
+                        for (const u of universes) {
+                            const opt = document.createElement('option');
+                            opt.value = u.id;
+                            opt.text = u.name;
+                            dropdownEl.add(opt);
+                        }
+                        if (defaultUniverseId) dropdownEl.value = defaultUniverseId;
+                        universeDropdownInitialized = true;
+                        // After universe dropdown is ready, populate series dropdown
+                        await updateSeriesDropdown(++seriesDropdownRequestId);
+                    } catch { /* no universes yet */ }
+                })();
 
                 const renderFields = () => {
                     // Show/hide fields based on project type
