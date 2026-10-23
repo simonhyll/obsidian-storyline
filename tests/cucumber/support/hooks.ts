@@ -1,8 +1,24 @@
 /**
  * Cucumber hooks — initialize the test world before each scenario.
+ *
+ * Sets up the Obsidian module mock so that production code importing
+ * from 'obsidian' (TFile, parseYaml, stringifyYaml) works in Node.js.
  */
 import { Before } from '@cucumber/cucumber';
 import { TestWorld } from './world';
+
+// Patch the 'obsidian' module in the module registry so that production
+// code (EventManager, SceneManager) can import TFile, parseYaml, and
+// stringifyYaml without failing. The real 'obsidian' package is types-only.
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- module patching
+const Module = require('module');
+const originalResolveFilename = Module._resolveFilename;
+Module._resolveFilename = function (request: string, ...rest: unknown[]): string {
+    if (request === 'obsidian') {
+        return require.resolve('./obsidian-mock');
+    }
+    return originalResolveFilename.apply(this, [request, ...rest]);
+};
 
 Before(function (this: TestWorld) {
   this.scenes = [];
@@ -49,4 +65,7 @@ Before(function (this: TestWorld) {
   this.latestRequestId = undefined;
   this.navService = undefined;
   this.lastNavigationResult = undefined;
+  this.testVault = undefined;
+  this.eventManager = undefined;
+  this.eventsFolder = undefined;
 });

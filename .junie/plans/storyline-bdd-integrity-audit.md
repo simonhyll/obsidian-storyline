@@ -3,11 +3,21 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-23 (Step 6C.4a — Persistence, ownership & UI safety hardening)
+> Updated: 2026-10-23 (Step 6C.4b.1 — Real EventManager persistence tests)
 > Total scenarios: 61
-> Total steps: 271
+> Total steps: 270
 
-## 6C.4a Update Summary
+## 6C.4b.1 Update Summary
+
+Step 6C.4b.1 repaired the in-memory vault harness and converted Event management scenarios to real persistence integration tests:
+
+1. **Vault harness repaired** — Fixed `exists()` bug that returned true for any child path under an existing folder. Added `TFile` test double so `instanceof TFile` checks pass. Added `js-yaml` as explicit dev dependency.
+2. **Obsidian module mock** — Created `tests/cucumber/support/obsidian-mock.ts` providing `TFile`, `parseYaml`, and `stringifyYaml` at runtime. Patched via `Module._resolveFilename` in hooks.
+3. **EventManager tests hardened** — `management.steps.ts` now uses real `EventManager.createEventFile()`, `saveEvent()`, `deleteEvent()`, and `loadAll()` with the in-memory vault. Assertions verify actual persisted YAML content, UUID round-trips, and file removal.
+4. **Canonical Event persistence** — `events.steps.ts` now uses real `EventManager.createEventFile()` for the canonical Event scenario. Gherkin step responsibilities corrected: Event creation moved from `Then` to `When`.
+5. **Assertion helpers** — Extracted to `tests/cucumber/support/event-assertions.ts` to keep management.steps.ts under 200-line budget.
+
+## 6C.4a Historical Summary
 
 Step 6C.4a corrected the BDD audit inventory and hardened critical safety tests:
 
@@ -152,16 +162,16 @@ This feature has 5 regular Scenarios and 2 Scenario Outlines (each with 3 exampl
 
 | # | Scenario | Production Module | When Invokes Production? | Assertions Observe Results? | Coverage | Risk |
 |---|---|---|---|---|---|---|
-| 1 | Create event with date | `createEvent()` | **Yes** — calls production `createEvent` | **Yes** — checks UUID, ownership, file | Production-backed | Low |
-| 2 | Create event without date | `createEvent()` | **Yes** — calls production `createEvent` | **Yes** — checks no timeSpan | Production-backed | Low |
-| 3 | Update event date | Test-only mutation | **Partial** — mutates event object directly | **Partial** — checks mutated value | Partially backed | Medium |
-| 4 | Delete event | Test-only | **Partial** — deletes from map | **Yes** — checks map empty | Partially backed | Medium |
-| 5 | Canonical event ownership | `createEvent()` | **Yes** — calls production `createEvent` | **Yes** — checks universe ownership | Production-backed | Low |
-| 6 | Book-scoped event ownership | `createEvent()` | **Yes** — calls production `createEvent` | **Yes** — checks book ownership | Production-backed | Low |
-| 7 | Load existing events | `createEvent()` | **Yes** — calls production `createEvent` | **Yes** — checks count | Production-backed | Low |
+| 1 | Create event with date | `EventManager.ts` | **Yes** — `createEventFile()` | **Yes** — checks UUID, ownership, persisted YAML | Production-backed | Low |
+| 2 | Create event without date | `EventManager.ts` | **Yes** — `createEventFile()` | **Yes** — checks no timeSpan | Production-backed | Low |
+| 3 | Update event date | `EventManager.ts` | **Yes** — `saveEvent()` | **Yes** — reloads from vault, checks TimeSpan | Production-backed | Low |
+| 4 | Delete event | `EventManager.ts` | **Yes** — `deleteEvent()` | **Yes** — checks file removed, event absent | Production-backed | Low |
+| 5 | Canonical event ownership | `EventManager.ts` | **Yes** — `createEventFile()` | **Yes** — checks universe ownership | Production-backed | Low |
+| 6 | Book-scoped event ownership | `EventManager.ts` | **Yes** — `createEventFile()` | **Yes** — checks book ownership | Production-backed | Low |
+| 7 | Load existing events | `EventManager.ts` | **Yes** — `loadAll()` on fresh instance | **Yes** — checks count and required fields | Production-backed | Low |
 
-**Summary:** 5 production-backed, 2 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
-**Action:** **Deferred to 6C.4.** Mostly good; update/delete could use production manager.
+**Summary:** 7 production-backed, 0 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
+**Action:** **Hardened in 6C.4b.1.** All 7 scenarios now exercise real EventManager with in-memory vault. Tests verify actual YAML persistence, UUID round-trips, file removal, and reload behavior.
 
 ---
 
@@ -169,12 +179,12 @@ This feature has 5 regular Scenarios and 2 Scenario Outlines (each with 3 exampl
 
 | # | Scenario | Production Module | When Invokes Production? | Assertions Observe Results? | Coverage | Risk |
 |---|---|---|---|---|---|---|
-| 1 | Canonical Event persistence | `createEvent()` | **Yes** — calls production `createEvent` | **Yes** — checks UUID, TimeSpan, ownership | Production-backed | Low |
+| 1 | Canonical Event persistence | `EventManager.ts` | **Yes** — `createEventFile()` | **Yes** — checks UUID, TimeSpan, ownership, persisted YAML | Production-backed | Low |
 | 2 | Scene creation safety | Test-only | **Partial** — creates scene object manually | **Yes** — checks ownership, path prefix | Partially backed | Medium |
 | 3 | Cancellation | Test-only | **No** — sets `cancelled = true` | **Partial** — checks file count | Simulated | Medium |
 
 **Summary:** 1 production-backed, 1 partially backed, 0 fixture-only, 1 simulated, 0 no-op.
-**Action:** **Deferred to 6C.4.** Cancellation scenario needs real modal test.
+**Action:** Scenario 1 hardened in 6C.4b.1 using real EventManager. Scenarios 2–3 deferred to 6C.4b.
 
 ---
 
@@ -193,29 +203,28 @@ This feature has 5 regular Scenarios and 2 Scenario Outlines (each with 3 exampl
 ---
 
 
-## Overall Summary (after 6C.4a)
+## Overall Summary (after 6C.4b.1)
 
-Scenario inventory corrected: 61 scenarios across 9 feature files (no fictitious step-file scenarios).
+Scenario inventory: 61 scenarios across 9 feature files, 270 steps.
 
 | Coverage Level | Count | Percentage |
 |---|---|---|
-| Production-backed | 38 | 62% |
-| Partially backed | 4 | 7% |
+| Production-backed | 44 | 72% |
+| Partially backed | 3 | 5% |
 | Fixture-only | 8 | 13% |
-| Simulated | 8 | 13% |
-| No-op | 3 | 5% |
+| Simulated | 4 | 7% |
+| No-op | 2 | 3% |
 | **Total** | **61** | **100%** |
 
-### Changes from 6C.3b → 6C.4a
+### Changes from 6C.4a → 6C.4b.1
 
 | Feature | Change |
 |---|---|
-| `timespan.feature` | Corrected: 11 scenarios (was 8), all production-backed |
-| `navigation.feature` | Already hardened in 6C.3, all 8 production-backed |
-| `creation.feature` | Concurrency guard now tests `CreationConcurrencyGuard` (production class) |
-| Removed | Fictitious "timeline.steps.ts extras" (4 scenarios that don't exist) |
+| `management.feature` | All 7 scenarios now production-backed (was 5 prod + 2 partial) |
+| `ownership.feature` | Canonical Event persistence now production-backed (was partial) |
+| Steps | 270 steps (was 271; merged ownership scenario steps) |
 
-### Scenarios Hardened in 6C.3 / 6C.3b / 6C.4a
+### Scenarios Hardened in 6C.3 / 6C.3b / 6C.4a / 6C.4b.1
 
 | Feature | Scenarios | Status |
 |---|---|---|
@@ -223,20 +232,21 @@ Scenario inventory corrected: 61 scenarios across 9 feature files (no fictitious
 | `creation.feature` | 9 | 8 production-backed, 1 partial (cancellation) |
 | `navigation.feature` | 8 | All production-backed |
 | `timespan.feature` | 11 | All production-backed |
-| **Total hardened** | **35** | — |
+| `management.feature` | 7 | All production-backed (new in 6C.4b.1) |
+| `ownership.feature` | 1 | Canonical Event persistence (new in 6C.4b.1) |
+| **Total hardened** | **43** | — |
 
-### Scenarios Deferred to Step 6C.4b
+### Scenarios Deferred to Step 6C.4b.2
 
 | Feature | Scenarios | Issues |
 |---|---|---|
 | `scenes.feature` | 5 | Fixture-only, no production SceneManager tested |
 | `hierarchy.feature` | 7 | Simulated migration/restore, fixture-only |
-| `management.feature` | 2 | Update/delete use direct mutation |
 | `ownership.feature` | 2 | Scene safety manual, cancellation simulated |
 | `export.feature` | 4 | All simulated or no-op |
 | `changelog.feature` | 1 | Tag protection simulates CLI error |
 | `creation.feature` | 1 | Cancellation simulates modal flag |
-| **Total deferred** | **20** | — |
+| **Total deferred** | **18** | — |
 
 ### Configuration Resolution
 

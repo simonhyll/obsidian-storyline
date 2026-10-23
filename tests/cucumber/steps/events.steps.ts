@@ -1,42 +1,54 @@
 /**
  * Step definitions for event ownership and scene creation safety scenarios.
- * Exercises real EventManager, TimeSpanService, and createEvent.
+ *
+ * The Canonical Event persistence scenario exercises real EventManager with
+ * in-memory vault harness. Scene creation safety and cancellation scenarios
+ * remain fixture-based (deferred to Step 6C.4b for full hardening).
  */
 import { Given, When, Then } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
+import { EventManager } from '../../../src/services/EventManager';
 import { TimeSpanService } from '../../../src/services/TimeSpanService';
-import { createEvent } from '../../../src/models/Event';
+import { createInMemoryVault, createAppMock } from '../support/in-memory-vault';
 import type { StoryLineProject } from '../../../src/models/StoryLineProject';
 
 Given('the author has a Universe with an Events folder', function (this: TestWorld) {
   this.universeId = 'universe-test';
-  this.createdFiles = new Map();
-});
-
-When('they create a canonical Event named {string}', function (this: TestWorld, name: string) {
-  this.eventName = name;
-});
-
-Then('the Event has date {string}', function (this: TestWorld, dateStr: string) {
+  const vault = createInMemoryVault();
+  const app = createAppMock(vault) as unknown as import('obsidian').App;
+  const em = new EventManager(app);
   const tss = new TimeSpanService();
-  const parsed = tss.parse(dateStr);
-  if (!parsed) throw new Error(`Failed to parse date: ${dateStr}`);
-  const event = createEvent(this.eventName || 'Untitled', 'StoryLine/Events/test-event.md', {
-    ownerId: this.universeId,
-    timeSpan: parsed,
-  });
-  this.events = [event];
-  this.createdFiles.set(event.filePath, `---\ntype: event\nid: ${event.id}\nname: ${event.name}\n---`);
+  em.setTimeSpanService(tss);
+  this.testVault = vault;
+  this.eventManager = em;
+  this.eventsFolder = 'StoryLine/Events';
 });
+
+When(
+  'they create a canonical Event named {string} with date {string}',
+  async function (this: TestWorld, name: string, dateStr: string) {
+    const tss = new TimeSpanService();
+    const parsed = tss.parse(dateStr);
+    if (!parsed) throw new Error(`Failed to parse date: ${dateStr}`);
+    const event = await this.eventManager!.createEventFile(this.eventsFolder!, name, {
+      ownerId: this.universeId,
+      timeSpan: parsed,
+    });
+    this.lastEvent = event;
+    this.events = [event];
+  },
+);
 
 Then('exactly one Event file is persisted', function (this: TestWorld) {
-  if (this.createdFiles.size !== 1) {
-    throw new Error(`Expected 1 file created, got ${this.createdFiles.size}`);
+  const vault = this.testVault!;
+  const mdFiles = vault.getMarkdownFiles();
+  if (mdFiles.length !== 1) {
+    throw new Error(`Expected 1 markdown file, got ${mdFiles.length}`);
   }
 });
 
 Then('its UUID, TimeSpan and ownership are correct', function (this: TestWorld) {
-  const event = this.events[0];
+  const event = this.lastEvent;
   if (!event) throw new Error('No event created');
   if (!event.id || event.id.length === 0) throw new Error('Event has no UUID');
   if (!event.timeSpan) throw new Error('Event has no TimeSpan');
@@ -46,9 +58,18 @@ Then('its UUID, TimeSpan and ownership are correct', function (this: TestWorld) 
   const tss = new TimeSpanService();
   const error = tss.validateTimeSpan(event.timeSpan);
   if (error) throw new Error(`Invalid TimeSpan: ${error}`);
+  // Verify the persisted file contains the UUID and ownership
+  const vault = this.testVault!;
+  const content = vault.files.get(event.filePath)!.content;
+  if (!content.includes(event.id)) {
+    throw new Error('Persisted file does not contain event UUID');
+  }
+  if (!content.includes(this.universeId!)) {
+    throw new Error('Persisted file does not contain owner ID');
+  }
 });
 
-// Scene creation safety
+// Scene creation safety (fixture-based, deferred for full hardening)
 
 Given('the author is viewing multiple Books', function (this: TestWorld) {
   this.books = [
@@ -118,7 +139,7 @@ Then('no Scene is accidentally written into another Book', function (this: TestW
   }
 });
 
-// Cancellation scenario
+// Cancellation scenario (fixture-based, deferred for full hardening)
 
 Given('an Event or Scene creation dialog is open', function (this: TestWorld) {
   this.filesBeforeCreation = new Map(this.createdFiles);

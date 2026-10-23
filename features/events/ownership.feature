@@ -6,8 +6,7 @@ Feature: Event and Scene creation safety
 
   Scenario: Canonical Event persistence
     Given the author has a Universe with an Events folder
-    When they create a canonical Event named "The Great Battle"
-    And the Event has date "2000-06-15"
+    When they create a canonical Event named "The Great Battle" with date "2000-06-15"
     Then exactly one Event file is persisted
     And its UUID, TimeSpan and ownership are correct
 

@@ -8,6 +8,7 @@ import type { Scene } from '../../../src/models/Scene';
 import type { StoryLineProject } from '../../../src/models/StoryLineProject';
 import type { TimeSpan } from '../../../src/models/TimeSpan';
 import type { CreationFormState } from '../../../src/services/projectCreation';
+import type { TestVault } from './in-memory-vault';
 
 export interface TestWorld {
   /** Scenes created during the scenario */
@@ -98,4 +99,10 @@ export interface TestWorld {
   navService?: import('../../../src/services/TimelineNavigationService').TimelineNavigationService;
   /** Last navigation result (navigateNext/navigatePrevious) */
   lastNavigationResult?: import('../../../src/services/TimelineNavigationService').TimelineNavItem | null;
+  /** In-memory vault for persistence tests */
+  testVault?: TestVault;
+  /** EventManager instance for persistence tests */
+  eventManager?: import('../../../src/services/EventManager').EventManager;
+  /** Events folder path for persistence tests */
+  eventsFolder?: string;
 }
