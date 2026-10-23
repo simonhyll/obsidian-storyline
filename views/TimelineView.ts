@@ -351,6 +351,7 @@ export class TimelineView extends ItemView {
 
         // Update navigation service with current items
         this.plugin.timelineNavigationService.updateItems(scenes, events);
+        this.updateTimeNavigationDisplay();
 
         // In multi-book reading order, force chronological
         const effectiveOrder = this.isMultiBookMode() ? 'chronological' : this.timelineOrder;
@@ -699,6 +700,10 @@ export class TimelineView extends ItemView {
         // Cancel if a newer render started while we were loading
         if (this.renderGeneration !== generation) return;
 
+        // Navigation must work in swimlane mode as well as linear mode.
+        this.plugin.timelineNavigationService.updateItems(scenes, events);
+        this.updateTimeNavigationDisplay();
+
         if (scenes.length === 0 && events.length === 0) {
             const empty = timelineEl.createDiv('story-line-empty');
             empty.createEl('p', { text: 'No scenes or events found.' });
@@ -775,8 +780,8 @@ export class TimelineView extends ItemView {
         prevBtn.addEventListener('click', () => {
             const item = this.plugin.timelineNavigationService.navigatePrevious();
             if (item) {
-                new Notice(`Navigated to ${item.scene ? item.scene.title : item.event?.name || 'undated item'}`);
-                this.refresh();
+                this.scrollToNavigationItem(item);
+                this.updateTimeNavigationDisplay();
             }
         });
 
@@ -791,9 +796,11 @@ export class TimelineView extends ItemView {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 const year = parseInt(yearInput.value, 10);
-                if (!isNaN(year)) {
+                if (Number.isSafeInteger(year)) {
                     this.plugin.timelineNavigationService.jumpToDate(year);
-                    this.refresh();
+                    this.updateTimeNavigationDisplay();
+                    // An empty year has no precise DOM position until the
+                    // temporal ruler exists. Do not fake an exact jump.
                 }
             }
         });
@@ -807,8 +814,8 @@ export class TimelineView extends ItemView {
         nextBtn.addEventListener('click', () => {
             const item = this.plugin.timelineNavigationService.navigateNext();
             if (item) {
-                new Notice(`Navigated to ${item.scene ? item.scene.title : item.event?.name || 'undated item'}`);
-                this.refresh();
+                this.scrollToNavigationItem(item);
+                this.updateTimeNavigationDisplay();
             }
         });
 
@@ -817,13 +824,42 @@ export class TimelineView extends ItemView {
             cls: 'story-line-time-period',
             text: '',
         });
-        periodDisplay.setAttr('title', 'Current visible time period');
+        periodDisplay.setAttr('title', 'Indexed time range and selected year');
+        this.updateTimeNavigationDisplay();
+    }
 
-        // Update the period display
+    /** Update navigation labels after async content is loaded or a date changes. */
+    private updateTimeNavigationDisplay(): void {
+        const root = this.rootContainer;
+        if (!root) return;
+        const period = root.querySelector('.story-line-time-period') as HTMLElement | null;
+        const yearInput = root.querySelector('.story-line-year-input') as HTMLInputElement | null;
         const state = this.plugin.timelineNavigationService.getState();
-        if (state.visibleRange) {
-            const { start, end } = state.visibleRange;
-            periodDisplay.setText(`${start.year} — ${end.year}`);
+        if (period) {
+            const range = state.visibleRange;
+            const rangeText = range ? `Items: ${range.start.year}–${range.end.year}` : 'No dated items';
+            period.setText(state.selectedDate
+                ? `Selected: ${state.selectedDate.year} · ${rangeText}`
+                : rangeText);
+        }
+        if (yearInput && state.selectedDate) {
+            yearInput.value = String(state.selectedDate.year);
+        }
+    }
+
+    /**
+     * Scroll to a rendered Scene or Event without reloading the whole view,
+     * changing the active Book or resetting the scroll position.
+     */
+    private scrollToNavigationItem(item: { scene?: Scene; event?: Event }): void {
+        if (!this.rootContainer) return;
+        const target = item.scene
+            ? this.rootContainer.querySelector(`[data-path="${CSS.escape(item.scene.filePath)}"]`)
+            : item.event
+                ? this.rootContainer.querySelector(`[data-event-id="${CSS.escape(item.event.id)}"]`)
+                : null;
+        if (target instanceof HTMLElement) {
+            target.scrollIntoView({ block: 'center', behavior: 'smooth' });
         }
     }
 
