@@ -72,23 +72,55 @@ describe('Hierarchy lifecycle', () => {
         };
     }
 
+    /** Create a markdown project file in the mock filesystem */
+    function createProjectFile(adapter: any, filePath: string, frontmatter: Record<string, unknown>) {
+        const lines = ['---'];
+        for (const [key, value] of Object.entries(frontmatter)) {
+            if (typeof value === 'object' && value !== null) {
+                lines.push(`${key}: ${JSON.stringify(value)}`);
+            } else {
+                lines.push(`${key}: ${value}`);
+            }
+        }
+        lines.push('---');
+        const content = lines.join('\n') + '\n';
+        adapter.fs.set(normalizePath(filePath), content);
+    }
+
     function setupManagers(adapter: any) {
         mockApp = {
             vault: {
                 adapter,
                 getAbstractFileByPath: (path: string) => {
                     const normalized = normalizePath(path);
-                    if (adapter.fs.has(normalized)) return { path: normalized } as any;
+                    const val = adapter.fs.get(normalized);
+                    if (val && typeof val === 'string') {
+                        return new TFile(normalized);
+                    }
                     for (const key of adapter.fs.keys()) {
-                        if (key === normalized || key.startsWith(normalized + '/')) return { path: normalized } as any;
+                        if (key === normalized || key.startsWith(normalized + '/')) {
+                            const v = adapter.fs.get(key);
+                            if (v && typeof v === 'object' && 'folder' in v) {
+                                return { path: normalized };
+                            }
+                        }
                     }
                     return null;
                 },
-                getMarkdownFiles: () => [],
+                getMarkdownFiles: () => {
+                    const result: any[] = [];
+                    for (const [key, val] of adapter.fs) {
+                        if (typeof val === 'string' && key.endsWith('.md')) {
+                            result.push(new TFile(key));
+                        }
+                    }
+                    return result;
+                },
                 getAllFiles: () => [],
                 getFileByPath: (path: string) => {
                     const normalized = normalizePath(path);
-                    if (adapter.fs.has(normalized)) return { path: normalized } as any;
+                    const val = adapter.fs.get(normalized);
+                    if (val && typeof val === 'string') return new TFile(normalized);
                     return null;
                 },
                 getFolderByPath: (path: string) => {
@@ -103,6 +135,9 @@ describe('Hierarchy lifecycle', () => {
                 },
                 modify: async (file: any, data: string) => {
                     await adapter.write(file.path, data);
+                },
+                read: async (file: any) => {
+                    return await adapter.read(file.path);
                 },
             },
             workspace: {
@@ -147,6 +182,7 @@ describe('Hierarchy lifecycle', () => {
             seriesManager: null,
             universeManager: null,
             saveSettings: vi.fn(),
+            saveData: vi.fn(),
         };
 
         sceneManager = new SceneManager(mockApp, plugin as any);
@@ -584,8 +620,8 @@ describe('Hierarchy lifecycle', () => {
         });
     });
 
-    describe('universeId persistence', () => {
-        it('preserves universeId when adding to series', async () => {
+    describe('universeId hierarchy invariant', () => {
+        it('clears stale universeId when series has no universe', async () => {
             const adapter = createMockAdapter();
             setupManagers(adapter);
 
@@ -607,18 +643,56 @@ describe('Hierarchy lifecycle', () => {
             const oldBookFolder = 'StoryLine/Test Book';
             await adapter.mkdir(oldBookFolder);
             await adapter.mkdir(`${oldBookFolder}/Scenes`);
-            const universeId = 'universe-123';
             const project = {
                 title: 'Test Book',
                 filePath: `${oldBookFolder}/Test Book.md`,
                 sceneFolder: `${oldBookFolder}/Scenes`,
                 bookId: 'test-book-id',
                 created: '2024-01-01',
-                universeId,
+                universeId: 'old-universe-xyz',
             } as any;
 
             await seriesManager.addBookToSeries(seriesUuid, project);
 
+            // Book's stale universeId should be cleared (series has no universe)
+            expect(project.universeId).toBeUndefined();
+        });
+
+        it('inherits series universeId when joining a series', async () => {
+            const adapter = createMockAdapter();
+            setupManagers(adapter);
+
+            const seriesFolder = 'StoryLine/My Series';
+            await adapter.mkdir(seriesFolder);
+            await adapter.mkdir(`${seriesFolder}/Codex`);
+            await adapter.mkdir(`${seriesFolder}/Codex/Characters`);
+            await adapter.mkdir(`${seriesFolder}/Codex/Locations`);
+            const seriesUuid = crypto.randomUUID();
+            const universeId = 'universe-abc';
+            const seriesMeta = {
+                name: 'My Series',
+                seriesUuid,
+                universeId,
+                bookOrder: [],
+                bookIds: [],
+                created: '2024-01-01',
+            };
+            await adapter.write(`${seriesFolder}/series.json`, JSON.stringify(seriesMeta));
+
+            const oldBookFolder = 'StoryLine/Test Book';
+            await adapter.mkdir(oldBookFolder);
+            await adapter.mkdir(`${oldBookFolder}/Scenes`);
+            const project = {
+                title: 'Test Book',
+                filePath: `${oldBookFolder}/Test Book.md`,
+                sceneFolder: `${oldBookFolder}/Scenes`,
+                bookId: 'test-book-id',
+                created: '2024-01-01',
+            } as any;
+
+            await seriesManager.addBookToSeries(seriesUuid, project);
+
+            // Book should inherit the series' universeId
             expect(project.universeId).toBe(universeId);
         });
     });

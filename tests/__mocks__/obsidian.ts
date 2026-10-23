@@ -358,9 +358,9 @@ export class TFolder {
 export class TFile {
     path: string;
     name: string;
-    constructor(path: string) {
-        this.path = path;
-        this.name = path.split('/').pop() || path;
+    constructor(path?: string) {
+        this.path = path || '';
+        this.name = this.path.split('/').pop() || this.path;
     }
 }
 

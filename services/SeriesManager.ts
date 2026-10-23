@@ -495,6 +495,15 @@ export class SeriesManager {
         project.seriesUuid = meta.seriesUuid;
         project.bookId = bookId;
 
+        // Hierarchy invariant: books inside a series inherit the series' universe.
+        // Clear any stale universeId so the book doesn't claim membership in a
+        // different universe than the series belongs to.
+        if (meta.universeId) {
+            project.universeId = meta.universeId;
+        } else {
+            delete project.universeId;
+        }
+
         // Save frontmatter using the UPDATED project.filePath
         await this.plugin.sceneManager.saveProjectFrontmatter(project);
 

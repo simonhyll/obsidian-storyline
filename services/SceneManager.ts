@@ -152,13 +152,14 @@ export class SceneManager implements ISceneStore {
         this.projects.delete(oldPath);
         this.projects.set(newPath, project);
 
-        // Re-derive folder paths from the new file path
+        // Re-derive all folder paths from the new file path using a shared assignment
         const newFolders = deriveProjectFoldersFromFilePath(newPath);
         project.sceneFolder = newFolders.sceneFolder;
         project.characterFolder = newFolders.characterFolder;
         project.locationFolder = newFolders.locationFolder;
         project.codexFolder = newFolders.codexFolder;
         project.notesFolder = newFolders.notesFolder;
+        project.sceneNotesFolder = newFolders.sceneNotesFolder;
         project.archiveFolder = newFolders.archiveFolder;
         project.researchFolder = newFolders.researchFolder;
 
