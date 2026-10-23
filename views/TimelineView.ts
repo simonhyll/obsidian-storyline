@@ -694,16 +694,12 @@ export class TimelineView extends ItemView {
         let laneKeys: string[];
 
         if (isMultiBook) {
-            // Multi-book mode: one lane per selected book
-            const bookTitles = new Map<string, string>();
-            for (const scene of scenes) {
-                const bookId = this.sceneManager.getProjectById(scene.filePath)?.bookId;
-                if (bookId && !bookTitles.has(bookId)) {
-                    const project = this.sceneManager.getProjectById(scene.filePath);
-                    bookTitles.set(bookId, project?.title || bookId);
-                }
-            }
-            laneKeys = Array.from(bookTitles.values()).sort();
+            // Lane identity must be the stable book UUID, not a Scene file path
+            // or Book title (different Books may share the same title).
+            // Include selected Books with no Scenes so their lanes stay visible.
+            laneKeys = Array.from(this.selectedBookIds).filter(
+                bookId => this.sceneManager.getProjectById(bookId) !== null,
+            );
         } else {
             // Single-book mode: use POV/Character/Location grouping
             const laneKeysSet = new Set<string>();
@@ -725,8 +721,11 @@ export class TimelineView extends ItemView {
         corner.textContent = '#';
         for (const lane of laneKeys) {
             const header = grid.createDiv('swimlane-lane-header');
-            header.textContent = lane;
-            header.setAttribute('title', lane);
+            const laneLabel = isMultiBook
+                ? (this.sceneManager.getProjectById(lane)?.title || lane)
+                : lane;
+            header.textContent = laneLabel;
+            header.setAttribute('title', laneLabel);
         }
 
         // ── Render each item in chronological order ──
@@ -827,7 +826,7 @@ export class TimelineView extends ItemView {
 
         // Determine which lane(s) this scene belongs to
         const sceneLaneKeys = isMultiBook
-            ? [this.getSceneBookTitle(scene) || '(unknown)']
+            ? [this.getSceneBookProject(scene)?.bookId || '(unknown)']
             : this.getSceneLaneKeys(scene);
         const sceneKeySet = new Set(sceneLaneKeys);
 
@@ -858,14 +857,10 @@ export class TimelineView extends ItemView {
             seqCell.createSpan({ cls: 'timeline-date-badge timeline-date-unknown', text: 'Undated' });
         }
 
-        // Render event card in the first lane as a shared reference marker
-        for (let i = 0; i < laneKeys.length; i++) {
-            const cell = grid.createDiv('swimlane-lane-cell');
-            if (i === 0) {
-                // Only render the event card in the first lane to avoid duplication
-                this.renderSwimlaneEventCard(cell, event);
-            }
-        }
+        // One event marker spans every Book lane; no duplicate cards.
+        const cell = grid.createDiv('swimlane-lane-cell swimlane-event-shared');
+        cell.setCssStyles({ gridColumn: '2 / -1' });
+        this.renderSwimlaneEventCard(cell, event);
     }
 
     /**
@@ -2561,7 +2556,7 @@ export class TimelineView extends ItemView {
                 this.selectedBookIds.add(project.bookId!);
             } else {
                 // Prevent deselecting the last book — require "Active Book only" instead
-                if (this.selectedBookIds.size === 0) {
+                if (this.selectedBookIds.size <= 1 && this.selectedBookIds.has(project.bookId!)) {
                     checkbox.checked = true;
                     new Notice('At least one book must be selected. Use "Active Book only" to reset.');
                     return;
@@ -2664,15 +2659,20 @@ export class TimelineView extends ItemView {
     /**
      * Get the book title for a scene's originating book.
      */
-    private getSceneBookTitle(scene: Scene): string | null {
-        // Try to find the project that owns this scene by checking scene folder paths
+    private getSceneBookProject(scene: Scene): StoryLineProject | null {
+        // Book identity comes from a boundary-aware source path, never from
+        // a Scene path passed to getProjectById() (which expects a Book UUID).
         for (const project of this.sceneManager.getProjects()) {
-            const folders = deriveProjectFoldersFromFilePath(project.filePath);
-            if (scene.filePath.startsWith(folders.sceneFolder)) {
-                return project.title;
+            const sceneFolder = deriveProjectFoldersFromFilePath(project.filePath).sceneFolder;
+            if (scene.filePath.startsWith(`${sceneFolder}/`)) {
+                return project;
             }
         }
         return null;
+    }
+
+    private getSceneBookTitle(scene: Scene): string | null {
+        return this.getSceneBookProject(scene)?.title ?? null;
     }
 
     /**
