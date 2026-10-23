@@ -1180,6 +1180,17 @@ export class SceneManager implements ISceneStore {
         // snippet into extra keys to merge. StoryLine keys win on conflict.
         const extraFm = isNote ? undefined : this.parseDefaultSceneFrontmatter();
 
+        // Generate stable UUID for the scene if not already provided.
+        // Corkboard notes don't need a stable identity.
+        if (!isNote && !sceneData.id) {
+            sceneData.id = crypto.randomUUID();
+        }
+
+        // Set ownership to the active book if not already provided.
+        if (!isNote && !sceneData.ownerId && this._activeProject?.bookId) {
+            sceneData.ownerId = this._activeProject.bookId;
+        }
+
         // Generate content
         const content = MetadataParser.generateSceneContent(sceneData, undefined, extraFm);
 

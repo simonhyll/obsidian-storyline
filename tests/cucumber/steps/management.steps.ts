@@ -107,6 +107,8 @@ Given('{int} existing event files', async function (this: TestWorld, count: numb
 
 When('I update the date to {string}', async function (this: TestWorld, date: string) {
   if (!this.lastEvent) throw new Error('No event to update');
+  // Store original date for reload verification
+  this.originalDate = this.lastEvent.timeSpan;
   const tss = new TimeSpanService();
   const timeSpan = tss.parse(date);
   if (!timeSpan) throw new Error(`Failed to parse date: ${date}`);
@@ -157,8 +159,8 @@ Then('the event file is removed', function (this: TestWorld) {
   assert.assertFileRemoved(this);
 });
 
-Then('the event is no longer in the timeline', function (this: TestWorld) {
-  assert.assertNotInTimeline(this);
+Then('the event is no longer in the timeline', async function (this: TestWorld) {
+  await assert.assertNotInTimeline(this);
 });
 
 Then('the event owner is the universe', function (this: TestWorld) {

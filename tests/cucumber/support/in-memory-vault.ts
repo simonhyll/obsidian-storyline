@@ -56,6 +56,8 @@ export interface TestVault {
   modify(file: InMemoryFile, content: string): Promise<void>;
   getAbstractFileByPath(path: string): InMemoryFile | null;
   getMarkdownFiles(): InMemoryFile[];
+  /** Create a folder (used by SceneManager.ensureFolder). */
+  createFolder(path: string): Promise<void>;
   /** All stored files (for test assertions). */
   files: Map<string, InMemoryFile>;
   /** All folders that have been created. */
@@ -136,6 +138,10 @@ function buildVault(
     files,
     folders,
     create: async (path: string, content: string): Promise<InMemoryFile> => {
+      // Reject if file already exists — matches Obsidian vault.create() semantics
+      if (files.has(path)) {
+        throw new Error(`File already exists: ${path}`);
+      }
       const file = createInMemoryFile(path, content);
       files.set(path, file);
       ensureParents(path);
@@ -157,6 +163,9 @@ function buildVault(
     },
     getMarkdownFiles: (): InMemoryFile[] => {
       return Array.from(files.values()).filter(f => f.path.endsWith('.md'));
+    },
+    createFolder: async (path: string): Promise<void> => {
+      folders.add(path);
     },
   };
 }
@@ -192,12 +201,28 @@ export function buildMarkdownWithFrontmatter(
   return `---\n${yamlStr}\n---\n${body}`;
 }
 
+/** Minimal fileManager mock for SceneManager tests. */
+export interface FileManagerMock {
+  renameFile(file: InMemoryFile, newPath: string): Promise<void>;
+}
+
 /**
  * Create a minimal App mock that wraps a test vault.
  * Used to construct EventManager/SceneManager instances.
  */
-export type AppMock = { vault: TestVault };
+export type AppMock = { vault: TestVault; fileManager: FileManagerMock };
 
 export function createAppMock(vault: TestVault): AppMock {
-  return { vault };
+  const fileManager: FileManagerMock = {
+    renameFile: async (file: InMemoryFile, newPath: string): Promise<void> => {
+      // Rename file in the vault
+      const content = vault.files.get(file.path)?.content;
+      if (content !== undefined) {
+        vault.files.delete(file.path);
+        const renamed = createInMemoryFile(newPath, content);
+        vault.files.set(newPath, renamed);
+      }
+    },
+  };
+  return { vault, fileManager };
 }

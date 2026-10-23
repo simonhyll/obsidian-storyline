@@ -36,3 +36,9 @@ export function parseYaml(text: string): unknown {
 export function stringifyYaml(obj: unknown): string {
     return yaml.dump(obj);
 }
+
+/** Normalize a file path (matches Obsidian's normalizePath). */
+export function normalizePath(path: string): string {
+    // Simple normalization: remove leading/trailing slashes, collapse double slashes
+    return path.replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
+}

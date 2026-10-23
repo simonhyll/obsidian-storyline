@@ -3,19 +3,21 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-23 (Step 6C.4b.1 — Real EventManager persistence tests)
+> Updated: 2026-10-23 (Step 6C.4b.2 — SceneManager persistence & Scene UUID fix)
 > Total scenarios: 61
 > Total steps: 270
 
-## 6C.4b.1 Update Summary
+## 6C.4b.2 Update Summary
 
-Step 6C.4b.1 repaired the in-memory vault harness and converted Event management scenarios to real persistence integration tests:
+Step 6C.4b.2 fixed a confirmed production bug (Scene UUID/ownership never serialized), hardened all 5 Scene lifecycle scenarios, and improved Event assertions:
 
-1. **Vault harness repaired** — Fixed `exists()` bug that returned true for any child path under an existing folder. Added `TFile` test double so `instanceof TFile` checks pass. Added `js-yaml` as explicit dev dependency.
-2. **Obsidian module mock** — Created `tests/cucumber/support/obsidian-mock.ts` providing `TFile`, `parseYaml`, and `stringifyYaml` at runtime. Patched via `Module._resolveFilename` in hooks.
-3. **EventManager tests hardened** — `management.steps.ts` now uses real `EventManager.createEventFile()`, `saveEvent()`, `deleteEvent()`, and `loadAll()` with the in-memory vault. Assertions verify actual persisted YAML content, UUID round-trips, and file removal.
-4. **Canonical Event persistence** — `events.steps.ts` now uses real `EventManager.createEventFile()` for the canonical Event scenario. Gherkin step responsibilities corrected: Event creation moved from `Then` to `When`.
-5. **Assertion helpers** — Extracted to `tests/cucumber/support/event-assertions.ts` to keep management.steps.ts under 200-line budget.
+1. **Scene UUID production bug fixed** — `MetadataParser.parseContent()` now deserializes `id`, `ownerId`, `introducedIn`. `MetadataParser.generateSceneContent()` now serializes them. `SceneManager.createScene()` now generates UUID via `crypto.randomUUID()` and sets `ownerId` from active book.
+2. **All 5 Scene scenarios hardened** — `scenes.steps.ts` now uses real `SceneManager.createScene()`, `updateScene()`, and `MetadataParser.parseContent()` with in-memory vault. UUID stability verified via persistence round-trip.
+3. **Event assertions improved** — `assertDateUpdated()` does true persistence reload via fresh EventManager. `assertNotInTimeline()` verifies fresh reload excludes deleted events. `assertFileRePersisted()` checks content changed.
+4. **Vault duplicate protection** — `create()` now throws if file already exists, matching Obsidian semantics.
+5. **BDD audit arithmetic corrected** — Per-feature totals reconciled: 41 production-backed (not 44), 20 deferred (not 18).
+6. **Obsidian mock extended** — Added `normalizePath`, `createFolder`, `fileManager.renameFile` for SceneManager support.
+7. **Cucumber config fixed** — `hooks.ts` now loaded first via explicit `--require` to ensure obsidian module mock is installed before any step definitions load.
 
 ## 6C.4a Historical Summary
 
@@ -130,14 +132,14 @@ This feature has 5 regular Scenarios and 2 Scenario Outlines (each with 3 exampl
 
 | # | Scenario | Production Module | When Invokes Production? | Assertions Observe Results? | Coverage | Risk |
 |---|---|---|---|---|---|---|
-| 1 | Create scene in active book | `vault-fixture.ts` | **Partial** — uses `createScene` fixture | **Partial** — checks path prefix | Fixture-only | Medium |
-| 2 | No active book → error | Test-only logic | **No** — test sets error directly | **Yes** — checks error exists | Simulated | Medium |
-| 3 | Scene metadata preserved | `vault-fixture.ts` | **No** — no-op reload step | **No** — checks fixture data | Fixture-only | Medium |
-| 4 | Scene ordering | `vault-fixture.ts` | **No** — no-op view step | **Partial** — checks fixture dates | Fixture-only | Medium |
-| 5 | UUID stability | Test-only | **No** — no-op update step | **No** — checks stored UUID | Fixture-only | Medium |
+| 1 | Create scene in active book | `SceneManager.ts` | **Yes** — `createScene()` | **Yes** — checks path, UUID, ownership | Production-backed | Low |
+| 2 | No active book → error | `SceneManager.ts` | **Yes** — `createScene()` | **Yes** — checks error recorded | Production-backed | Low |
+| 3 | Scene metadata preserved | `SceneManager.ts` | **Yes** — `createScene()` + reload | **Yes** — reloads from vault | Production-backed | Low |
+| 4 | Scene ordering | `SceneManager.ts` | **Yes** — creates out of order | **Yes** — checks sorted order | Production-backed | Low |
+| 5 | UUID stability | `SceneManager.ts` | **Yes** — `updateScene()` | **Yes** — reloads and compares UUID | Production-backed | Low |
 
-**Summary:** 0 production-backed, 0 partially backed, 5 fixture-only/simulated, 0 no-op.
-**Action:** **Deferred to 6C.4.** Record findings; prioritize for next hardening step.
+**Summary:** 5 production-backed, 0 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
+**Action:** **Hardened in 6C.4b.2.** All 5 scenarios now exercise real SceneManager with in-memory vault. Scene UUID production bug fixed: `MetadataParser` now serializes/deserializes `id`, `ownerId`, `introducedIn`; `SceneManager.createScene()` generates UUID and sets ownership.
 
 ---
 
@@ -203,28 +205,31 @@ This feature has 5 regular Scenarios and 2 Scenario Outlines (each with 3 exampl
 ---
 
 
-## Overall Summary (after 6C.4b.1)
+## Overall Summary (after 6C.4b.2)
 
 Scenario inventory: 61 scenarios across 9 feature files, 270 steps.
 
+Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) + timespan(11) + scenes(5) + hierarchy(0) + management(7) + ownership(1) + export(0) = **46 production-backed**.
+
 | Coverage Level | Count | Percentage |
 |---|---|---|
-| Production-backed | 44 | 72% |
+| Production-backed | 46 | 75% |
 | Partially backed | 3 | 5% |
-| Fixture-only | 8 | 13% |
-| Simulated | 4 | 7% |
-| No-op | 2 | 3% |
+| Fixture-only | 3 | 5% |
+| Simulated | 6 | 10% |
+| No-op | 3 | 5% |
 | **Total** | **61** | **100%** |
 
-### Changes from 6C.4a → 6C.4b.1
+### Changes from 6C.4b.1 → 6C.4b.2
 
 | Feature | Change |
 |---|---|
-| `management.feature` | All 7 scenarios now production-backed (was 5 prod + 2 partial) |
-| `ownership.feature` | Canonical Event persistence now production-backed (was partial) |
-| Steps | 270 steps (was 271; merged ownership scenario steps) |
+| `scenes.feature` | All 5 scenarios now production-backed (was 0) |
+| `management.feature` | Assertions improved: true reload, content verification |
+| `ownership.feature` | Scene safety still fixture-based (deferred) |
+| Production bug | Scene UUID/ownership serialization fixed in MetadataParser + SceneManager |
 
-### Scenarios Hardened in 6C.3 / 6C.3b / 6C.4a / 6C.4b.1
+### Scenarios Hardened in 6C.3 / 6C.3b / 6C.4a / 6C.4b.1 / 6C.4b.2
 
 | Feature | Scenarios | Status |
 |---|---|---|
@@ -232,21 +237,21 @@ Scenario inventory: 61 scenarios across 9 feature files, 270 steps.
 | `creation.feature` | 9 | 8 production-backed, 1 partial (cancellation) |
 | `navigation.feature` | 8 | All production-backed |
 | `timespan.feature` | 11 | All production-backed |
+| `scenes.feature` | 5 | All production-backed (new in 6C.4b.2) |
 | `management.feature` | 7 | All production-backed (new in 6C.4b.1) |
 | `ownership.feature` | 1 | Canonical Event persistence (new in 6C.4b.1) |
-| **Total hardened** | **43** | — |
+| **Total hardened** | **48** | — |
 
-### Scenarios Deferred to Step 6C.4b.2
+### Scenarios Deferred to Step 6C.4b.2 / 6C.4b.3
 
 | Feature | Scenarios | Issues |
 |---|---|---|
-| `scenes.feature` | 5 | Fixture-only, no production SceneManager tested |
 | `hierarchy.feature` | 7 | Simulated migration/restore, fixture-only |
-| `ownership.feature` | 2 | Scene safety manual, cancellation simulated |
+| `ownership.feature` | 2 | Scene safety fixture-based, cancellation simulated |
 | `export.feature` | 4 | All simulated or no-op |
 | `changelog.feature` | 1 | Tag protection simulates CLI error |
 | `creation.feature` | 1 | Cancellation simulates modal flag |
-| **Total deferred** | **18** | — |
+| **Total deferred** | **15** | — |
 
 ### Configuration Resolution
 

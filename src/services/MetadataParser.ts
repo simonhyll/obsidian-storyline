@@ -139,6 +139,9 @@ export class MetadataParser {
         return {
             filePath,
             type: 'scene',
+            id: frontmatter.id ? String(frontmatter.id) : undefined,
+            ownerId: frontmatter.ownerId ? String(frontmatter.ownerId) : undefined,
+            introducedIn: frontmatter.introducedIn ? String(frontmatter.introducedIn) : undefined,
             title: frontmatter.title || this.titleFromPath(filePath),
             act: frontmatter.act,
             chapter: frontmatter.chapter,
@@ -417,6 +420,9 @@ export class MetadataParser {
             title: scene.title || 'Untitled Scene',
         };
 
+        if (scene.id) fm.id = scene.id;
+        if (scene.ownerId) fm.ownerId = scene.ownerId;
+        if (scene.introducedIn) fm.introducedIn = scene.introducedIn;
         if (scene.act !== undefined) fm.act = scene.act;
         if (scene.chapter !== undefined) fm.chapter = scene.chapter;
         if (scene.sequence !== undefined) fm.sequence = scene.sequence;

@@ -105,4 +105,18 @@ export interface TestWorld {
   eventManager?: import('../../../src/services/EventManager').EventManager;
   /** Events folder path for persistence tests */
   eventsFolder?: string;
+  /** Original date before update (for reload verification) */
+  originalDate?: TimeSpan;
+  /** SceneManager instance for scene persistence tests */
+  sceneManager?: import('../../../src/services/SceneManager').SceneManager;
+  /** Scene file path for persistence tests */
+  sceneFilePath?: string;
+  /** Scene ID for persistence tests */
+  sceneId?: string;
+  /** Scene date for persistence tests */
+  sceneDate?: string;
+  /** Scene count for ordering tests */
+  sceneCount?: number;
+  /** Original scene content for update verification */
+  sceneOriginalContent?: string;
 }
