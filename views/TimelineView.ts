@@ -20,6 +20,7 @@ import { parseSceneLocations } from '../services/MetadataParser';
 import { deriveProjectFoldersFromFilePath, type StoryLineProject } from '../models/StoryLineProject';
 import type { Event } from '../models/Event';
 import type { TimeSpan, Timestamp } from '../models/TimeSpan';
+import type { TimelineNavigationService } from '../services/TimelineNavigationService';
 
 /**
  * Timeline ordering mode
@@ -286,6 +287,9 @@ export class TimelineView extends ItemView {
             this.refreshTimeline(container);
         });
 
+        // Time navigation controls
+        this.renderTimeNavigation(controls);
+
         // Refresh button
         const refreshBtn = controls.createEl('button', {
             cls: 'clickable-icon',
@@ -344,6 +348,9 @@ export class TimelineView extends ItemView {
 
         // Cancel if a newer render started while we were loading
         if (this.renderGeneration !== generation) return;
+
+        // Update navigation service with current items
+        this.plugin.timelineNavigationService.updateItems(scenes, events);
 
         // In multi-book reading order, force chronological
         const effectiveOrder = this.isMultiBookMode() ? 'chronological' : this.timelineOrder;
@@ -750,6 +757,73 @@ export class TimelineView extends ItemView {
             } else if (item.kind === 'event') {
                 this.renderSwimlaneEventRow(grid, item.event, laneKeys);
             }
+        }
+    }
+
+    /**
+     * Render time navigation controls in the toolbar.
+     */
+    private renderTimeNavigation(controls: HTMLElement): void {
+        const navContainer = controls.createDiv('story-line-time-nav');
+
+        // Previous item button
+        const prevBtn = navContainer.createEl('button', {
+            cls: 'clickable-icon',
+        });
+        obsidian.setIcon(prevBtn, 'chevron-left');
+        attachTooltip(prevBtn, 'Previous item');
+        prevBtn.addEventListener('click', () => {
+            const item = this.plugin.timelineNavigationService.navigatePrevious();
+            if (item) {
+                new Notice(`Navigated to ${item.scene ? item.scene.title : item.event?.name || 'undated item'}`);
+                this.refresh();
+            }
+        });
+
+        // Jump to date input
+        const jumpContainer = navContainer.createDiv('story-line-jump-to-date');
+        const yearInput = jumpContainer.createEl('input', {
+            type: 'number',
+            attr: { placeholder: 'Year', 'aria-label': 'Jump to year' },
+            cls: 'story-line-year-input',
+        });
+        yearInput.addEventListener('keydown', (e: KeyboardEvent) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const year = parseInt(yearInput.value, 10);
+                if (!isNaN(year)) {
+                    this.plugin.timelineNavigationService.jumpToDate(year);
+                    this.refresh();
+                }
+            }
+        });
+
+        // Next item button
+        const nextBtn = navContainer.createEl('button', {
+            cls: 'clickable-icon',
+        });
+        obsidian.setIcon(nextBtn, 'chevron-right');
+        attachTooltip(nextBtn, 'Next item');
+        nextBtn.addEventListener('click', () => {
+            const item = this.plugin.timelineNavigationService.navigateNext();
+            if (item) {
+                new Notice(`Navigated to ${item.scene ? item.scene.title : item.event?.name || 'undated item'}`);
+                this.refresh();
+            }
+        });
+
+        // Current time period display
+        const periodDisplay = navContainer.createSpan({
+            cls: 'story-line-time-period',
+            text: '',
+        });
+        periodDisplay.setAttr('title', 'Current visible time period');
+
+        // Update the period display
+        const state = this.plugin.timelineNavigationService.getState();
+        if (state.visibleRange) {
+            const { start, end } = state.visibleRange;
+            periodDisplay.setText(`${start.year} — ${end.year}`);
         }
     }
 

@@ -9079,6 +9079,48 @@ body /* Clamp title on mobile too, in case it's very long */
     gap: 4px;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   Time Navigation Controls
+   ═══════════════════════════════════════════════════════════ */
+
+.story-line-time-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    padding-left: 8px;
+    border-left: 1px solid var(--background-modifier-border);
+}
+
+.story-line-jump-to-date {
+    display: flex;
+    align-items: center;
+}
+
+.story-line-year-input {
+    width: 60px;
+    padding: 2px 4px;
+    font-size: 12px;
+    text-align: center;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background-color: var(--background-primary);
+    color: var(--text-normal);
+}
+
+.story-line-year-input:focus {
+    border-color: var(--interactive-accent);
+    outline: none;
+}
+
+.story-line-time-period {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 0 4px;
+    min-width: 80px;
+    text-align: center;
+}
+
 /*
  * Codex / Character / Location detail forms: on phones the side
  * panel stacks below the form. Make sure the form area scrolls
