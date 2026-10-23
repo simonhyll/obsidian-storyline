@@ -3,11 +3,22 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-24 (Step 6C.4b.3b.4 — Final migration integrity gate)
+> Updated: 2026-10-24 (Step 6C.4b.3b.5 — Test-first migration safety closure)
 > Total scenarios: 62
 > Total steps: 276
 
-## 6C.4b.3b.4 Update Summary
+## 6C.4b.3b.5 Update Summary
+
+Step 6C.4b.3b.5 created test-first integration evidence for migration safety and closed two remaining data-loss paths:
+
+1. **Migration integration tests** — Created `migration-integration-tests.ts` with 23 focused tests covering malformed System JSON, malformed plotgrid, pending legacy data across settings saves, and project color round-trip. Runs at test bootstrap via `BeforeAll` hook.
+2. **RED evidence captured** — Two failures observed before fixes: (a) `mergePlotgridData` allowed overwriting malformed existing files, (b) `saveSettings` merge order overwrote persisted legacy data with empty in-memory defaults.
+3. **mergePlotgridData fixed** — Now returns `null` for malformed existing files (previously allowed overwrite). Extracted `parsePlotgridExisting()` helper to meet complexity budget.
+4. **saveSettings merge order fixed** — Changed from `{ ...persisted, ...this.settings }` to `{ ...this.settings, ...persisted }` so persisted legacy values survive settings save calls.
+5. **parseExisting exported** — Added `parseExisting` to the re-exports in `legacyMigration.ts` for test access.
+6. **Architecture** — 1,164 violations (delta 0 from baseline).
+
+## 6C.4b.3b.4 Historical Summary
 
 Step 6C.4b.3b.4 closed the remaining migration data-loss paths and restored the architecture budget:
 
@@ -371,6 +382,17 @@ The `runVaultHarnessTests()` function runs at test bootstrap and verifies:
 - `exists()` returns false for nonexistent child paths
 - File removal actually removes files
 - `adapter.list()` returns only immediate children
+
+### Migration Safety Integration Tests
+
+The `runMigrationIntegrationTests()` function runs at test bootstrap and verifies 23 assertions:
+- Malformed existing System JSON is not overwritten by merge helpers
+- Malformed plotgrid destination is not overwritten
+- Pending legacy data survives settings merge (persisted values win over empty defaults)
+- Malformed System files are detected as parse failures
+- `useProjectColors` → `projectColors` round-trip preserves color settings
+- Existing `projectColors` take precedence over legacy migration
+- `parseExisting()` correctly handles null, empty, valid, array, and malformed inputs
 
 ### Configuration Resolution
 

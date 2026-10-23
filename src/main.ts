@@ -688,9 +688,13 @@ export default class SceneCardsPlugin extends Plugin {
         setWordcountLocale(normalizeStoryLineLocale(this.sceneManager?.getEffectiveLocale() ?? this.settings.defaultProjectLanguage));
 
         const persisted = await this.loadData();
+        // Merge order matters: in-memory settings first, then persisted data on top.
+        // This ensures that unresolved legacy values in data.json (e.g., characterAliases
+        // that failed to migrate) are not overwritten by empty defaults loaded into
+        // this.settings when System/ files failed to parse.
         const toSave: Record<string, unknown> = {
-            ...(persisted && typeof persisted === 'object' ? persisted : {}),
             ...this.settings,
+            ...(persisted && typeof persisted === 'object' ? persisted : {}),
         };
 
         if (this._systemMigrationDone) {

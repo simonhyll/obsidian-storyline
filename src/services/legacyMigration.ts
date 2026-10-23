@@ -27,6 +27,7 @@ export {
   mergeCharacterData,
   mergeStatsData,
   mergeCustomSectionsData,
+  parseExisting,
   deriveSystemFolder,
   deriveSystemFolderFromProjectFile,
 } from './legacyMigration.helpers';

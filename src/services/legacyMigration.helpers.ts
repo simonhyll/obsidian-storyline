@@ -97,6 +97,10 @@ export function getKeysForSystemFile(systemFile: string): string[] {
 
 /**
  * Merge legacy plotgrid data into System/plotgrid.json.
+ *
+ * If the existing file is malformed (nonempty but unparseable), returns null
+ * to signal that the merge should be deferred — the existing file must not be
+ * overwritten with potentially incomplete data.
  */
 export function mergePlotgridData(
   legacyData: Record<string, unknown>,
@@ -105,18 +109,29 @@ export function mergePlotgridData(
   const hasLegacy = 'rows' in legacyData || 'columns' in legacyData || 'cells' in legacyData;
   if (!hasLegacy) return null;
 
-  let existingHasData = false;
-  if (existingContent) {
-    try {
-      const existing: Record<string, unknown> = JSON.parse(existingContent) as Record<string, unknown>;
-      existingHasData = Object.keys(existing).length > 0;
-    } catch {
-      // Unreadable — allow overwrite
-    }
+  const existing = parsePlotgridExisting(existingContent);
+  if (existing === null) {
+    // No file or malformed — malformed means defer, no file means proceed.
+    if (existingContent !== null) return null;
+    return buildPlotgridData(legacyData);
   }
-  if (existingHasData) return null;
-
+  // Existing file has meaningful data — do not overwrite.
+  if (Object.keys(existing).length > 0) return null;
   return buildPlotgridData(legacyData);
+}
+
+/**
+ * Parse existing plotgrid JSON, returning null if malformed or missing.
+ */
+function parsePlotgridExisting(content: string | null): Record<string, unknown> | null {
+  if (!content) return null;
+  try {
+    const parsed: unknown = JSON.parse(content);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    return parsed as Record<string, unknown>;
+  } catch {
+    return null;
+  }
 }
 
 function buildPlotgridData(legacyData: Record<string, unknown>): Record<string, unknown> {
