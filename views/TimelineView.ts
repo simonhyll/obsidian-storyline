@@ -63,6 +63,14 @@ export class TimelineView extends ItemView {
     /** Popover element for the book selector dropdown */
     private bookSelectorPopover: HTMLElement | null = null;
     private bookSelectorButton: HTMLElement | null = null;
+    /** One document listener per view, removed when the view closes. */
+    private readonly onBookSelectorDocumentClick = (e: MouseEvent): void => {
+        const popover = this.bookSelectorPopover;
+        if (popover && !popover.contains(e.target as Node) &&
+            !this.bookSelectorButton?.contains(e.target as Node)) {
+            this.closeBookSelectorPopover();
+        }
+    };
 
     constructor(leaf: WorkspaceLeaf, plugin: SceneCardsPlugin, sceneManager: SceneManager) {
         super(leaf);
@@ -98,10 +106,18 @@ export class TimelineView extends ItemView {
         this.rootContainer = container;
 
         await this.sceneManager.initialize();
+        document.removeEventListener('click', this.onBookSelectorDocumentClick);
+        document.addEventListener('click', this.onBookSelectorDocumentClick);
         this.renderView(container);
     }
 
-    async onClose(): Promise<void> {}
+    async onClose(): Promise<void> {
+        // The popover lives under document.body, outside the Obsidian leaf.
+        this.closeBookSelectorPopover();
+        this.bookSelectorButton = null;
+        document.removeEventListener('click', this.onBookSelectorDocumentClick);
+        this.renderGeneration++;
+    }
 
     private isNoteScene(scene: Scene): boolean {
         const value: unknown = (scene as Scene & { corkboardNote?: unknown }).corkboardNote;
@@ -113,6 +129,9 @@ export class TimelineView extends ItemView {
     }
 
     private renderView(container: HTMLElement): void {
+        // Refresh destroys the old toolbar but not its document.body popover.
+        this.closeBookSelectorPopover();
+        this.bookSelectorButton = null;
         container.empty();
 
         // Toolbar
@@ -2222,12 +2241,6 @@ export class TimelineView extends ItemView {
             this.toggleBookSelectorPopover(btn);
         });
 
-        // Close popover on outside click
-        document.addEventListener('click', (e) => {
-            if (this.bookSelectorPopover && !this.bookSelectorPopover.contains(e.target as Node) && !btn.contains(e.target as Node)) {
-                this.closeBookSelectorPopover();
-            }
-        });
     }
 
     /**
@@ -2373,6 +2386,10 @@ export class TimelineView extends ItemView {
                 standaloneBooks.push(project);
             }
         }
+
+        // A refresh/close can remove this body-level popover while names load.
+        // Never resurrect or repopulate a stale detached popover.
+        if (this.bookSelectorPopover !== popover || !popover.isConnected) return;
 
         // Clear loading state
         popover.empty();
