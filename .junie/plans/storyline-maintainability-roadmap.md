@@ -1,10 +1,10 @@
 # StoryLine — Maintainability & Tooling Roadmap
 
-Status: **planned**, not implemented. Owner: development team / Junie. Target branch: `feat/rework`.
+Status: **in progress**. Steps 1A/1B (focused quality cleanup) and Step 2 (source/distribution layout) implemented; Steps 3–5 pending. Owner: development team / Junie. Target branch: `feat/rework`.
 
 Created after Phase 3 Milestone 2B, commit `516bc72`. This roadmap addresses technical debt before Saved Views expands view-state, persistence and UI complexity.
 
-## Evidence from the current repository
+## Historical baseline (before the modernization)
 
 - TypeScript lives at repository root (`main.ts`, `settings.ts`, `constants.ts`) and in top-level `components/`, `models/`, `services/`, `utils/`, `views/`.
 - `esbuild.config.mjs` bundles `main.ts` to **root `main.js`**; the Obsidian manifest's `main` is `main.js`.
@@ -94,6 +94,8 @@ versions.json
 - Treat `dist/` as disposable generated output and add it to `.gitignore` **after** the CI/release/vault processes are updated to build their own dist output. Remove previously tracked root build artefacts (`main.js`, `styles.css`, `manifest.json`) in the same verified migration; never delete or change `assets/manifest.json` accidentally. Do not include generated bundles in ordinary feature commits.
 - Never change the vault folder structure or move user manuscript files as part of this refactor.
 - Acceptance: build produces all three files under `dist/` and no distributable files at repository root; all existing tests pass; vault-install/watch installs exactly `dist/` contents into Obsidian's normal flat plugin folder; CI uploads `dist/` artifacts; manual GitHub Release uploads the three correctly named files (without a nested dist directory); metadata checks read `assets/manifest.json` and `dist/manifest.json`; no behavioral changes to the bundle.
+
+**Step 2 implementation report (2026-10-23):** Commits `50f5915` and `6ab211e` moved 97 TS source files to `src/`, `manifest.json` to `assets/`, CSS source to `src/styles/legacy.css` and generated plugin artifacts to `dist/`. The GitHub CI run for `6ab211e` initially failed incremental lint due to newly modified source-read lines in two test files; typed `node:fs` imports were added in subsequent fixes. The dev-mode `esbuild` asset watcher and `DEVELOPMENT.md` were also corrected subsequently. Preserve these fixes before Step 3. **CI/test success does not establish an actual Obsidian desktop smoke test** unless separately reported.
 
 ### 3. Adopt modular SCSS with one output file
 
