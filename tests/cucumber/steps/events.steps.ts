@@ -4,9 +4,9 @@
  */
 import { Given, When, Then } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
-import { TimeSpanService } from '../../src/services/TimeSpanService';
-import { createEvent } from '../../src/models/Event';
-import type { StoryLineProject } from '../../src/models/StoryLineProject';
+import { TimeSpanService } from '../../../src/services/TimeSpanService';
+import { createEvent } from '../../../src/models/Event';
+import type { StoryLineProject } from '../../../src/models/StoryLineProject';
 
 Given('the author has a Universe with an Events folder', function (this: TestWorld) {
   this.universeId = 'universe-test';

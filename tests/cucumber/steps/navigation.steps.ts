@@ -4,8 +4,8 @@
  */
 import { Given, When, Then } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
-import { TimeSpanService } from '../../src/services/TimeSpanService';
-import { TimelineNavigationService } from '../../src/services/TimelineNavigationService';
+import { TimeSpanService } from '../../../src/services/TimeSpanService';
+import { TimelineNavigationService } from '../../../src/services/TimelineNavigationService';
 import { createScene, createBook } from '../support/vault-fixture';
 
 Given('the timeline contains {int} scenes', function (this: TestWorld, count: number) {

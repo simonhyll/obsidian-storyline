@@ -39,7 +39,7 @@ export default defineConfig([
   },
   {
     // Cucumber test files: keep structural budgets, relax safety rules for mocks.
-    files: ["features/**/*.ts"],
+    files: ["tests/cucumber/**/*.ts"],
     rules: {
       "eslint-comments/disable-enable-pair": "off",
       "eslint-comments/no-unused-disable": "off",

@@ -4,9 +4,9 @@
  */
 import { Given, When, Then } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
-import { TimeSpanService } from '../../src/services/TimeSpanService';
-import { createEvent } from '../../src/models/Event';
-import type { Event } from '../../src/models/Event';
+import { TimeSpanService } from '../../../src/services/TimeSpanService';
+import { createEvent } from '../../../src/models/Event';
+import type { Event } from '../../../src/models/Event';
 
 Given('I create an event named {string} with date {string}', function (this: TestWorld, name: string, date: string) {
   this.universeId = 'universe-test';

@@ -74,9 +74,10 @@ assets/
   images/             # shipped source images/icons, if any
   templates/          # resource files only if actually bundled/used
 tests/
-  __mocks__/
-  features/           # later Cucumber pilot
+  cucumber/           # Cucumber BDD: steps, support, config
+  __mocks__/          # Obsidian API mocks (if needed)
 scripts/
+features/              # Gherkin .feature specifications only (human-readable)
 dist/                  # generated plugin distribution; ignored by git
   main.js
   styles.css
@@ -112,18 +113,17 @@ versions.json
 - Keep generated `dist/styles.css` untracked with the rest of `dist/`; CI and release builds must regenerate it deterministically, not assume tracked output. Obsidian never reads `.scss` directly.
 - Acceptance: `dist/styles.css` compiles deterministically, a documented smoke checklist across desktop/mobile views passes, existing CSS behavior is preserved, and CI/release/vault sync continue to work.
 
-### 4. Add Cucumber for real acceptance scenarios; retain Vitest for unit/service tests
+### 4. Cucumber BDD as the primary test framework
 
-**Do not wholesale replace Vitest.** Cucumber/Gherkin describes feature behavior; the step definitions still require a meaningful integration harness.
+**Cucumber/Gherkin is now the sole automated test framework.** Vitest was removed in Step 6C.
 
-- Introduce `@cucumber/cucumber` for a small BDD pilot, with `tests/features/**/*.feature`, step definitions and a documented `pnpm test:bdd` command.
-- Keep Vitest (`pnpm test`) for TimeSpan arithmetic, parsers, metadata/UUID rules, and other fast isolated service tests.
-- The first feature should cover: select Books A+B in one Universe, Event X from a sibling scope, confirm chronological Timeline, jump to an empty year, create a canonical Event, verify one persisted file and correct ownership; ensure wrong-universe Book cannot be selected.
-- Step definitions MUST invoke production services and, when claiming a UI behavior, a real rendered view or appropriate Obsidian integration harness. Assertions on local test-only state or duplicated algorithms are **not** acceptance tests.
+- Gherkin specifications live in `features/` (human-readable, used for future documentation).
+- Executable test infrastructure lives in `tests/cucumber/` (steps, support, config).
+- `pnpm test` and `pnpm test:bdd` both run the Cucumber suite via `tests/cucumber/cucumber.config.js`.
+- `pnpm verify:feature-layout` enforces that `features/` contains only `.feature` files.
+- Step definitions MUST invoke production services and, when claiming a UI behavior, a real rendered view or appropriate Obsidian integration harness.
 - Use a disposable test vault with fixture data. Never run mutating scenarios against the only authoring vault.
-- Capture why a desktop/electron Obsidian smoke test might still be required if mocks cannot reproduce real DOM/workspace behavior.
-- Evaluate pilot maintenance and signal before expanding Cucumber to more scenarios. Do not translate 400+ existing unit tests into prose merely to increase BDD test counts.
-- Acceptance: reliable, failing-on-regression end-to-end-ish acceptance tests executed in CI, plus fast Vitest suite intact.
+- Acceptance: 61 scenarios, 271 steps, all passing in CI.
 
 ### 5. Commit-driven changelog automation
 
@@ -155,13 +155,13 @@ Do not repeat blanket suppression as a permanent fix. Audit Obsidian ESLint pres
 2. Do quality/typecheck/lint cleanup and CI gating; finish and verify it.
 3. Move TS to `src/`, source manifest/assets to `assets/`, and generated plugin outputs to `dist/`; migrate CI, release and vault sync together. Finish and verify it.
 4. Split stylesheet into SCSS modules and compile to `dist/styles.css`. Finish and verify it.
-5. Add a Cucumber acceptance pilot while retaining Vitest.
+5. Replace Vitest with Cucumber-only BDD testing (Step 6C).
 6. Introduce Conventional Commits / generated changelog workflow without changing release publication.
 7. **Step 6A:** establish hard structural budgets, accurate architecture-debt baseline, whole-file/function CI regression gate and safe autofix verification.
 8. **Step 6B:** progressively decompose the monoliths with meaningful JSDoc and no behavioral changes until architectural budgets are met.
 9. Resume Saved Views after the architecture checkpoints are complete.
 
-**Every stage:** run build, Vitest, the applicable BDD tests, lint, typecheck and a disposable-vault smoke test where behavior or packaging may change. Report failures honestly with new-vs-existing provenance. Verify the latest two commits and remote HEAD before and after work. Commit and push actual code, not only updates to a planning checkbox.
+**Every stage:** run build, Cucumber tests, lint, typecheck and a disposable-vault smoke test where behavior or packaging may change. Report failures honestly with new-vs-existing provenance. Verify the latest two commits and remote HEAD before and after work. Commit and push actual code, not only updates to a planning checkbox.
 
 ## Deferred product and ecosystem plans (planning only)
 

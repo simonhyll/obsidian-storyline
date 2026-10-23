@@ -4,8 +4,8 @@
  */
 import { Given, When, Then } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
-import { executeCreation, CreationValidationError } from '../../src/services/projectCreation';
-import type { ProjectType, ProjectCreationDeps, CreationFormState } from '../../src/services/projectCreation';
+import { executeCreation, CreationValidationError } from '../../../src/services/projectCreation';
+import type { ProjectType, ProjectCreationDeps, CreationFormState } from '../../../src/services/projectCreation';
 import { createBook } from '../support/vault-fixture';
 
 Given('I enter a book title {string}', function (this: TestWorld, title: string) {

@@ -2,12 +2,12 @@
  * Cucumber test world — holds per-scenario state.
  * All mutable state lives here; step definitions must NOT use module-level variables.
  */
-import type { TimelineNavItem } from '../../src/services/TimelineNavigationService';
-import type { Event } from '../../src/models/Event';
-import type { Scene } from '../../src/models/Scene';
-import type { StoryLineProject } from '../../src/models/StoryLineProject';
-import type { TimeSpan } from '../../src/models/TimeSpan';
-import type { CreationFormState } from '../../src/services/projectCreation';
+import type { TimelineNavItem } from '../../../src/services/TimelineNavigationService';
+import type { Event } from '../../../src/models/Event';
+import type { Scene } from '../../../src/models/Scene';
+import type { StoryLineProject } from '../../../src/models/StoryLineProject';
+import type { TimeSpan } from '../../../src/models/TimeSpan';
+import type { CreationFormState } from '../../../src/services/projectCreation';
 
 export interface TestWorld {
   /** Scenes created during the scenario */

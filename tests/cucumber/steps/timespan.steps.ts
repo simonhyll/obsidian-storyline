@@ -4,8 +4,8 @@
  */
 import { Given, When, Then } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
-import { TimeSpanService } from '../../src/services/TimeSpanService';
-import type { TimeSpan } from '../../src/models/TimeSpan';
+import { TimeSpanService } from '../../../src/services/TimeSpanService';
+import type { TimeSpan } from '../../../src/models/TimeSpan';
 
 Given('I parse the date {string}', function (this: TestWorld, dateStr: string) {
   const tss = new TimeSpanService();

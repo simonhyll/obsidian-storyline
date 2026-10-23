@@ -42,7 +42,7 @@
   },
   "include": [
     "src/**/*.ts",
-    "features/**/*.ts"
+    "tests/**/*.ts"
   ],
   "exclude": [
     "node_modules",

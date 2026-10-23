@@ -123,7 +123,7 @@ Every wave must:
 - Add meaningful JSDoc to extracted exported/public functions, classes and critical public data types; document parameter ownership and error/cancellation behavior without restating obvious TypeScript types.
 - Verify all newly extracted files <=200 effective LOC, functions <=50 effective LOC, complexity <=10, depth <=3 and statement/parameter budgets, with no permanent exceptions.
 - Recalculate architecture debt and **demonstrate a monotonic reduction** in remaining violations. Delete resolved baseline entries rather than relaxing limits.
-- Run build, Vitest, Cucumber, typecheck (zero errors), CSS regression, changelog checks, incremental lint, architecture regression gate and a disposable-vault smoke test for UI-affecting changes.
+- Run build, Cucumber tests, typecheck (zero errors), CSS regression, changelog checks, incremental lint, architecture regression gate and a disposable-vault smoke test for UI-affecting changes.
 - Use Conventional Commits, push to `feat/rework`, check GitHub Actions and stop at the end of each agreed wave. No giant repo-wide rewrite, and no unrelated feature work.
 
 ## Exit criteria

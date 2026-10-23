@@ -4,13 +4,13 @@
  */
 import { Given, When, Then } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
-import { TimeSpanService } from '../../src/services/TimeSpanService';
-import { TimelineNavigationService } from '../../src/services/TimelineNavigationService';
-import type { Scene } from '../../src/models/Scene';
-import type { Event } from '../../src/models/Event';
-import { deriveProjectFoldersFromFilePath } from '../../src/models/StoryLineProject';
-import type { StoryLineProject } from '../../src/models/StoryLineProject';
-import { createEvent } from '../../src/models/Event';
+import { TimeSpanService } from '../../../src/services/TimeSpanService';
+import { TimelineNavigationService } from '../../../src/services/TimelineNavigationService';
+import type { Scene } from '../../../src/models/Scene';
+import type { Event } from '../../../src/models/Event';
+import { deriveProjectFoldersFromFilePath } from '../../../src/models/StoryLineProject';
+import type { StoryLineProject } from '../../../src/models/StoryLineProject';
+import { createEvent } from '../../../src/models/Event';
 
 function makeScene(title: string, storyDate: string, bookId: string, filePath: string): Scene {
   return {

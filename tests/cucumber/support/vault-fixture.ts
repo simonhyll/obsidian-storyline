@@ -1,11 +1,11 @@
 /**
  * Vault fixture — creates test fixtures for StoryLine vault structures.
  */
-import type { StoryLineProject } from '../../src/models/StoryLineProject';
-import { deriveProjectFoldersFromFilePath } from '../../src/models/StoryLineProject';
-import type { Scene } from '../../src/models/Scene';
-import type { Event } from '../../src/models/Event';
-import { createEvent } from '../../src/models/Event';
+import type { StoryLineProject } from '../../../src/models/StoryLineProject';
+import { deriveProjectFoldersFromFilePath } from '../../../src/models/StoryLineProject';
+import type { Scene } from '../../../src/models/Scene';
+import type { Event } from '../../../src/models/Event';
+import { createEvent } from '../../../src/models/Event';
 
 /**
  * Create a test book/project fixture.

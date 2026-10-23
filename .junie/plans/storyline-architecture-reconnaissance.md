@@ -1423,7 +1423,7 @@ Requested technical improvements, grouped into independent, verifiable stages:
 - [ ] Fix existing TypeScript errors, tighten typing/linting incrementally, and enforce CI checks on development branch without hiding a historical baseline.
 - [ ] Move TypeScript source to `src/`, put authoritative source manifest/assets in `assets/`, and generate ONLY `dist/main.js`, `dist/styles.css`, `dist/manifest.json`. Migrate vault sync, CI and release paths. Installed Obsidian plugin folder still has the three files flat at its root.
 - [ ] Convert monolithic CSS to modular SCSS source, compiled as `dist/styles.css` with working dev/release/vault watchers.
-- [ ] Introduce **Cucumber BDD for real user acceptance flows**, retaining Vitest for fast unit/service tests; use production APIs and safe test vaults.
+- [x] Replace Vitest with **Cucumber BDD as the sole test framework**; Gherkin specs in `features/`, test infrastructure in `tests/cucumber/`.
 - [ ] Introduce **Conventional Commits and automatically generated changelog entries** without automatically releasing new plugin versions or modifying published tags.
 - [ ] Resume **Phase 3 Saved Views** after the structural and quality prerequisites have passed.
 
@@ -1437,5 +1437,5 @@ Do not combine the entire modernization into one refactor, or confuse planning c
 - [ ] Prove `pnpm lint --fix` cannot break TypeScript or tests in an isolated checkout; investigate the Obsidian lint preset and disable only the unsafe `any` → `unknown` fixer, not the diagnostic.
 - [ ] **Step 6B:** decompose `src/main.ts`, giant views/managers, import/export modules, tests and scripts in measured, independently verified waves; never use file-wide `eslint-disable` to pretend the 200-line target has been met.
 - [ ] Add actionable JSDoc to public/exported APIs, invariant-heavy helpers and asynchronous persistence behavior. Preserve Universe/Series/Book and canonical Event ownership.
-- [ ] Show monotonically decreasing violation counts across waves; finish with clean lint, zero typecheck errors, passing Vitest/Cucumber/CI, safe `dist/` packaging and vault smoke tests.
+- [ ] Show monotonically decreasing violation counts across waves; finish with clean lint, zero typecheck errors, passing Cucumber/CI, safe `dist/` packaging and vault smoke tests.
 - [ ] Only after these hardening checkpoints, resume **Saved Views**.
