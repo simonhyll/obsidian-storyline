@@ -1412,6 +1412,8 @@ Complete the interactive temporal axis, calendar correctness, and date-based con
 
 - **Audit note (2026-10-23):** Commit `516bc72` does not modify TimelineView.ts, so its reported ruler/creation UI is not present; TimelineNavigationService still contains JavaScript Date. Existing completion claims for these items are superseded by the unchecked tasks above. See [storyline-maintainability-roadmap.md](storyline-maintainability-roadmap.md) step 0.
 
+**Post-516bc72 implementation update (2026-10-23):** The linear Timeline ruler, date-prefilled QuickAdd/EventModal flows, and integer-based Gregorian marker arithmetic have now been implemented. Subsequent commits isolate navigation per Timeline leaf, use the actually clicked timestamp, protect Scene precision and label Book Event ownership explicitly. Remaining before marking full interaction verified: Obsidian runtime smoke tests; real persisted-file/owner regression tests; swimlane ruler parity; explicit Universe/Series/Book Event scope selection and precise month/day ruler positioning. See the modernisation roadmap Step 0. Step 1 quality cleanup may proceed in parallel with these bounded UI acceptance gaps.
+
 ### * Step 17: Maintainability Modernization — before Phase 3 Saved Views
 **Detailed plan:** [storyline-maintainability-roadmap.md](storyline-maintainability-roadmap.md).
 
