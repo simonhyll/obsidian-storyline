@@ -13,7 +13,7 @@ Created after Phase 3 Milestone 2B, commit `516bc72`. This roadmap addresses tec
 - `.github/workflows/ci.yml` runs build and Vitest but does **not** currently enforce typecheck or ESLint, and runs on `main` pushes and PRs (not every direct `feat/rework` push).
 - `pnpm run typecheck` currently has **27 reported errors**; confirm exact baseline rather than assuming their provenance.
 - `CHANGELOG.md` is maintained manually and currently has duplicate `1.11.0` headings and a TODO placeholder.
-- `scripts/sync-vault.mjs` and release/CI workflows expect root `main.js`, `manifest.json`, `styles.css`. `main.js` is intentionally tracked.
+- `scripts/sync-vault.mjs` and release/CI workflows **currently** expect root `main.js`, `manifest.json`, `styles.css`. `main.js` is intentionally tracked today. **The user explicitly wants all three distributable files moved to `dist/`** during the tooling migration; current root paths are dependencies to migrate, not requirements to preserve.
 - Release publication is currently a **manual workflow dispatch**. Do not change that without a separate release-design decision.
 
 ## Decision and ordering
@@ -43,7 +43,7 @@ Do not start all workstreams in one agent task or commit. Each stage must be ind
 - Run test/build/typecheck/lint on PRs and direct development-branch pushes. Fail on **new** errors throughout migration; make full typecheck/lint mandatory once baseline is clean.
 - Acceptance: reproducible clean gates, no blanket `eslint-disable` or `@ts-ignore` added solely to make the dashboard green.
 
-### 2. Move TS source to `src/`; organize assets
+### 2. Move TS source to `src/`, source assets to `assets/`, and ALL plugin outputs to `dist/`
 
 Desired source structure (illustrative; adjust for existing modules and plugin requirements):
 
@@ -64,35 +64,40 @@ src/
     views/
     shared/
 assets/
-  images/            # shipped source images/icons, if any
-  fonts/             # only permitted distributable assets; do not assume needed
-  templates/         # resource files only if actually bundled/used
+  manifest.json       # authoritative SOURCE manifest; copied to dist/
+  images/             # shipped source images/icons, if any
+  templates/          # resource files only if actually bundled/used
 tests/
   __mocks__/
   features/           # later Cucumber pilot
 scripts/
-main.js                # generated, kept at root for Obsidian
-styles.css             # compiled, kept at root for Obsidian
-manifest.json          # kept at root
+dist/                  # generated plugin distribution; ignored by git
+  main.js
+  styles.css
+  manifest.json
+package.json
 versions.json
 ```
 
 - Move application `.ts` files into `src/` as a coherent change; keep `tests/`, config, workflows and scripts at repository root. Handle `.d.ts` appropriately.
 - Use `git mv` when practical; update all relative imports and aliases in `tsconfig.json`, `esbuild.config.mjs`, ESLint configuration, Vitest, developer tooling, Junie instructions and IDE references.
-- The esbuild entry becomes `src/main.ts`, but its output **remains root `main.js`**; Obsidian manifest ID and version metadata do not change.
-- Move only real **source** assets under `assets/`. Keep documentation screenshots in `screenshots/` unless a concrete reason exists to reorganize them. Do not put release artefacts into `assets/`.
-- If the runtime needs static assets, explicitly copy/bundle them and check packaging and vault sync. Do not assume Obsidian can resolve arbitrary source-relative paths in a packaged plugin.
+- The esbuild entry becomes `src/main.ts`, and its output becomes **`dist/main.js`**, NOT root `main.js`. The authoring SCSS entry compiles to **`dist/styles.css`**. The authoritative source manifest moves to **`assets/manifest.json`** and is copied deterministically to **`dist/manifest.json`**. Do not maintain two hand-edited manifests. Preserve the Obsidian plugin ID `storyline`, name, version and compatibility metadata.
+- Move only real **source** assets under `assets/`, including `assets/manifest.json` as the source-of-truth manifest. Keep documentation screenshots in `screenshots/` unless there is a concrete reason to reorganize them. Do not put release artefacts into `assets/`.
+- If runtime code needs static assets, explicitly copy/bundle them under `dist/` and check packaging and vault sync. Do not assume Obsidian can resolve source-relative paths in a packaged plugin.
+- **Source root is not the installed plugin root.** Obsidian must receive the three files at the **root of the installed plugin directory** (`.obsidian/plugins/storyline/main.js`, `styles.css`, `manifest.json`). The deployment and release processes copy/upload the *contents* of `dist/`, never create a nested `.obsidian/plugins/storyline/dist/` directory.
+- Update `scripts/sync-vault.mjs` to read and watch `dist/`; handle a missing `dist/` directory with a helpful “run build” error. Update both `.github/workflows/ci.yml` and `release.yml` to install/build/validate/package from `dist/`. Update `DEVELOPMENT.md`, any docs and old root-path checks. Keep the existing manual-release behavior, version checks and `versions.json` sync. Ensure `pnpm dev` and `pnpm vault:watch` work together as before.
+- Treat `dist/` as disposable generated output and add it to `.gitignore` **after** the CI/release/vault processes are updated to build their own dist output. Remove previously tracked root build artefacts (`main.js`, `styles.css`, `manifest.json`) in the same verified migration; never delete or change `assets/manifest.json` accidentally. Do not include generated bundles in ordinary feature commits.
 - Never change the vault folder structure or move user manuscript files as part of this refactor.
-- Acceptance: build and 100% of existing tests pass, old Obsidian vault-install/watch workflow still works, bundled `main.js` unchanged in intended behavior, release CI asset checks remain valid.
+- Acceptance: build produces all three files under `dist/` and no distributable files at repository root; all existing tests pass; vault-install/watch installs exactly `dist/` contents into Obsidian's normal flat plugin folder; CI uploads `dist/` artifacts; manual GitHub Release uploads the three correctly named files (without a nested dist directory); metadata checks read `assets/manifest.json` and `dist/manifest.json`; no behavioral changes to the bundle.
 
 ### 3. Adopt modular SCSS with one output file
 
-- Add Sass tooling and compile `src/styles/main.scss` (or chosen canonical SCSS entry) to **root `styles.css`** for Obsidian.
+- Add Sass tooling and compile `src/styles/main.scss` (or chosen canonical SCSS entry) to **`dist/styles.css`**, never the repository root.
 - Split the current stylesheet by responsibility: variables/tokens, base, forms, components, Timeline, Project Library, Codex, responsive/layout, etc. Use explicit `@use` / `@forward` modules rather than legacy global `@import`.
 - **Preserve current selector behavior and cascade order** during the mechanical split. No UI redesign in the same commit. Avoid changing CSS specificity unintentionally.
-- Integrate Sass into `pnpm dev` and `pnpm build` (including watch), and maintain `pnpm vault:watch` support for generated root `styles.css`.
-- Decide and document whether generated `styles.css` stays tracked (existing packaging workflows require it) and prevent accidental stale output. Never expect Obsidian to read `.scss` directly.
-- Acceptance: root CSS compiled deterministically, a documented smoke checklist across desktop/mobile views, existing CSS regressions avoided, CI/release checks continue to pass.
+- Integrate Sass into `pnpm dev` and `pnpm build` (including watch), and maintain `pnpm vault:watch` support for generated **`dist/styles.css`**.
+- Keep generated `dist/styles.css` untracked with the rest of `dist/`; CI and release builds must regenerate it deterministically, not assume tracked output. Obsidian never reads `.scss` directly.
+- Acceptance: `dist/styles.css` compiles deterministically, a documented smoke checklist across desktop/mobile views passes, existing CSS behavior is preserved, and CI/release/vault sync continue to work.
 
 ### 4. Add Cucumber for real acceptance scenarios; retain Vitest for unit/service tests
 
@@ -112,7 +117,7 @@ versions.json
 - Adopt **Conventional Commits** for all new changes, e.g. `feat(timeline): ...`, `fix(projects): ...`, `refactor(styles): ...`, `test(bdd): ...`, `docs: ...`; reserve `BREAKING CHANGE` for actual compatibility breaks.
 - Choose a single reliable generator such as `conventional-changelog` or Release Please after comparing it against current manual `release.yml`. Prefer changelog generation on an explicit preparation step / release PR rather than silent release publication.
 - Preserve existing historical changelog content; fix duplicate `1.11.0` headings and TODO placeholders with an explicit, reviewed change. Older nonconforming commits may require a curated initial baseline.
-- Version metadata `package.json`, `manifest.json` and `versions.json` must stay synchronized. Never auto-bump version or force-update tags in an unreviewed automation.
+- Version metadata `package.json`, `assets/manifest.json`, `dist/manifest.json` and `versions.json` must stay synchronized. Never auto-bump a version or force-update tags in an unreviewed automation.
 - Keep the existing **manual release workflow** unless separately approved to change publishing semantics. Ensure release notes in `CHANGELOG.md` and release artefacts match the released version.
 - Add optional commit-message validation (commitlint or similar), with a migration policy that does not retroactively invalidate existing history.
 - Acceptance: new conventional commits produce reproducible release notes, manual release packaging still works, no automatically created release or moved tag, and published changelog accurately reflects user-facing changes.
@@ -121,8 +126,8 @@ versions.json
 
 1. Verify current 2B implementation on a safe test vault and capture exact quality/tooling baselines.
 2. Do quality/typecheck/lint cleanup and CI gating; finish and verify it.
-3. Move TS to `src/`, organize genuinely distributable assets, update all tool paths. Finish and verify it.
-4. Split stylesheet into SCSS modules, compile to root `styles.css`. Finish and verify it.
+3. Move TS to `src/`, source manifest/assets to `assets/`, and generated plugin outputs to `dist/`; migrate CI, release and vault sync together. Finish and verify it.
+4. Split stylesheet into SCSS modules and compile to `dist/styles.css`. Finish and verify it.
 5. Add a Cucumber acceptance pilot while retaining Vitest.
 6. Introduce Conventional Commits / generated changelog workflow without changing release publication.
 7. Only then start Saved Views, unless stages 5–6 are explicitly decoupled and their verification is preserved.
