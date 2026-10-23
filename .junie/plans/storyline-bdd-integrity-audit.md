@@ -3,21 +3,24 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-23 (Step 6C.4b.2 — SceneManager persistence & Scene UUID fix)
-> Total scenarios: 61
-> Total steps: 270
+> Updated: 2026-10-23 (Step 6C.4b.2a — Eliminate false-green Scene tests)
+ > Total scenarios: 61
+ > Total steps: 270
 
-## 6C.4b.2 Update Summary
+## 6C.4b.2a Update Summary
 
-Step 6C.4b.2 fixed a confirmed production bug (Scene UUID/ownership never serialized), hardened all 5 Scene lifecycle scenarios, and improved Event assertions:
+Step 6C.4b.2a eliminated false-green Scene acceptance tests and fixed Event date comparison:
 
-1. **Scene UUID production bug fixed** — `MetadataParser.parseContent()` now deserializes `id`, `ownerId`, `introducedIn`. `MetadataParser.generateSceneContent()` now serializes them. `SceneManager.createScene()` now generates UUID via `crypto.randomUUID()` and sets `ownerId` from active book.
-2. **All 5 Scene scenarios hardened** — `scenes.steps.ts` now uses real `SceneManager.createScene()`, `updateScene()`, and `MetadataParser.parseContent()` with in-memory vault. UUID stability verified via persistence round-trip.
-3. **Event assertions improved** — `assertDateUpdated()` does true persistence reload via fresh EventManager. `assertNotInTimeline()` verifies fresh reload excludes deleted events. `assertFileRePersisted()` checks content changed.
-4. **Vault duplicate protection** — `create()` now throws if file already exists, matching Obsidian semantics.
-5. **BDD audit arithmetic corrected** — Per-feature totals reconciled: 41 production-backed (not 44), 20 deferred (not 18).
-6. **Obsidian mock extended** — Added `normalizePath`, `createFolder`, `fileManager.renameFile` for SceneManager support.
-7. **Cucumber config fixed** — `hooks.ts` now loaded first via explicit `--require` to ensure obsidian module mock is installed before any step definitions load.
+1. **Production guard added** — `SceneManager.createScene()` now throws when no active book (for non-note scenes). Also rejects `ownerId` mismatch with active book.
+2. **No-active-Book test fixed** — Tests the real production throw, verifies no file created and error message mentions active book.
+3. **Scene ordering test fixed** — Uses `storyDate` sort field with explicit chronological order assertion. Scenes created out of order (March, Jan, Feb); verified sorted as Jan, Feb, March.
+4. **Scene date round-trip fixed** — Verifies exact year/month/day from `serializeToYaml()` nested `instant` structure, not just non-null check.
+5. **UUID stability test fixed** — Uses explicit UUID from Gherkin (`550e8400-e29b-41d4-a716-446655440000`), creates scene with that ID, verifies it survives update.
+6. **Multi-book Scene safety hardened** — Uses real `SceneManager.createScene()` with two-book setup; verifies file path and `ownerId` match active book.
+7. **Event date comparison fixed** — Replaced object identity (`===`) with `JSON.stringify()` deep comparison. Added assertion that reloaded date matches expected date.
+8. **Notice mock added** — `obsidian-mock.ts` now exports `Notice` class for test environment.
+9. **Scene assertions extracted** — `scene-assertions.ts` keeps `scenes.steps.ts` under 200-line budget.
+10. **Event assertions refactored** — `assertDateUpdated()` split into smaller functions to meet complexity budget.
 
 ## 6C.4a Historical Summary
 

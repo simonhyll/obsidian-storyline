@@ -1109,6 +1109,13 @@ export class SceneManager implements ISceneStore {
     async createScene(sceneData: Partial<Scene>, afterScene?: Scene): Promise<TFile> {
         // Route corkboard notes to the Notes/ folder
         const isNote = sceneData.corkboardNote === true;
+
+        // Scenes require an active book; corkboard notes do not.
+        if (!isNote && !this._activeProject) {
+            new Notice('Cannot create scene: no active book');
+            throw new Error('Cannot create scene without an active book');
+        }
+
         const baseFolder = isNote ? this.getNotesFolder() : this.getSceneFolder();
 
         // Ensure folder exists
@@ -1187,8 +1194,16 @@ export class SceneManager implements ISceneStore {
         }
 
         // Set ownership to the active book if not already provided.
-        if (!isNote && !sceneData.ownerId && this._activeProject?.bookId) {
-            sceneData.ownerId = this._activeProject.bookId;
+        // If an explicit ownerId is provided that differs from the active book,
+        // reject it — a scene must belong to the book whose folder it is created in.
+        if (!isNote && this._activeProject?.bookId) {
+            if (sceneData.ownerId && sceneData.ownerId !== this._activeProject.bookId) {
+                new Notice('Cannot create scene: owner mismatch with active book');
+                throw new Error('Scene ownerId does not match active book');
+            }
+            if (!sceneData.ownerId) {
+                sceneData.ownerId = this._activeProject.bookId;
+            }
         }
 
         // Generate content

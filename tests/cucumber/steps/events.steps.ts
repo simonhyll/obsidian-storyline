@@ -2,14 +2,16 @@
  * Step definitions for event ownership and scene creation safety scenarios.
  *
  * The Canonical Event persistence scenario exercises real EventManager with
- * in-memory vault harness. Scene creation safety and cancellation scenarios
- * remain fixture-based (deferred to Step 6C.4b for full hardening).
+ * in-memory vault harness. Scene creation safety now uses real SceneManager
+ * with production ownership guard. Cancellation remains fixture-based.
  */
 import { Given, When, Then } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
 import { EventManager } from '../../../src/services/EventManager';
 import { TimeSpanService } from '../../../src/services/TimeSpanService';
 import { createInMemoryVault, createAppMock } from '../support/in-memory-vault';
+import { setupSceneManager } from '../support/scene-test-helpers';
+import { MetadataParser } from '../../../src/services/MetadataParser';
 import type { StoryLineProject } from '../../../src/models/StoryLineProject';
 
 Given('the author has a Universe with an Events folder', function (this: TestWorld) {
@@ -69,9 +71,10 @@ Then('its UUID, TimeSpan and ownership are correct', function (this: TestWorld) 
   }
 });
 
-// Scene creation safety (fixture-based, deferred for full hardening)
+// Scene creation safety — uses real SceneManager with production ownership guard
 
 Given('the author is viewing multiple Books', function (this: TestWorld) {
+  // Set up two books with distinct scene folders
   this.books = [
     {
       title: 'Book One',
@@ -102,40 +105,57 @@ Given('the author is viewing multiple Books', function (this: TestWorld) {
       plotGridFile: 'StoryLine/Book Two/plotgrid.json',
     } as unknown as StoryLineProject,
   ];
+  // Active book is Book One — scene creation goes here
   this.activeBook = this.books[0];
+  // Set up SceneManager with Book One as active
+  const { sceneManager, vault } = setupSceneManager('book-one', 'Book One');
+  this.sceneManager = sceneManager;
+  this.testVault = vault;
 });
 
-When('they create a new Scene named {string}', function (this: TestWorld, name: string) {
-  if (!this.activeBook?.bookId) {
-    throw new Error('Cannot create scene without an owning Book ID');
+When('they create a new Scene named {string}', async function (this: TestWorld, name: string) {
+  if (!this.sceneManager) {
+    throw new Error('SceneManager not initialized');
   }
-  const scenePath = `${this.activeBook.sceneFolder}/${name}.md`;
-  this.scenes = [{
-    type: 'scene',
-    title: name,
-    filePath: scenePath,
-    ownerId: this.activeBook.bookId,
-    introducedIn: this.activeBook.bookId,
-    sequence: 1,
-    chronologicalOrder: 1,
-  }];
-  this.createdFiles.set(scenePath, `---\ntype: scene\ntitle: ${name}\n---`);
+  // Create scene through production SceneManager
+  const file = await this.sceneManager.createScene({ title: name });
+  const vault = this.testVault!;
+  const storedFile = vault.files.get(file.path);
+  if (storedFile) {
+    const scene = MetadataParser.parseContent(storedFile.content, file.path);
+    if (scene) {
+      this.scenes = [scene];
+      this.sceneFilePath = file.path;
+    }
+  }
 });
 
 Then('the correct owning Book must be explicitly established', function (this: TestWorld) {
   const scene = this.scenes[0];
   if (!scene) throw new Error('No scene created');
+  if (!scene.ownerId) {
+    throw new Error('Scene has no ownerId');
+  }
   if (scene.ownerId !== this.activeBook?.bookId) {
-    throw new Error(`Scene bookId does not match active book`);
+    throw new Error(`Scene owner ${scene.ownerId} does not match active book ${this.activeBook?.bookId}`);
   }
 });
 
 Then('no Scene is accidentally written into another Book', function (this: TestWorld) {
   const scene = this.scenes[0];
   if (!scene) throw new Error('No scene created');
-  const expectedPrefix = this.activeBook?.sceneFolder;
-  if (!scene.filePath.startsWith(expectedPrefix!)) {
-    throw new Error(`Scene path ${scene.filePath} is not under ${expectedPrefix}`);
+  // Verify the scene file is in the active book's folder, not another book's
+  const activeBookSceneFolder = this.activeBook?.sceneFolder;
+  if (!this.sceneFilePath?.startsWith(activeBookSceneFolder!)) {
+    throw new Error(`Scene file ${this.sceneFilePath} is not in active book's folder ${activeBookSceneFolder}`);
+  }
+  // Verify it is NOT in any other book's folder
+  for (const book of this.books) {
+    if (book !== this.activeBook && book.sceneFolder) {
+      if (this.sceneFilePath?.startsWith(book.sceneFolder)) {
+        throw new Error(`Scene accidentally written into ${book.title}'s folder`);
+      }
+    }
   }
 });
 

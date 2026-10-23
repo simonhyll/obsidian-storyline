@@ -42,3 +42,10 @@ export function normalizePath(path: string): string {
     // Simple normalization: remove leading/trailing slashes, collapse double slashes
     return path.replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
 }
+
+/** Minimal Notice mock for test environment. */
+export class Notice {
+    constructor(_message: string) {
+        // No-op in test environment
+    }
+}

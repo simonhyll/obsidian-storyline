@@ -60,35 +60,71 @@ export function assertUncertainDate(world: TestWorld): void {
  */
 export async function assertDateUpdated(world: TestWorld): Promise<void> {
   if (!world.lastEvent) throw new Error('No event to check');
+  const reloaded = await reloadEventFromVault(world);
+  if (!reloaded) throw new Error('Event not found after reload from persisted file');
+  if (!reloaded.timeSpan) throw new Error('Event date was not persisted');
+  assertEventIdentityUnchanged(world, reloaded);
+  assertDateChanged(world, reloaded);
+  assertDateMatchesExpected(world, reloaded);
+}
+
+/** Reload an event from the vault using a fresh EventManager. */
+async function reloadEventFromVault(
+  world: TestWorld,
+): Promise<import('../../../src/models/Event').Event | null> {
   const vault = world.testVault!;
-  // Create a fresh EventManager and reload from persisted files
   const freshApp = createAppMock(vault) as unknown as import('obsidian').App;
   const freshEM = new EventManager(freshApp);
   freshEM.setTimeSpanService(new TimeSpanService());
   await freshEM.loadAll(world.eventsFolder!);
-  const reloaded = freshEM.getEvent(world.lastEvent.id);
-  if (!reloaded) throw new Error('Event not found after reload from persisted file');
-  if (!reloaded.timeSpan) {
-    throw new Error('Event date was not persisted');
+  return freshEM.getEvent(world.lastEvent!.id) ?? null;
+}
+
+/** Verify UUID, owner ID and file path are unchanged after reload. */
+function assertEventIdentityUnchanged(
+  world: TestWorld,
+  reloaded: import('../../../src/models/Event').Event,
+): void {
+  const orig = world.lastEvent!;
+  if (reloaded.id !== orig.id) {
+    throw new Error(`Event UUID changed after reload: ${reloaded.id} !== ${orig.id}`);
   }
-  // Verify UUID, owner ID and file path are unchanged
-  if (reloaded.id !== world.lastEvent.id) {
-    throw new Error(`Event UUID changed after reload: ${reloaded.id} !== ${world.lastEvent.id}`);
+  if (reloaded.ownerId !== orig.ownerId) {
+    throw new Error(`Event owner changed after reload: ${reloaded.ownerId} !== ${orig.ownerId}`);
   }
-  if (reloaded.ownerId !== world.lastEvent.ownerId) {
-    throw new Error(`Event owner changed after reload: ${reloaded.ownerId} !== ${world.lastEvent.ownerId}`);
+  if (reloaded.filePath !== orig.filePath) {
+    throw new Error(`Event path changed after reload: ${reloaded.filePath} !== ${orig.filePath}`);
   }
-  if (reloaded.filePath !== world.lastEvent.filePath) {
-    throw new Error(`Event path changed after reload: ${reloaded.filePath} !== ${world.lastEvent.filePath}`);
+}
+
+/** Verify the date actually changed from the original. */
+function assertDateChanged(
+  world: TestWorld,
+  reloaded: import('../../../src/models/Event').Event,
+): void {
+  if (!world.originalDate || !reloaded.timeSpan) return;
+  const tss = new TimeSpanService();
+  const origJson = JSON.stringify(tss.serializeToYaml(world.originalDate));
+  const newJson = JSON.stringify(tss.serializeToYaml(reloaded.timeSpan));
+  if (origJson === newJson) {
+    throw new Error('Event date was not actually changed');
   }
-  // Verify the new date is actually different from the original
-  if (world.originalDate && reloaded.timeSpan) {
-    const tss = new TimeSpanService();
-    const origSerialized = tss.serializeToYaml(world.originalDate);
-    const newSerialized = tss.serializeToYaml(reloaded.timeSpan);
-    if (origSerialized === newSerialized) {
-      throw new Error('Event date was not actually changed');
-    }
+}
+
+/** Verify the reloaded date matches the expected updated date. */
+function assertDateMatchesExpected(
+  world: TestWorld,
+  reloaded: import('../../../src/models/Event').Event,
+): void {
+  const expected = world.lastEvent;
+  if (!expected?.timeSpan || !reloaded.timeSpan) return;
+  const tss = new TimeSpanService();
+  const expectedJson = JSON.stringify(tss.serializeToYaml(expected.timeSpan));
+  const reloadedJson = JSON.stringify(tss.serializeToYaml(reloaded.timeSpan));
+  if (expectedJson !== reloadedJson) {
+    throw new Error(
+      `Event date mismatch after reload: expected ${expectedJson}, got ${reloadedJson}`,
+    );
   }
 }
 
@@ -104,16 +140,30 @@ export function assertFileRePersisted(world: TestWorld): void {
     throw new Error('Event file not re-persisted');
   }
   // Verify the file content contains the updated event data
-  if (world.lastEvent.timeSpan) {
-    const content = file.content;
-    // The persisted file should contain timeSpan data
-    if (!content.includes('timeSpan')) {
-      throw new Error('Re-persisted file does not contain updated timeSpan');
-    }
+  const content = file.content;
+  // The persisted file should contain timeSpan data
+  if (!content.includes('timeSpan')) {
+    throw new Error('Re-persisted file does not contain timeSpan');
   }
   // Verify the file content contains the event name
-  if (!file.content.includes(world.lastEvent.name)) {
+  if (!content.includes(world.lastEvent.name)) {
     throw new Error('Re-persisted file does not contain event name');
+  }
+  // Verify the persisted timeSpan matches the expected updated date
+  if (world.lastEvent.timeSpan) {
+    const tss = new TimeSpanService();
+    const serialized = tss.serializeToYaml(world.lastEvent.timeSpan);
+    // serializeToYaml returns { kind, instant: { year, month, day, ... }, display }
+    const instant = (serialized.instant as Record<string, unknown>) ??
+      (serialized.start as Record<string, unknown>);
+    if (instant && instant.year !== undefined) {
+      const yearStr = String(Number(instant.year));
+      if (!content.includes(yearStr)) {
+        throw new Error(
+          `Re-persisted file does not contain expected year ${yearStr} from updated timeSpan`,
+        );
+      }
+    }
   }
 }
 

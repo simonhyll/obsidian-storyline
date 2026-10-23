@@ -119,4 +119,6 @@ export interface TestWorld {
   sceneCount?: number;
   /** Original scene content for update verification */
   sceneOriginalContent?: string;
+  /** Scene UUIDs in creation order (for ordering test) */
+  sceneUuidsInOrder?: string[];
 }

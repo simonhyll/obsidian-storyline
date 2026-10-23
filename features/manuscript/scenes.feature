@@ -29,6 +29,6 @@ Feature: Scene management
     Then the scenes appear in the correct order
 
   Scenario: Entity UUID identity is stable
-    Given a scene with UUID "scene-123"
+    Given a scene with UUID "550e8400-e29b-41d4-a716-446655440000"
     When I update the scene
-    Then the UUID remains "scene-123"
+    Then the UUID remains "550e8400-e29b-41d4-a716-446655440000"
