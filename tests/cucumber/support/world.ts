@@ -171,4 +171,10 @@ export interface TestWorld {
   restartedProjects?: StoryLineProject[];
   /** SceneManager after restart */
   restartedSceneManager?: import('../../../src/services/SceneManager').SceneManager;
+  /** Plugin data store for restart tests (simulates data.json) */
+  pluginDataStore?: import('./plugin-data-store').PluginDataStore;
+  /** Scene A for restart test */
+  sceneA?: Scene;
+  /** Scene B for restart test */
+  sceneB?: Scene;
 }

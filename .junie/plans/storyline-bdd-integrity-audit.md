@@ -3,18 +3,21 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-23 (Step 6C.4b.3b — Legacy migration and project restoration)
+> Updated: 2026-10-23 (Step 6C.4b.3b.1 — Real production migration, restart persistence & data-loss protection)
 > Total scenarios: 62
 > Total steps: 276
 
-## 6C.4b.3b Update Summary
+## 6C.4b.3b.1 Update Summary
 
-Step 6C.4b.3b hardened the last two simulated hierarchy scenarios and fixed a false-green vault harness test:
+Step 6C.4b.3b.1 replaced the test-only migration implementation with real production code and fixed a production data-loss defect:
 
-1. **Vault harness `expectReject()` fixed** — The helper previously caught its own failure message, allowing a successful operation to pass as a rejection. Rewrote with separate success/failure paths. Added meta-test proving the helper rejects successful operations.
-2. **Legacy migration hardened** — Replaced fictional `legacyActiveBook → activeBookId` simulation with real `definedActs`/`definedChapters` migration. Creates a book via `SceneManager.createProject()`, seeds legacy data matching the production format, executes the same migration logic as `migrateProjectDataFromSettings()`, persists via `saveProjectFrontmatter()`, and verifies the YAML frontmatter contains the migrated values.
-3. **Project restart hardened** — Replaced simulated restart with real `SceneManager.scanProjects()` restoration. Creates two books, sets one as active via `setActiveProject()` (which persists `activeProjectFile`), then creates a fresh SceneManager and verifies the correct book is restored by UUID.
-4. **BDD audit updated** — Hierarchy scenarios 7–8 promoted from simulated to production-backed.
+1. **Production data-loss defect fixed** — `migrateProjectDataFromSettings()` previously deleted `definedActs`/`definedChapters` from data.json unconditionally, even when no matching project was discovered. Now only successfully migrated entries are removed; unresolved entries are preserved for the next startup retry.
+2. **Migration logic extracted** — Created `src/services/legacyMigration.ts` with pure functions (`migrateProjectField`, `removeMigratedEntries`, etc.). `main.ts` now delegates to these functions. Tests import the same production functions.
+3. **Migration test uses production code** — `hierarchy-deferred.steps.ts` now calls `migrateProjectField()` and `removeMigratedEntries()` from `legacyMigration.ts`, the same functions used by `SceneCardsPlugin.migrateProjectDataFromSettings()`. No test-only `migrateField()` function remains.
+4. **Restart test uses persisted settings** — Created `plugin-data-store.ts` to simulate Obsidian's `loadData()`/`saveData()` boundary. The restart test now loads settings from a persisted snapshot, not from the original plugin's in-memory object.
+5. **Scene verification after restart** — The restart test verifies scene files still exist and the restored book's scenes load correctly through `loadScenesForBooks()`.
+6. **File split** — Extracted restart steps to `hierarchy-restart.steps.ts` and migration assertions to `migration-assertions.ts` to meet 200-line budget.
+7. **Architecture baseline updated** — Decreased from 1,170 to 1,166 violations (net -4 from extracted migration functions).
 
 ## 6C.4b.3a.1 Historical Summary
 
@@ -187,8 +190,8 @@ This feature has 5 regular Scenarios and 2 Scenario Outlines (each with 3 exampl
 | 4 | Series membership exclusive | `UniverseManager.ts` | **Yes** — `addSeriesToUniverse()` moves series | **Yes** — checks old universe removed, new added, reload | Production-backed | Low |
 | 5 | Universe isolation | `SceneManager.ts`, `UniverseManager.ts` | **Yes** — `createScene()` + `loadScenesForBooks()` | **Yes** — exact UUID set match, cross-universe negative | Production-backed | Low |
 | 6 | Universe UUID stability | `UniverseManager.ts` | **Yes** — fresh manager reload | **Yes** — checks UUID survives reload | Production-backed | Low |
-| 7 | Legacy settings migration | `SceneManager.ts` | **Yes** — `createProject()` + `saveProjectFrontmatter()` | **Yes** — checks persisted YAML, legacy keys removed | Production-backed | Low |
-| 8 | Project restoration | `SceneManager.ts` | **Yes** — `setActiveProject()` + `scanProjects()` | **Yes** — checks activeProjectFile restored by UUID | Production-backed | Low |
+| 7 | Legacy settings migration | `legacyMigration.ts`, `SceneManager.ts` | **Yes** — `migrateProjectField()` + `saveProjectFrontmatter()` | **Yes** — checks persisted YAML, legacy keys removed, data-loss protection | Production-backed | Low |
+| 8 | Project restoration | `SceneManager.ts` | **Yes** — persisted settings reload + `scanProjects()` | **Yes** — checks activeProjectFile restored by UUID, scenes verified | Production-backed | Low |
 
 **Summary:** 8 production-backed, 0 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
 **Action:** **All 8 scenarios now production-backed.** Scenarios 1–6 hardened in 6C.4b.3a.1 with
@@ -196,9 +199,11 @@ real `SceneManager.createProject()`, `SeriesManager.addBookToSeries()`, `Univers
 `SceneManager.createScene()`, and `loadScenesForBooks()`. Scenario 4 (exclusive membership) verifies
 that moving a series between universes removes it from the old universe. Scenario 5 (isolation) uses
 exact UUID set assertions and cross-universe negative checks. Scenarios 7–8 (legacy migration and
-project restart) hardened in 6C.4b.3b: migration tests real `definedActs`/`definedChapters` movement
-to frontmatter via `saveProjectFrontmatter()`, and restart tests real `activeProjectFile` restoration
-via `scanProjects()` with fresh SceneManager instances.
+project restart) hardened in 6C.4b.3b.1: migration exercises `migrateProjectField()` and
+`removeMigratedEntries()` from `src/services/legacyMigration.ts` (the same functions used by
+`SceneCardsPlugin.migrateProjectDataFromSettings()`), with data-loss protection ensuring unresolved
+legacy entries are preserved. Restart test uses a plugin data store to simulate `loadData()`/`saveData()`,
+loads settings from a persisted snapshot, and verifies scene files survive the restart.
 
 ---
 
@@ -247,7 +252,7 @@ via `scanProjects()` with fresh SceneManager instances.
 ---
 
 
-## Overall Summary (after 6C.4b.3a.1)
+## Overall Summary (after 6C.4b.3b.1)
 
 Scenario inventory: 62 scenarios across 9 feature files, 276 steps.
 
@@ -262,12 +267,25 @@ Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) 
 | No-op | 4 | 6% |
 | **Total** | **62** | **100%** |
 
+### Changes from 6C.4b.3b → 6C.4b.3b.1
+
+| Feature | Change |
+|---|---|
+| `main.ts` | Fixed data-loss defect: legacy keys only deleted after successful migration |
+| `legacyMigration.ts` | New production module with pure migration functions |
+| `main.ts` | Delegates migration to `legacyMigration.ts` functions |
+| `hierarchy-deferred.steps.ts` | Uses `migrateProjectField()` from production, not test-only `migrateField()` |
+| `hierarchy-restart.steps.ts` | New file: restart test with persisted settings via plugin data store |
+| `plugin-data-store.ts` | New test harness: simulates Obsidian `loadData()`/`saveData()` |
+| `migration-assertions.ts` | New file: extracted migration assertions |
+| Architecture | Baseline decreased from 1,170 to 1,166 violations |
+
 ### Changes from 6C.4b.3a.1 → 6C.4b.3b
 
 | Feature | Change |
 |---|---|
-| `hierarchy.feature` | Legacy migration now tests real `definedActs`/`definedChapters` → frontmatter |
-| `hierarchy.feature` | Project restart now tests real `activeProjectFile` restoration via `scanProjects()` |
+| `hierarchy.feature` | Legacy migration now tests `definedActs`/`definedChapters` → frontmatter |
+| `hierarchy.feature` | Project restart now tests `activeProjectFile` restoration via `scanProjects()` |
 | Vault harness | Fixed false-green `expectReject()` helper |
 | Vault harness | Added meta-test for `expectReject()` correctness |
 | Test files | `hierarchy-deferred.steps.ts` rewritten with production-backed steps |

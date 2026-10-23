@@ -62,6 +62,21 @@ import { createServices, wireServiceCallbacks } from './services/initServices';
 import { runStartupSequence } from './services/startup';
 import { discoverProjects, shouldSuppressNewProjectModal, showMobileProjectNotice } from './services/projectDiscovery';
 import { CreateProjectModal } from './components/CreateProjectModal';
+import {
+	migrateProjectField,
+	removeMigratedEntries,
+	migrateFilterPresets,
+	removeObsoleteLegacyKeys,
+	PROJECT_DATA_KEYS,
+	hasProjectDataKeys,
+	stripProjectDataKeys,
+	mergePlotgridData,
+	mergePlotlineData,
+	mergeCharacterData,
+	mergeStatsData,
+	deriveSystemFolder,
+	deriveSystemFolderFromProjectFile,
+} from './services/legacyMigration';
 
 /**
  * StoryLine Plugin for Obsidian
@@ -2405,6 +2420,8 @@ export default class SceneCardsPlugin extends Plugin {
      *  - writingTrackerData → System/stats.json
      *
      * After successful migration the legacy keys are removed from data.json.
+     * If a project cannot be discovered, its legacy data is preserved so the
+     * next startup can retry — no author data is lost.
      */
     async migrateProjectDataFromSettings(): Promise<void> {
         const rawAny: unknown = await this.loadData();
@@ -2421,44 +2438,57 @@ export default class SceneCardsPlugin extends Plugin {
 
         let dirty = false;
         const adapter = this.app.vault.adapter;
+        const projects = this.sceneManager.getProjects();
 
         // ── Phase 1: legacy frontmatter migrations (definedActs, etc.) ──
+        // Only delete legacy entries for projects that were successfully migrated.
+        // Unmigrated entries are preserved so the next startup can retry.
         if (raw.definedActs && typeof raw.definedActs === 'object') {
-            for (const [projectPath, acts] of Object.entries(raw.definedActs)) {
-                if (!Array.isArray(acts) || acts.length === 0) continue;
-                const project = this.sceneManager.getProjects().find(p => p.filePath === projectPath);
-                if (project && project.definedActs.length === 0) {
-                    project.definedActs = (acts as number[]).map(Number).filter(n => !isNaN(n));
+            const { migratedPaths, unmigratedPaths } = migrateProjectField(
+                raw.definedActs,
+                projects,
+                'definedActs',
+            );
+            // Persist each migrated project
+            for (const path of migratedPaths) {
+                const project = projects.find(p => p.filePath === path);
+                if (project) {
                     await this.sceneManager.saveProjectFrontmatter(project);
                 }
             }
-            delete raw.definedActs;
-            dirty = true;
+            // Only remove successfully migrated entries; preserve unmigrated ones
+            if (removeMigratedEntries(raw, 'definedActs', migratedPaths, unmigratedPaths)) {
+                dirty = true;
+            }
         }
 
         if (raw.definedChapters && typeof raw.definedChapters === 'object') {
-            for (const [projectPath, chapters] of Object.entries(raw.definedChapters)) {
-                if (!Array.isArray(chapters) || chapters.length === 0) continue;
-                const project = this.sceneManager.getProjects().find(p => p.filePath === projectPath);
-                if (project && project.definedChapters.length === 0) {
-                    project.definedChapters = (chapters as number[]).map(Number).filter(n => !isNaN(n));
+            const { migratedPaths, unmigratedPaths } = migrateProjectField(
+                raw.definedChapters,
+                projects,
+                'definedChapters',
+            );
+            for (const path of migratedPaths) {
+                const project = projects.find(p => p.filePath === path);
+                if (project) {
                     await this.sceneManager.saveProjectFrontmatter(project);
                 }
             }
-            delete raw.definedChapters;
-            dirty = true;
-        }
-
-        if (Array.isArray(raw.filterPresets) && raw.filterPresets.length > 0) {
-            const activeProject = this.sceneManager.activeProject;
-            if (activeProject && activeProject.filterPresets.length === 0) {
-                activeProject.filterPresets = raw.filterPresets as FilterPreset[];
-                await this.sceneManager.saveProjectFrontmatter(activeProject);
+            if (removeMigratedEntries(raw, 'definedChapters', migratedPaths, unmigratedPaths)) {
+                dirty = true;
             }
         }
 
-        for (const legacyKey of ['sceneFolder', 'characterFolder', 'locationFolder', 'plotGridFolder']) {
-            if (legacyKey in raw) { delete raw[legacyKey]; dirty = true; }
+        if (migrateFilterPresets(raw, this.sceneManager.activeProject ?? null)) {
+            const activeProject = this.sceneManager.activeProject;
+            if (activeProject) {
+                await this.sceneManager.saveProjectFrontmatter(activeProject);
+            }
+            dirty = true;
+        }
+
+        if (removeObsoleteLegacyKeys(raw)) {
+            dirty = true;
         }
 
         // ── Phase 2: move JSON files from project root → System/ ──
@@ -2474,16 +2504,13 @@ export default class SceneCardsPlugin extends Plugin {
         let sysFolder: string | null = null;
         const activeProject = this.sceneManager?.activeProject;
         if (activeProject) {
-            const base = activeProject.sceneFolder.replace(/\\/g, '/').replace(/\/Scenes\/?$/, '');
-            sysFolder = `${base}/System`;
+            sysFolder = deriveSystemFolder(activeProject.sceneFolder);
         } else if (raw.activeProjectFile) {
-            // Derive from file path: StoryLine/Foo/Foo.md → StoryLine/Foo/System
-            const base = String(raw.activeProjectFile).replace(/\/[^\/]+\.md$/i, '');
-            if (base) sysFolder = `${base}/System`;
+            sysFolder = deriveSystemFolderFromProjectFile(raw.activeProjectFile);
         }
 
         // Check if there's actually any per-project data to migrate
-        const hasLegacyData = SceneCardsPlugin.PROJECT_DATA_KEYS.some(k => k in raw);
+        const hasLegacyData = hasProjectDataKeys(raw);
 
         if (sysFolder && hasLegacyData) {
             // Ensure System folder exists
@@ -2498,25 +2525,14 @@ export default class SceneCardsPlugin extends Plugin {
             // ── plotgrid.json (rows/columns/cells/zoom/stickyHeaders) ──
             // Only write legacy plotgrid data if System/plotgrid.json is empty.
             // If it already has data (e.g. from gen_plotgrid.ps1), keep it.
-            if ('rows' in raw || 'columns' in raw || 'cells' in raw) {
+            {
                 try {
                     const pgPath = `${sysFolder}/plotgrid.json`;
-                    let existingHasData = false;
-                    if (await adapter.exists(pgPath)) {
-                        try {
-                            const existing = JSON.parse(await adapter.read(pgPath));
-                            existingHasData = Array.isArray(existing.rows) && existing.rows.length > 0;
-                        } catch { /* unreadable — allow overwrite */ }
-                    }
-                    if (!existingHasData) {
-                        const pgData: Record<string, unknown> = {};
-                        if (Array.isArray(raw.rows)) pgData.rows = raw.rows;
-                        if (Array.isArray(raw.columns)) pgData.columns = raw.columns;
-                        if (raw.cells && typeof raw.cells === 'object') pgData.cells = raw.cells;
-                        if (raw.zoom !== undefined) pgData.zoom = raw.zoom;
-                        if (raw.stickyHeaders !== undefined) pgData.stickyHeaders = raw.stickyHeaders;
-                        if (raw.labelColumnWidth !== undefined) pgData.labelColumnWidth = raw.labelColumnWidth;
-                        if (raw.collapsedSections !== undefined) pgData.collapsedSections = raw.collapsedSections;
+                    const existingContent = await adapter.exists(pgPath)
+                        ? await adapter.read(pgPath)
+                        : null;
+                    const pgData = mergePlotgridData(raw, existingContent);
+                    if (pgData) {
                         await adapter.write(pgPath, JSON.stringify(pgData, null, 2));
                     }
                 } catch (e) {
@@ -2525,21 +2541,13 @@ export default class SceneCardsPlugin extends Plugin {
             }
 
             // ── plotlines.json (tagColors, tagTypeOverrides) ──
-            // Write from this.settings (the in-memory copy) which has values
-            // regardless of whether these keys exist in data.json.
             {
                 try {
                     const path = `${sysFolder}/plotlines.json`;
-                    let existing: Record<string, unknown> = {};
-                    if (await adapter.exists(path)) {
-                        try { existing = JSON.parse(await adapter.read(path)); } catch { /* */ }
-                    }
-                    // Merge: use raw (data.json) values if present, else keep existing System file values,
-                    // else fall back to in-memory settings (which have defaults).
-                    const merged: Record<string, unknown> = {
-                        tagColors: raw.tagColors ?? existing.tagColors ?? this.settings.tagColors ?? {},
-                        tagTypeOverrides: raw.tagTypeOverrides ?? existing.tagTypeOverrides ?? this.settings.tagTypeOverrides ?? {},
-                    };
+                    const existingContent = await adapter.exists(path)
+                        ? await adapter.read(path)
+                        : null;
+                    const merged = mergePlotlineData(raw, existingContent, this.settings as unknown as Record<string, unknown>);
                     await adapter.write(path, JSON.stringify(merged, null, 2));
                 } catch (e) {
                     void e;
@@ -2550,14 +2558,10 @@ export default class SceneCardsPlugin extends Plugin {
             {
                 try {
                     const path = `${sysFolder}/characters.json`;
-                    let existing: Record<string, unknown> = {};
-                    if (await adapter.exists(path)) {
-                        try { existing = JSON.parse(await adapter.read(path)); } catch { /* */ }
-                    }
-                    const merged: Record<string, unknown> = {
-                        characterAliases: raw.characterAliases ?? existing.characterAliases ?? this.settings.characterAliases ?? {},
-                        ignoredCharacters: raw.ignoredCharacters ?? existing.ignoredCharacters ?? this.settings.ignoredCharacters ?? [],
-                    };
+                    const existingContent = await adapter.exists(path)
+                        ? await adapter.read(path)
+                        : null;
+                    const merged = mergeCharacterData(raw, existingContent, this.settings as unknown as Record<string, unknown>);
                     await adapter.write(path, JSON.stringify(merged, null, 2));
                 } catch (e) {
                     void e;
@@ -2568,14 +2572,11 @@ export default class SceneCardsPlugin extends Plugin {
             {
                 try {
                     const path = `${sysFolder}/stats.json`;
-                    let existing: Record<string, unknown> = {};
-                    if (await adapter.exists(path)) {
-                        try { existing = JSON.parse(await adapter.read(path)); } catch { /* */ }
-                    }
-                    const merged: Record<string, unknown> = {
-                        writingTrackerData: raw.writingTrackerData ?? existing.writingTrackerData ?? null,
-                    };
-                    if (merged.writingTrackerData) {
+                    const existingContent = await adapter.exists(path)
+                        ? await adapter.read(path)
+                        : null;
+                    const merged = mergeStatsData(raw, existingContent);
+                    if (merged) {
                         await adapter.write(path, JSON.stringify(merged, null, 2));
                     }
                 } catch (e) {
@@ -2584,8 +2585,8 @@ export default class SceneCardsPlugin extends Plugin {
             }
 
             // ── Strip migrated keys from raw and save ──
-            for (const key of SceneCardsPlugin.PROJECT_DATA_KEYS) {
-                if (key in raw) { delete raw[key]; dirty = true; }
+            if (stripProjectDataKeys(raw)) {
+                dirty = true;
             }
             // Do NOT set _systemMigrationDone here — that happens in
             // loadProjectSystemData() which runs next and loads the System
