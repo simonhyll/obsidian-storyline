@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion, no-useless-escape -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
-import { addIcon, App, ButtonComponent, DropdownComponent, FuzzySuggestModal, ItemView, Modal, Notice, Platform, Plugin, Setting, TFile, TextComponent, ToggleComponent, WorkspaceLeaf, normalizePath, parseYaml, setIcon } from 'obsidian';
+import { addIcon, App, ButtonComponent, DropdownComponent, ItemView, Modal, Notice, Platform, Plugin, Setting, TFile, TextComponent, ToggleComponent, WorkspaceLeaf, normalizePath, parseYaml, setIcon } from 'obsidian';
 import { SceneCardsSettings, SceneCardsSettingTab, DEFAULT_SETTINGS, migrateSectionStateKeys } from './settings';
 import { asRecord, isRecord } from './utils/narrow';
 import type { FilterPreset } from './models/Scene';
@@ -52,12 +52,9 @@ import { CharacterManager } from './services/CharacterManager';
 import { CodexManager } from './services/CodexManager';
 import { makeCustomCodexCategory } from './models/Codex';
 import { QuickAddModal } from './components/QuickAddModal';
-import { SceneFilenameSyncModal } from './components/SceneFilenameSyncModal';
-import { ExportModal } from './components/ExportModal';
 import { WritingTracker } from './services/WritingTracker';
 import { SnapshotManager } from './services/SnapshotManager';
 import { ViewSnapshotService } from './services/ViewSnapshotService';
-import { openManageSnapshotsModal } from './components/ViewSnapshotModal';
 import { LinkScanner } from './services/LinkScanner';
 import { CascadeRenameService } from './services/CascadeRenameService';
 import { FieldTemplateService } from './services/FieldTemplateService';
@@ -71,6 +68,9 @@ import { setupMobileKeyboardHandling } from './components/MobileAdapter';
 import { EditorView } from '@codemirror/view';
 import { getQuotePair } from './utils/locale';
 import { createFocusTextExtension } from './services/FocusTextExtension';
+import { registerCommands } from './commands/registerCommands';
+import { registerEvents } from './commands/registerEvents';
+import { registerLeafChange } from './commands/registerLeafChange';
 
 /**
  * StoryLine Plugin for Obsidian
@@ -423,601 +423,17 @@ export default class SceneCardsPlugin extends Plugin {
         });
 
 
-        // Commands
-        this.addCommand({
-            id: 'open-board-view',
-            name: 'Open board view',            callback: () => this.activateView(BOARD_VIEW_TYPE),
-        });
-
-        this.addCommand({
-            id: 'open-timeline-view',
-            name: 'Open timeline view',            callback: () => this.activateView(TIMELINE_VIEW_TYPE),
-        });
-
-        this.addCommand({
-            id: 'open-plotgrid-view',
-            name: 'Open plotgrid view',            callback: () => this.activateView(PLOTGRID_VIEW_TYPE),
-        });
-
-        this.addCommand({
-            id: 'open-plotlines-view',
-            name: 'Open plotlines view',
-            callback: () => this.activateView(STORYLINE_VIEW_TYPE),
-        });
-
-        this.addCommand({
-            id: 'open-character-view',
-            name: 'Open character view',            callback: () => this.activateView(CHARACTER_VIEW_TYPE),
-        });
-
-        this.addCommand({
-            id: 'open-stats-view',
-            name: 'Open statistics dashboard',            callback: () => this.activateView(STATS_VIEW_TYPE),
-        });
-
-        this.addCommand({
-            id: 'open-location-view',
-            name: 'Open location view',            callback: () => this.activateView(LOCATION_VIEW_TYPE),
-        });
-
-        this.addCommand({
-            id: 'open-codex-view',
-            name: 'Open codex',            callback: () => this.activateView(CODEX_VIEW_TYPE),
-        });
-
-        this.addCommand({
-            id: 'create-new-scene',
-            name: 'Create new scene',            callback: () => this.openQuickAdd(),
-        });
-
-        this.addCommand({
-            id: 'synchronize-scene-filenames',
-            name: 'Synchronize scene filenames from metadata',
-            checkCallback: (checking: boolean) => {
-                if (!this.sceneManager.activeProject) return false;
-                if (!checking) {
-                    const changes = this.sceneManager.getSceneFilenameSyncPreview();
-                    if (changes.length === 0) {
-                        new Notice('Scene filenames are already synchronized.');
-                        return true;
-                    }
-                    new SceneFilenameSyncModal(this.app, changes, async () => {
-                        const count = await this.sceneManager.synchronizeSceneFileNames();
-                        this.refreshOpenViews();
-                        new Notice(`Synchronized ${count} scene filename${count === 1 ? '' : 's'}.`);
-                    }).open();
-                }
-                return true;
-            },
-        });
-
-        this.addCommand({
-            id: 'create-new-project',
-            name: 'Create new project',
-            callback: () => this.openNewProjectModal(),
-        });
-
-        this.addCommand({
-            id: 'switch-project',
-            name: 'Open or switch project',
-            callback: () => {
-                const projects = this.sceneManager.getProjects();
-                if (projects.length <= 1) {
-                    new Notice(projects.length === 0 ? 'No projects found.' : 'Only one project exists.');
-                    return;
-                }
-                const modal = new ProjectSwitcherModal(this.app, projects, async (project) => {
-                    await this.sceneManager.setActiveProject(project);
-                    this.refreshOpenViews();
-                    new Notice(`Switched to "${project.title}"`);
-                });
-                modal.open();
-            },
-        });
-
-        this.addCommand({
-            id: 'fork-project',
-            name: 'Fork current project',
-            callback: () => this.openForkProjectModal(),
-        });
-
-        this.addCommand({
-            id: 'delete-project',
-            name: 'Delete current project',
-            callback: () => this.openDeleteProjectModal(),
-        });
-
-        this.addCommand({
-            id: 'undo',
-            name: 'Undo last scene change',
-            callback: async () => {
-                await this.sceneManager.undoManager.undo();
-            },
-        });
-
-        this.addCommand({
-            id: 'redo',
-            name: 'Redo last scene change',
-            callback: async () => {
-                await this.sceneManager.undoManager.redo();
-            },
-        });
-
-        // Register a global keydown handler so Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y
-        // route to StoryLine's undo/redo when a StoryLine view is active and
-        // the focus is not inside a text input, textarea, or contentEditable.
-        this.registerDomEvent(activeDocument, 'keydown', (evt: KeyboardEvent) => {
-            const isUndo = (evt.ctrlKey || evt.metaKey) && !evt.shiftKey && evt.key === 'z';
-            const isRedo = ((evt.ctrlKey || evt.metaKey) && evt.shiftKey && evt.key === 'Z')
-                || ((evt.ctrlKey || evt.metaKey) && evt.key === 'y');
-            if (!isUndo && !isRedo) return;
-
-            // Don't intercept if focus is in a text field
-            const active = activeDocument.activeElement;
-            if (active && (
-                active.instanceOf(HTMLInputElement) ||
-                active.instanceOf(HTMLTextAreaElement) ||
-                (active as HTMLElement).isContentEditable
-            )) return;
-
-            // Check if a StoryLine view is active
-            const view = this.app.workspace.getActiveViewOfType(ItemView);
-            if (!view) return;
-            const viewType: string = view.getViewType();
-            if (typeof viewType !== 'string') return;
-            const slViewTypes = [
-                BOARD_VIEW_TYPE, PLOTGRID_VIEW_TYPE, TIMELINE_VIEW_TYPE,
-                STORYLINE_VIEW_TYPE, CHARACTER_VIEW_TYPE, STATS_VIEW_TYPE,
-                LOCATION_VIEW_TYPE, CODEX_VIEW_TYPE, SCENE_INSPECTOR_VIEW_TYPE,
-                NOTES_VIEW_TYPE, SYNOPSIS_VIEW_TYPE, DETAILS_VIEW_TYPE,
-                MANUSCRIPT_VIEW_TYPE, RESEARCH_VIEW_TYPE, HELP_VIEW_TYPE,
-                NAVIGATOR_VIEW_TYPE,
-            ];
-            if (!slViewTypes.includes(viewType)) return;
-
-            evt.preventDefault();
-            evt.stopPropagation();
-            if (isUndo) {
-                void this.sceneManager.undoManager.undo();
-            } else {
-                void this.sceneManager.undoManager.redo();
-            }
-        });
-
-        this.addCommand({
-            id: 'export-project',
-            name: 'Export project',            callback: () => {
-                new ExportModal(this).open();
-            },
-        });
-
-        this.addCommand({
-            id: 'open-help',
-            name: 'Open help',
-            callback: () => this.openHelp(),
-        });
-
-        this.addCommand({
-            id: 'open-navigator',
-            name: 'Open navigator',
-            callback: () => this.openNavigator(),
-        });
-
-        this.addCommand({
-            id: 'open-scene-inspector',
-            name: 'Open scene details sidebar',
-            callback: () => this.openSceneInspector(),
-        });
-
-        this.addCommand({
-            id: 'open-scene-notes',
-            name: 'Open scene notes sidebar',
-            callback: () => this.openNotesView(),
-        });
-
-        this.addCommand({
-            id: 'open-scene-notes-file',
-            name: 'Open scene notes as file',
-            checkCallback: (checking: boolean) => {
-                const scene = this.sceneManager.getScene(this.app.workspace.getActiveFile()?.path ?? '');
-                if (!scene) return false;
-                if (!checking) {
-                    this.sceneManager.openSceneNotes(scene);
-                }
-                return true;
-            },
-        });
-
-        this.addCommand({
-            id: 'open-scene-synopsis',
-            name: 'Open scene synopsis sidebar',
-            callback: () => this.openSynopsisView(),
-        });
-
-        this.addCommand({
-            id: 'open-scene-details-view',
-            name: 'Open scene details in own pane',
-            callback: () => this.openSceneDetailsLeaf(),
-        });
-
-        this.addCommand({
-            id: 'open-research',
-            name: 'Open research sidebar',
-            callback: () => this.openResearch(),
-        });
-
-        this.addCommand({
-            id: 'create-series',
-            name: 'Create new series from current project',
-            callback: () => this.openCreateSeriesModal(),
-        });
-
-        this.addCommand({
-            id: 'add-to-series',
-            name: 'Add current project to existing series',
-            callback: () => this.openAddToSeriesModal(),
-        });
-
-        this.addCommand({
-            id: 'remove-from-series',
-            name: 'Remove current project from series',
-            callback: async () => {
-                const project = this.sceneManager.activeProject;
-                if (!project?.seriesId && !project?.seriesUuid) {
-                    new Notice('This project is not part of a series.');
-                    return;
-                }
-                try {
-                    await this.seriesManager.removeProjectFromSeries();
-                    this.refreshOpenViews();
-                } catch (e: unknown) {
-                    new Notice((e instanceof Error ? e.message : String(e)), 10000);
-                }
-            },
-        });
-
-        // ── Universe commands ──
-
-        this.addCommand({
-            id: 'create-universe',
-            name: 'Create new universe',
-            callback: () => this.openCreateUniverseModal(),
-        });
-
-        this.addCommand({
-            id: 'add-series-to-universe',
-            name: 'Add series to universe',
-            callback: () => this.openAddSeriesToUniverseModal(),
-        });
-
-        this.addCommand({
-            id: 'remove-series-from-universe',
-            name: 'Remove series from universe',
-            callback: () => this.openRemoveSeriesFromUniverseModal(),
-        });
-
-        this.addCommand({
-            id: 'delete-universe',
-            name: 'Delete universe',
-            callback: () => this.openDeleteUniverseModal(),
-        });
-
-        this.addCommand({
-            id: 'open-universe-view',
-            name: 'Open project library',
-            callback: () => this.activateView(UNIVERSE_VIEW_TYPE),
-        });
-
-        // Event management commands
-        this.addCommand({
-            id: 'create-event',
-            name: 'Create new event',
-            checkCallback: (checking: boolean) => {
-                if (!this.sceneManager.activeProject) return false;
-                if (checking) return true;
-                this.openCreateEventModal();
-                return true;
-            },
-        });
-
-        this.addCommand({
-            id: 'browse-events',
-            name: 'Browse events',
-            checkCallback: (checking: boolean) => {
-                if (!this.sceneManager.activeProject) return false;
-                if (checking) return true;
-                this.openEventBrowser();
-                return true;
-            },
-        });
-
-        this.addCommand({
-            id: 'rename-project',
-            name: 'Rename current project',
-            callback: () => this.openRenameProjectModal(),
-        });
-
-        this.addCommand({
-            id: 'manage-view-snapshots',
-            name: 'Manage view snapshots',
-            callback: () => {
-                if (!this.sceneManager.activeProject) {
-                    new Notice('No active project.');
-                    return;
-                }
-                openManageSnapshotsModal(this.app, this.viewSnapshotService);
-            },
-        });
-
-        this.addCommand({
-            id: 'import-scrivener',
-            name: 'Import Scrivener project',
-            callback: async () => {
-                const { ScrivenerImporter, pickScrivenerDestination } = await import('./services/ScrivenerImporter');
-                if (!ScrivenerImporter.isAvailable()) {
-                    new Notice('Scrivener import is only available on desktop.');
-                    return;
-                }
-                let remote: { dialog: { showOpenDialog: (opts: unknown) => Promise<{ canceled: boolean; filePaths?: string[] }> } } | undefined;
-                const win = window as unknown as { require?: (m: string) => unknown };
-                try { remote = win.require?.('@electron/remote') as typeof remote; }
-                catch { try { remote = (win.require?.('electron') as { remote: typeof remote })?.remote; } catch { /* */ } }
-                if (!remote) { new Notice('File dialog not available.'); return; }
-
-                const result = await remote.dialog.showOpenDialog({
-                    title: 'Select Scrivener Project folder (.scriv)',
-                    message: 'Select the .scriv project folder. A second dialog will ask for an import destination inside the active vault.',
-                    properties: ['openDirectory'],
-                    filters: [
-                        { name: 'Scrivener Project', extensions: ['scriv'] },
-                    ],
-                });
-                if (result.canceled || !result.filePaths?.length) return;
-                const scrivPath = result.filePaths[0];
-                if (!scrivPath.toLowerCase().endsWith('.scriv')) {
-                    new Notice('Please select a .scriv folder.'); return;
-                }
-                let destination: string | null;
-                try {
-                    const result = await pickScrivenerDestination(this.app);
-                    destination = result ?? undefined;
-                } catch (err: unknown) {
-                    new Notice('Import cancelled: ' + (err instanceof Error ? err.message : String(err)));
-                    return;
-                }
-                if (!destination) return;
-                new Notice('Importing Scrivener project…');
-                try {
-                    const importer = new ScrivenerImporter(this.app, this);
-                    const r = await importer.import(scrivPath, destination);
-                    const parts = [`${r.scenesImported} scenes`, `${r.charactersImported} characters`, `${r.locationsImported} locations`];
-                    if (r.filesImported > 0) parts.push(`${r.filesImported} files`);
-                    new Notice(`Imported "${r.projectTitle}": ${parts.join(', ')}`, 8000);
-                } catch (err: unknown) {
-                    new Notice('Import failed: ' + (err instanceof Error ? err.message : String(err)));
-                }
-            },
-        });
-
-        // Issue #83 \u2014 turn an arbitrary markdown note into a scene.
-        this.addCommand({
-            id: 'convert-note-to-scene',
-            name: 'Convert note to scene',
-            checkCallback: (checking: boolean) => {
-                const file = this.app.workspace.getActiveFile();
-                if (!file || file.extension !== 'md') return false;
-                if (!this.sceneManager.activeProject) return false;
-                if (checking) return true;
-                this.sceneManager.convertFileToScene(file.path).then(newPath => {
-                    if (newPath) this.refreshOpenViews();
-                });
-                return true;
-            },
-        });
-
-        // Show "Convert to scene" in the file context menu for markdown files
-        // when a project is active and the file isn't already a real scene.
-        this.registerEvent(
-            this.app.workspace.on('file-menu', (menu, file) => {
-                if (!(file instanceof TFile) || file.extension !== 'md') return;
-                if (!this.sceneManager.activeProject) return;
-                const existing = this.sceneManager.getScene(file.path);
-                if (existing && existing.type === 'scene' && !existing.corkboardNote) return;
-                menu.addItem(item => {
-                    item.setTitle('Convert to scene')
-                        .setIcon('clapperboard')
-                        .onClick(async () => {
-                            const newPath = await this.sceneManager.convertFileToScene(file.path);
-                            if (newPath) this.refreshOpenViews();
-                        });
-                });
-            })
-        );
-
         // Settings tab
         this.addSettingTab(new SceneCardsSettingTab(this.app, this));
 
         // Suppress native (browser) title tooltips inside StoryLine UI.
         this.enableNativeTooltipSuppression();
 
-        // File watchers for reactive updates
-        // We debounce the async refresh pipeline so multiple rapid edits
-        // only trigger one re-render after the index has finished updating.
-        // Issue #279 — a Git pull can replace or add markdown files without
-        // following the same event sequence as an in-app edit. The sync
-        // refresh therefore rebuilds the active scene index from disk.
-        const debouncedRefresh = this.debounce(() => this.refreshOpenViews(true), 500);
-        const modifiedPaths = new Set<string>();
-        const debouncedIncrementalRefresh = this.debounce(() => {
-            const paths = Array.from(modifiedPaths);
-            modifiedPaths.clear();
-            void this.refreshOpenViews(false, paths);
-        }, 500);
-
-        this.registerEvent(
-            this.app.vault.on('create', (file) => {
-                if (file instanceof TFile && this.isRelevantStoryLineFile(file.path)) {
-                    debouncedRefresh();
-                }
-            })
-        );
-
-        this.registerEvent(
-            this.app.vault.on('modify', (file) => {
-                if (file instanceof TFile && this.isRelevantStoryLineFile(file.path)) {
-                    this.sceneManager.handleFileChange(file).then(() => {
-                        modifiedPaths.add(file.path);
-                        debouncedIncrementalRefresh();
-                    });
-                    // Issue #238 — schedule a debounced writing-stats save on
-                    // any scene edit so stats survive crashes/force-quits.
-                    // Issue #242 — skip StoryLine's own System/ files here;
-                    // otherwise saveProjectSystemData()'s JSON writes emit
-                    // modify events that re-arm this timer in a ~60s loop.
-                    // Also skip files outside the active project's content
-                    // tree so unrelated vault edits don't trigger a save.
-                    const sysFolder = this.getProjectSystemFolder();
-                    const isSystemFile = file.path === sysFolder
-                        || file.path.startsWith(sysFolder + '/');
-                    if (!isSystemFile) {
-                        this.scheduleWritingStatsSave();
-                    }
-                }
-            })
-        );
-
-        this.registerEvent(
-            this.app.vault.on('delete', (file) => {
-                if (file instanceof TFile && this.isRelevantStoryLineFile(file.path)) {
-                    this.sceneManager.handleFileDelete(file.path);
-                    debouncedRefresh();
-                }
-            })
-        );
-
-        this.registerEvent(
-            this.app.vault.on('rename', (file, oldPath) => {
-                if (file instanceof TFile && (this.isRelevantStoryLineFile(file.path) || this.isRelevantStoryLineFile(oldPath))) {
-                    this.sceneManager.handleFileRename(file, oldPath).then(async () => {
-                        // Update any PlotGrid cells that reference the old path
-                        await this.updatePlotGridLinkedSceneIds(oldPath, file.path);
-                        debouncedRefresh();
-                    });
-                }
-            })
-        );
-
-        // "Show in StoryLine" — command palette + file-menu entry
-        // Detects whether the active file is a character, location, or codex entry
-        // and navigates to the appropriate detail panel.
-        this.addCommand({
-            id: 'show-entity-details',
-            name: 'Show in details view',
-            checkCallback: (checking) => {
-                const file = this.app.workspace.getActiveFile();
-                if (!file) return false;
-                if (!this.resolveEntityType(file.path)) return false;
-                if (!checking) this.showEntityDetails(file.path);
-                return true;
-            },
-        });
-
-        this.registerEvent(
-            this.app.workspace.on('file-menu', (menu, file) => {
-                if (!(file instanceof TFile)) return;
-                if (!this.resolveEntityType(file.path)) return;
-                menu.addItem((item) => {
-                    item.setTitle('Show in StoryLine')
-                        .setIcon('book-open')
-                        .onClick(() => this.showEntityDetails(file.path));
-                });
-            })
-        );
-
-        this.registerEvent(
-            this.app.workspace.on('editor-menu', (menu, _editor, info) => {
-                const file = info.file;
-                if (!file) return;
-                if (!this.resolveEntityType(file.path)) return;
-                menu.addItem((item) => {
-                    item.setTitle('Show in StoryLine')
-                        .setIcon('book-open')
-                        .onClick(() => this.showEntityDetails(file.path));
-                });
-            })
-        );
-
-        // Issue #195 — add "Find & replace in manuscript" to the editor
-        // right-click menu when the active view is the Manuscript view, so
-        // it appears alongside Obsidian's own editor menu items.
-        this.registerEvent(
-            this.app.workspace.on('editor-menu', (menu) => {
-                const view = this.app.workspace.getActiveViewOfType(ItemView);
-                const viewType = (view as unknown as { getViewType?: () => string })?.getViewType?.();
-                if (viewType !== MANUSCRIPT_VIEW_TYPE) return;
-                menu.addItem((item) => {
-                    item.setTitle('Find & replace in manuscript')
-                        .setIcon('search')
-                        .onClick(() => {
-                            const leaves = this.app.workspace.getLeavesOfType(MANUSCRIPT_VIEW_TYPE);
-                            const mv = leaves[0]?.view as unknown as { toggleSearch?: () => void };
-                            mv?.toggleSearch?.();
-                        });
-                });
-            })
-        );
-
-        // Inject formatting toolbar into scene editors when Editing Toolbar is absent
-        this.registerEvent(
-            this.app.workspace.on('active-leaf-change', (leaf) => {
-                // Issue #215 — on iPad/iPhone, any DOM mutation inside a
-                // scroll container (even class toggles) causes WebKit to
-                // reset the scroll position to the top. When the new active
-                // leaf is NOT a StoryLine scene file (e.g. settings, a
-                // sidebar, another plugin's view, a non-StoryLine tab),
-                // skip all DOM work entirely. The toolbar and frontmatter
-                // visibility are already applied to scene editors from the
-                // previous activation; they don't need re-evaluation when
-                // the user merely opens settings or switches to a tab that
-                // isn't a StoryLine scene.
-                if (leaf) {
-                    const view = leaf.view as unknown as {
-                        getViewType?: () => string;
-                        file?: TFile | null;
-                    };
-                    const isMarkdown = view?.getViewType?.() === 'markdown';
-                    const file = view?.file ?? null;
-                    const sf = this.sceneManager?.activeProject?.sceneFolder;
-                    const projectRoot = sf ? sf.replace(/\/Scenes$/, '') : undefined;
-                    const isStoryLineScene = isMarkdown
-                        && !!file
-                        && !!projectRoot
-                        && file.path.startsWith(projectRoot);
-                    if (!isStoryLineScene) {
-                        // Still tear down toolbars if the setting was turned off,
-                        // but don't do any other DOM work.
-                        if (!this.settings.showFormattingToolbar) {
-                            activeDocument.querySelectorAll('.sl-injected-fmt-toolbar').forEach(el => el.remove());
-                        }
-                        return;
-                    }
-                }
-                this.injectFormattingToolbar(leaf);
-                this.updateFrontmatterVisibility();
-            })
-        );
-
-        // Re-apply scoped frontmatter hiding when layout changes or files open
-        this.registerEvent(
-            this.app.workspace.on('layout-change', () => {
-                this.updateFrontmatterVisibility();
-            })
-        );
-        this.registerEvent(
-            this.app.workspace.on('file-open', () => {
-                this.updateFrontmatterVisibility();
-            })
-        );
+        // Register all command-palette entries, vault/workspace events,
+        // and leaf-change handlers in dedicated modules.
+        registerCommands(this as unknown as import('./commands/plugin-target').PluginTarget);
+        registerEvents(this as unknown as import('./commands/plugin-target').PluginTarget);
+        registerLeafChange(this as unknown as import('./commands/plugin-target').PluginTarget);
     }
 
     /**
@@ -2270,7 +1686,7 @@ export default class SceneCardsPlugin extends Plugin {
      * Determine what kind of StoryLine entity a file belongs to.
      * Returns 'character' | 'location' | 'codex' | null.
      */
-    private resolveEntityType(filePath: string): 'character' | 'location' | 'codex' | null {
+    resolveEntityType(filePath: string): 'character' | 'location' | 'codex' | null {
         const p = normalizePath(filePath);
         const charFolder = normalizePath(this.sceneManager.getCharacterFolder());
         if (p.startsWith(charFolder + '/') || p === charFolder) return 'character';
@@ -2284,7 +1700,7 @@ export default class SceneCardsPlugin extends Plugin {
     /**
      * Open the appropriate StoryLine view and navigate to the entity's detail panel.
      */
-    private async showEntityDetails(filePath: string): Promise<void> {
+    async showEntityDetails(filePath: string): Promise<void> {
         const kind = this.resolveEntityType(filePath);
         switch (kind) {
             case 'character': {
@@ -2470,7 +1886,7 @@ export default class SceneCardsPlugin extends Plugin {
     /**
      * Open the Quick Add modal
      */
-    private openQuickAdd(): void {
+    openQuickAdd(): void {
         const modal = new QuickAddModal(
             this.app,
             this,
@@ -3009,7 +2425,7 @@ export default class SceneCardsPlugin extends Plugin {
         return Array.from(paths);
     }
 
-    private isRelevantStoryLineFile(filePath: string): boolean {
+    isRelevantStoryLineFile(filePath: string): boolean {
         const activeProject = this.sceneManager?.activeProject;
         if (!activeProject) return false;
 
@@ -3085,7 +2501,7 @@ export default class SceneCardsPlugin extends Plugin {
      * Update any PlotGrid cell linkedSceneId references when a vault file is renamed.
      * Without this, cells that link to the old path become stale.
      */
-    private async updatePlotGridLinkedSceneIds(oldPath: string, newPath: string): Promise<void> {
+    async updatePlotGridLinkedSceneIds(oldPath: string, newPath: string): Promise<void> {
         try {
             const projectKey = this.sceneManager.activeProject?.filePath;
             const projectBase = this.getProjectBaseFolder().replace(/\\/g, '/').replace(/\/$/, '');
@@ -3808,7 +3224,7 @@ export default class SceneCardsPlugin extends Plugin {
     /**
      * Open a modal to fork the active project into a variant
      */
-    private openForkProjectModal(): void {
+    openForkProjectModal(): void {
         const activeProject = this.sceneManager.activeProject;
         if (!activeProject) {
             new Notice('No active project to fork');
@@ -3849,7 +3265,7 @@ export default class SceneCardsPlugin extends Plugin {
      * the user's "Deleted files" setting. If the project belongs to a
      * series it is also removed from `series.json`.
      */
-    private openDeleteProjectModal(): void {
+    openDeleteProjectModal(): void {
         const activeProject = this.sceneManager.activeProject;
         if (!activeProject) {
             new Notice('No active project to delete');
@@ -3919,7 +3335,7 @@ export default class SceneCardsPlugin extends Plugin {
     //  Series modals
     // ────────────────────────────────────
 
-    private openCreateSeriesModal(): void {
+    openCreateSeriesModal(): void {
         const project = this.sceneManager.activeProject;
         if (!project) {
             new Notice('No active project');
@@ -3963,7 +3379,7 @@ export default class SceneCardsPlugin extends Plugin {
         modal.open();
     }
 
-    private async openAddToSeriesModal(): Promise<void> {
+    async openAddToSeriesModal(): Promise<void> {
         const project = this.sceneManager.activeProject;
         if (!project) {
             new Notice('No active project');
@@ -4010,7 +3426,7 @@ export default class SceneCardsPlugin extends Plugin {
         modal.open();
     }
 
-    private openRenameProjectModal(): void {
+    openRenameProjectModal(): void {
         const project = this.sceneManager.activeProject;
         if (!project) {
             new Notice('No active project to rename.');
@@ -4143,7 +3559,7 @@ export default class SceneCardsPlugin extends Plugin {
         modal.open();
     }
 
-    private async openRemoveSeriesFromUniverseModal(): Promise<void> {
+    async openRemoveSeriesFromUniverseModal(): Promise<void> {
         const modal = new Modal(this.app);
         modal.titleEl.setText('Remove series from universe');
 
@@ -4228,7 +3644,7 @@ export default class SceneCardsPlugin extends Plugin {
         modal.open();
     }
 
-    private async openDeleteUniverseModal(): Promise<void> {
+    async openDeleteUniverseModal(): Promise<void> {
         const modal = new Modal(this.app);
         modal.titleEl.setText('Delete universe');
 
@@ -4457,33 +3873,6 @@ export default class SceneCardsPlugin extends Plugin {
         }
 
         return undefined;
-    }
-}
-
-/**
- * Fuzzy-search modal for quick project switching from the command palette.
- */
-class ProjectSwitcherModal extends FuzzySuggestModal<StoryLineProject> {
-    private projects: StoryLineProject[];
-    private onChoose: (project: StoryLineProject) => void;
-
-    constructor(app: App, projects: StoryLineProject[], onChoose: (project: StoryLineProject) => void) {
-        super(app);
-        this.projects = projects;
-        this.onChoose = onChoose;
-        this.setPlaceholder('Switch to project…');
-    }
-
-    getItems(): StoryLineProject[] {
-        return this.projects;
-    }
-
-    getItemText(project: StoryLineProject): string {
-        return project.title + (project.seriesId || project.seriesUuid ? ` [${project.seriesId ?? project.seriesUuid}]` : '');
-    }
-
-    onChooseItem(project: StoryLineProject): void {
-        this.onChoose(project);
     }
 }
 
