@@ -51,7 +51,14 @@ export class InfoPanelComponent {
     hide(): void {
         this.currentScene = null;
         this.detachNotesEditor();
+        this.clearNotesRenderComponent();
         this.container.empty();
+    }
+
+    /** Release MarkdownRenderer child components when their preview goes away. */
+    private clearNotesRenderComponent(): void {
+        this.notesRenderComponent?.unload();
+        this.notesRenderComponent = null;
     }
 
     isVisible(): boolean {
@@ -91,6 +98,7 @@ export class InfoPanelComponent {
 
     private render(): void {
         this.detachNotesEditor();
+        this.clearNotesRenderComponent();
         this.container.empty();
         const scene = this.currentScene;
         if (!scene) return;
@@ -370,9 +378,8 @@ export class InfoPanelComponent {
      * Checkboxes are interactive in preview mode.
      */
     private renderNotesLive(container: HTMLElement, scene: Scene): void {
+        this.clearNotesRenderComponent();
         container.empty();
-        // Clean up previous markdown render component to avoid leaks
-        this.notesRenderComponent?.unload();
 
         if (!scene.notes) {
             // Empty state — show a clickable placeholder that opens the editor
@@ -436,6 +443,7 @@ export class InfoPanelComponent {
     }
 
     private renderNotesEditor(container: HTMLElement, scene: Scene): void {
+        this.clearNotesRenderComponent();
         container.empty();
         const editorEl = container.createDiv('sl-info-notes-live is-editing');
 
