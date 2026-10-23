@@ -59,6 +59,7 @@ import { registerEvents } from './commands/registerEvents';
 import { registerLeafChange } from './commands/registerLeafChange';
 import { registerViews } from './views/registerViews';
 import { createServices, wireServiceCallbacks } from './services/initServices';
+import { runStartupSequence } from './services/startup';
 
 /**
  * StoryLine Plugin for Obsidian
@@ -233,98 +234,15 @@ export default class SceneCardsPlugin extends Plugin {
 
         // Wait for the workspace layout to be ready, then bootstrap projects
         this.app.workspace.onLayoutReady(async () => {
-            try {
-                // Apply frontmatter visibility (scoped to StoryLine files only — issue #104)
-                this.updateFrontmatterVisibility();
-                // Apply toolbar visibility settings (v1.10.17) — hide the
-                // "StoryLine" title row and/or auto-collapse view-tab labels
-                // when the toolbar is narrow.
-                this.updateToolbarVisibility();
+            // Issue #238 — periodic autosave of writing stats so a crash or
+            // force-quit no longer loses the whole session. The safety-net
+            // interval flushes+persists every 5 minutes regardless of activity.
+            this.writingStatsIntervalId = window.setInterval(
+                () => this.scheduleWritingStatsSave(true),
+                5 * 60_000,
+            );
 
-                await this.bootstrapProjects();
-                // Re-initialize scene index now that the active project is set.
-                // Views that opened before bootstrapProjects may have scanned a
-                // fallback folder and found no scenes.
-                await this.sceneManager.initialize(true);
-                // Migrate legacy data from data.json into project frontmatter
-                await this.migrateProjectDataFromSettings();
-                // Load per-project data from System/ files (tagColors, aliases, etc.)
-                await this.loadProjectSystemData();
-                // Load universal field templates from System/field-templates.json
-                await this.fieldTemplates.load();
-                // Load corkboard layout from System/board.json
-                await this.sceneManager.loadCorkboardPositions();
-                // Load active view snapshot state
-                await this.viewSnapshotService.loadActiveState();
-                // Load locations and characters for the active project
-                try {
-                    await this.loadActiveProjectEntities();
-                } catch (e) {
-                    console.error('[StoryLine] Failed to load active project entities:', e);
-                }
-                // Scan extra source folders and route by frontmatter type
-                try {
-                    await this.scanExtraFolders();
-                } catch (e) {
-                    console.error('[StoryLine] Failed to scan extra folders:', e);
-                }
-                // Load and initialize codex (must be before LinkScanner.scanAll)
-                try {
-                    const codexFolder = this.sceneManager.getCodexFolder();
-                    if (codexFolder) {
-                        const customDefs = (this.settings.codexCustomCategories || []).map(
-                            (cc: { id: string; label: string; icon: string }) => makeCustomCodexCategory(cc.id, cc.label, cc.icon)
-                        );
-                        this.codexManager.initCategories(this.settings.codexEnabledCategories || [], customDefs);
-                        await this.codexManager.loadAll(codexFolder);
-                        // Load inherited codex from Universe and Series scopes
-                        try {
-                            const inheritedFolders = await this.universeManager.getInheritedCodexFolders(
-                                this.sceneManager.activeProject!
-                            );
-                            if (inheritedFolders.length > 0) {
-                                await this.codexManager.loadInheritedFolders(inheritedFolders);
-                            }
-                        } catch { /* Universe inheritance is optional; ignore errors */ }
-                    }
-                } catch (e) {
-                    console.error('[StoryLine] Failed to load codex:', e);
-                }
-                // Load Events for the active project
-                try {
-                    await this.loadActiveProjectEvents();
-                } catch (e) {
-                    console.error('[StoryLine] Failed to load events:', e);
-                }
-                // Scan scene bodies for wikilinks after entities are fully loaded
-                // Issue #271 fix: explicitly re-scan to ensure link discovery works on reload
-                this.linkScanner.invalidateAll();
-                this.linkScanner.rebuildLookups(this.settings.characterAliases);
-                await this.linkScanner.scanAllAsync(this.sceneManager.getAllScenes());
-                // Ensure a plotgrid file exists for the active project (or default location)
-                // (removed — createPlotGridIfMissing was causing race-condition overwrites)
-
-                // Initialize writing tracker from per-project System/stats.json
-                const stats = this.sceneManager.queryService.getStatistics();
-                this.writingTracker.startSession(stats.totalWords);
-
-                // Issue #238 — periodic autosave of writing stats so a crash or
-                // force-quit no longer loses the whole session. A debounced save
-                // runs 60s after the last scene change, and a safety-net interval
-                // flushes+persists every 5 minutes regardless of activity.
-                this.scheduleWritingStatsSave();
-                this.writingStatsIntervalId = window.setInterval(
-                    () => this.scheduleWritingStatsSave(true),
-                    5 * 60_000,
-                );
-
-                // Refresh all open views now that the project is set — this ensures
-                // PlotGrid and other views that opened before bootstrapProjects reload
-                // their data from the correct project folder.
-                this.refreshOpenViews();
-            } catch (startupErr) {
-                void startupErr;
-            }
+            await runStartupSequence(this);
         });
 
         // Register the supplied StoryLine mark in Obsidian's icon registry.
@@ -2483,7 +2401,7 @@ export default class SceneCardsPlugin extends Plugin {
      *
      * After successful migration the legacy keys are removed from data.json.
      */
-    private async migrateProjectDataFromSettings(): Promise<void> {
+    async migrateProjectDataFromSettings(): Promise<void> {
         const rawAny: unknown = await this.loadData();
         if (!rawAny || !isRecord(rawAny)) return;
         const raw = rawAny as Record<string, unknown> & {
@@ -2756,7 +2674,7 @@ export default class SceneCardsPlugin extends Plugin {
      * hasn't finished indexing (common on mobile and after laptop wake).
      * Only prompt for a new project if retries are exhausted.
      */
-    private async bootstrapProjects(): Promise<void> {
+    async bootstrapProjects(): Promise<void> {
         let projects = await this.sceneManager.scanProjects();
 
         // If nothing found but we expect a project, retry after short delays
