@@ -136,7 +136,7 @@ function createMockVault(files: Record<string, string>) {
         read: async (file: TFile) => fileMap.get(file.path) || '',
         create: async (path: string, content: string) => {
             fileMap.set(path, content);
-            return new (TFile as unknown)(path);
+            return new (TFile as any)(path);
         },
         modify: async (file: TFile, content: string) => {
             fileMap.set(file.path, content);
@@ -144,10 +144,10 @@ function createMockVault(files: Record<string, string>) {
         getMarkdownFiles: () => {
             return Array.from(fileMap.keys())
                 .filter(p => p.endsWith('.md'))
-                .map(p => new (TFile as unknown)(p));
+                .map(p => new (TFile as any)(p));
         },
         getAbstractFileByPath: (path: string) => {
-            if (fileMap.has(path)) return new (TFile as unknown)(path);
+            if (fileMap.has(path)) return new (TFile as any)(path);
             return null;
         },
     };
@@ -155,8 +155,8 @@ function createMockVault(files: Record<string, string>) {
     return { vault: mockVault, fileMap };
 }
 
-function createMockApp(vault: unknown) {
-    return { vault } as unknown;
+function createMockApp(vault: any) {
+    return { vault } as any;
 }
 
 // Note: The obsidian mock (__mocks__/obsidian.ts) already provides parseYaml/stringifyYaml.
@@ -341,8 +341,8 @@ describe('Phase 2: Event persistence', () => {
         fileMap.set(event.filePath, newContent);
 
         // Reload from vault and save with a name change
-        const file = eventManager['app'].vault.getAbstractFileByPath(event.filePath) as unknown;
-        const reloadedContent = await eventManager['app'].vault.read(file);
+        const file = eventManager['app'].vault.getAbstractFileByPath(event.filePath) as any;
+        const reloadedContent = await eventManager['app'].vault.read(file as any);
         const reloaded = eventManager.parseEvent(reloadedContent, event.filePath)!;
         reloaded.name = 'Renamed Event';
         await eventManager.saveEvent(reloaded);
@@ -369,8 +369,8 @@ describe('Phase 2: Event persistence', () => {
         fileMap.set(event.filePath, newContent);
 
         // Reload from vault and save with a name change
-        const file = eventManager['app'].vault.getAbstractFileByPath(event.filePath) as unknown;
-        const reloadedContent = await eventManager['app'].vault.read(file);
+        const file = eventManager['app'].vault.getAbstractFileByPath(event.filePath) as any;
+        const reloadedContent = await eventManager['app'].vault.read(file as any);
         const reloaded = eventManager.parseEvent(reloadedContent, event.filePath)!;
         reloaded.name = 'Updated Body Event';
         await eventManager.saveEvent(reloaded);
@@ -556,7 +556,7 @@ describe('Phase 2: TimeSpan arithmetic edge cases', () => {
         const ts = service.parse('2024-01-31');
         expect(ts).not.toBeNull();
         // 2024 is a leap year
-        const shifted = service.shiftTimestamp((ts as unknown).instant, 1, 'month');
+        const shifted = service.shiftTimestamp((ts as any).instant!, 1, 'month');
         expect(shifted.month).toBe(2);
         expect(shifted.day).toBe(29); // leap year
     });
@@ -564,7 +564,7 @@ describe('Phase 2: TimeSpan arithmetic edge cases', () => {
     it('handles Dec 31 + 1 day = Jan 1 next year', () => {
         const ts = service.parse('2023-12-31');
         expect(ts).not.toBeNull();
-        const shifted = service.shiftTimestamp((ts as unknown).instant, 1, 'day');
+        const shifted = service.shiftTimestamp((ts as any).instant!, 1, 'day');
         expect(shifted.year).toBe(2024);
         expect(shifted.month).toBe(1);
         expect(shifted.day).toBe(1);
@@ -574,7 +574,7 @@ describe('Phase 2: TimeSpan arithmetic edge cases', () => {
         const ts = service.parse('2024-02-29');
         expect(ts).not.toBeNull();
         // +1 year from leap year → Feb 28
-        const shifted = service.shiftTimestamp((ts as unknown).instant, 1, 'year');
+        const shifted = service.shiftTimestamp((ts as any).instant!, 1, 'year');
         expect(shifted.year).toBe(2025);
         // Year offset doesn't clamp day — that's expected behavior
         expect(shifted.month).toBe(2);

@@ -23,12 +23,12 @@ import type { Event } from '../src/models/Event';
 describe('EventManager Integration', () => {
     let eventManager: EventManager;
     let timeSpanService: TimeSpanService;
-    let mockVault: unknown;
+    let mockVault: any;
 
     beforeEach(() => {
         timeSpanService = new TimeSpanService();
         const mockApp = { vault: { adapter: {}, getMarkdownFiles: () => [], read: async () => '', create: async () => {}, modify: async () => {}, getAbstractFileByPath: () => null } };
-        eventManager = new EventManager(mockApp as unknown);
+        eventManager = new EventManager(mockApp as any);
         eventManager.setTimeSpanService(timeSpanService);
         mockVault = mockApp.vault;
     });

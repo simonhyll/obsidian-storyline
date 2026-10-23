@@ -22,7 +22,7 @@ describe('Phase 3: Events in Timeline', () => {
 
     beforeEach(() => {
         tsService = new TimeSpanService();
-        eventManager = new EventManager({} as unknown);
+        eventManager = new EventManager({} as any);
         eventManager.setTimeSpanService(tsService);
     });
 

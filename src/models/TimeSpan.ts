@@ -216,7 +216,7 @@ export function createIntervalTimeSpan(
             },
             end: {
                 calendar: cal,
-                year: endYear,
+                year: endYear!,
                 month: endMonth,
                 day: endDay,
                 precision: endDay ? 'day' : endMonth ? 'month' : 'year',

@@ -5,15 +5,15 @@
 
 // Core types
 export class App {
-    vault: unknown = null;
-    workspace: unknown = null;
-    commands: unknown = null;
-    scope: unknown = null;
-    plugins: unknown = null;
+    vault: any = null;
+    workspace: any = null;
+    commands: any = null;
+    scope: any = null;
+    plugins: any = null;
     customRibbon = false;
-    manifest: unknown = null;
-    metadataCache: unknown = null;
-    resourceManager: unknown = null;
+    manifest: any = null;
+    metadataCache: any = null;
+    resourceManager: any = null;
     isMobileEditor = false;
     isMobile = false;
     isSafari = false;
@@ -23,7 +23,7 @@ export class App {
 }
 
 export class Vault {
-    adapter: unknown = null;
+    adapter: any = null;
     getMarkdownFiles() { return []; }
     getAllFiles() { return []; }
     getFileByPath() { return null; }
@@ -31,23 +31,23 @@ export class Vault {
 }
 
 export class WorkspaceLeaf {
-    view: unknown = null;
+    view: any = null;
 }
 
 export class ItemView {
-    constructor(leaf: unknown) {}
+    constructor(leaf: any) {}
     getViewType() { return ''; }
     getDisplayText() { return ''; }
     getIcon() { return ''; }
-    containerEl: unknown = null;
+    containerEl: any = null;
     async onOpen() {}
     async onClose() {}
 }
 
 export class Modal {
-    app: unknown = null;
-    contentEl: unknown = null;
-    titleEl: unknown = null;
+    app: any = null;
+    contentEl: any = null;
+    titleEl: any = null;
     open() {}
     close() {}
     constructor() {
@@ -63,7 +63,7 @@ export class Modal {
 }
 
 export class Setting {
-    constructor(_container: unknown) {}
+    constructor(_container: any) {}
     setName() { return this; }
     setDesc() { return this; }
     addText() { return this; }
@@ -83,7 +83,7 @@ export class Setting {
 export class TextComponent {
     setPlaceholder() { return this; }
     onChange() { return this; }
-    inputEl: unknown = null;
+    inputEl: any = null;
     setValue() { return this; }
     getValue() { return ''; }
 }
@@ -101,7 +101,7 @@ export class DropdownComponent {
     onChange() { return this; }
     setValue() { return this; }
     getValue() { return ''; }
-    selectEl: unknown = { empty: () => {} };
+    selectEl: any = { empty: () => {} };
 }
 
 export class Notice {
@@ -123,7 +123,7 @@ export class Menu {
  */
 export function parseYaml(text: string): Record<string, unknown> {
     const lines = text.split('\n');
-    return parseYamlBlock(lines, 0, 0)[0];
+    return parseYamlBlock(lines, 0, 0)[0] as Record<string, unknown>;
 }
 
 /**
@@ -321,7 +321,7 @@ export function normalizePath(path: string): string {
     return result;
 }
 
-export function setIcon(el: unknown, icon: string): void {
+export function setIcon(el: any, icon: string): void {
     // No-op
 }
 
@@ -359,8 +359,8 @@ export class TFolder {
 export class TFile {
     path: string;
     name: string;
-    vault: unknown;
-    parent: unknown;
+    vault: any;
+    parent: any;
     constructor(p?: string) {
         this.path = p || '';
         this.name = this.path.split('/').pop() || this.path;

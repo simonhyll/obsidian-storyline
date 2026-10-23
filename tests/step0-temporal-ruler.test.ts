@@ -228,10 +228,10 @@ describe('TimelineView — temporal ruler', () => {
         expect(firstMarker).toBeDefined();
 
         // Simulate clicking the first marker
-        nav.jumpToDate(firstMarker.timestamp.year);
+        nav.jumpToDate(firstMarker!.timestamp.year);
 
         const state = nav.getState();
-        expect(state.selectedDate?.year).toBe(firstMarker.timestamp.year);
+        expect(state.selectedDate?.year).toBe(firstMarker!.timestamp.year);
     });
 });
 
