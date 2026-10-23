@@ -1,0 +1,606 @@
+/* --- Scene Inspector tabs + Info panel (right sidebar) --- */
+/* The view marks its Obsidian leaf wrapper with `.sl-scene-inspector-leaf`
+    so the leaf content can claim full height. In the right sidedock Obsidian
+    does NOT give it `flex:1` by default. */
+.workspace-leaf.sl-scene-inspector-leaf > .workspace-leaf-content {
+    flex: 9999 1 auto;
+    min-height: 0;
+    height: 100%;
+}
+/* Orphan leaf-content siblings (stale DOM from previous sessions for the
+   embedded views) steal vertical space. Workspace API confirms they aren't
+   real leaves, so it's safe to hide them when they appear alongside us. */
+.workspace-leaf.sl-scene-inspector-leaf > .workspace-leaf-content[data-type="story-line-research"],
+.workspace-leaf.sl-scene-inspector-leaf > .workspace-leaf-content[data-type="story-line-help"] {
+    display: none;
+}
+.view-content.sl-scene-inspector-host {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.sl-scene-inspector-sidebar {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.sl-inspector-tabbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px 6px 10px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    background: var(--background-secondary);
+    flex: 0 0 auto;
+}
+.sl-inspector-tab.sl-inspector-tab {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0 10px;
+    margin: 0;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    outline: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    min-width: 0;
+    line-height: 1;
+}
+.sl-inspector-tab.sl-inspector-tab:hover {
+    background: none;
+    color: var(--text-normal);
+}
+.sl-inspector-tab.sl-inspector-tab:focus,
+.sl-inspector-tab.sl-inspector-tab:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+.sl-inspector-tab.sl-inspector-tab.active {
+    background: none;
+    color: var(--interactive-accent);
+    border-bottom-color: var(--interactive-accent);
+    cursor: default;
+}
+.sl-inspector-tab-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.sl-inspector-tab-icon svg,
+.sl-inspector-tab-icon .svg-icon {
+    width: 16px;
+    height: 16px;
+}
+.sl-inspector-panels {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+.sl-inspector-panel {
+    display: none;
+}
+.sl-inspector-panel.is-active {
+    display: block;
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+.sl-inspector-panel.is-active:not(.sl-inspector-embed) {
+    padding: 8px 10px 32px;
+}
+/* Embedded full-views: no panel-level padding — the inner view classes
+   (e.g. `.sl-research-panel`, `.storyline-help-container`) own their own
+   padding, identical to when they're mounted as standalone views. */
+.sl-inspector-panel.is-active.sl-inspector-embed {
+    overflow-y: auto;
+}
+/* Bottom breathing room for the embedded scroll containers so the last
+   item is fully visible when scrolled to the end. */
+.sl-inspector-panel.is-active.sl-inspector-embed > .sl-research-panel,
+.sl-inspector-panel.is-active.sl-inspector-embed > .storyline-help-container {
+    padding-bottom: 40px;
+}
+.sl-inspector-shortcut {
+    padding: 12px 4px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+}
+.sl-inspector-shortcut p {
+    margin: 0;
+}
+
+/* Info panel layout */
+.sl-info-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px;
+}
+.sl-info-title {
+    font-size: var(--font-ui-medium);
+    font-weight: 700;
+    color: var(--text-normal);
+    margin-bottom: 4px;
+}
+.sl-info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 28px;
+}
+.sl-info-label {
+    flex: 0 0 70px;
+    font-size: var(--font-ui-smaller);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+.sl-info-field {
+    flex: 1;
+    min-width: 0;
+}
+.sl-info-value {
+    color: var(--text-normal);
+}
+.sl-quote-settings {
+    margin-bottom: 8px;
+}
+.sl-info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+}
+.sl-info-section-label {
+    font-size: var(--font-ui-smaller);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+.sl-info-synopsis-textarea {
+    width: 100%;
+    min-height: 320px;
+    resize: vertical;
+    font-family: var(--font-text);
+    font-size: var(--font-ui-small);
+    line-height: 1.4;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    color: var(--text-normal);
+    box-sizing: border-box;
+}
+.sl-info-notes-textarea {
+    width: 100%;
+    min-height: 260px;
+    resize: vertical;
+    font-family: var(--font-text);
+    font-size: var(--font-ui-small);
+    line-height: 1.4;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    color: var(--text-normal);
+    box-sizing: border-box;
+}
+.sl-info-notes-open-btn {
+    float: right;
+    padding: 2px 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+}
+.sl-info-notes-open-btn:hover {
+    color: var(--interactive-accent);
+}
+.sl-info-notes-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.sl-info-notes-header .sl-info-section-label { flex: 1; }
+.sl-info-notes-header .clickable-icon {
+    padding: 2px 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+}
+.sl-info-notes-header .clickable-icon:hover { color: var(--interactive-accent); }
+.sl-info-notes-container { width: 100%; }
+.sl-info-notes-editor-host {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    overflow: hidden;
+}
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .workspace-tabs,
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .workspace-tab-container,
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .workspace-leaf,
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .workspace-leaf-content,
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .view-content,
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .markdown-source-view,
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .markdown-reading-view,
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .cm-editor {
+    height: 100%;
+    min-height: 0;
+    width: 100%;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .view-header,
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .workspace-tab-header-container,
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .workspace-leaf-resize-handle {
+    display: none;
+}
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .inline-title.inline-title {
+    display: none;
+}
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .view-content {
+    padding: 0;
+    overflow: hidden;
+}
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .markdown-source-view .cm-scroller.cm-scroller,
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .markdown-reading-view .cm-scroller.cm-scroller,
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .cm-editor .cm-scroller.cm-scroller {
+    overflow: auto;
+}
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .cm-content,
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .markdown-preview-sizer {
+    min-height: 100%;
+}
+.sl-info-notes-embedded-split.sl-info-notes-embedded-split .sl-notes-hidden-heading.sl-notes-hidden-heading {
+    display: none;
+}
+.sl-info-notes-live {
+    width: 100%;
+    min-height: 40px;
+    border-radius: 6px;
+    font-size: var(--font-ui-small);
+    line-height: 1.5;
+}
+.sl-info-notes-live.is-preview {
+    padding: 8px;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    color: var(--text-normal);
+    cursor: text;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.sl-info-notes-live.is-preview:hover {
+    border-color: var(--interactive-accent);
+}
+.sl-info-notes-live.is-preview p { margin: 0.3em 0; }
+.sl-info-notes-live.is-preview ul, .sl-info-notes-live.is-preview ol { margin: 0.3em 0; padding-left: 1.5em; }
+.sl-info-notes-live.is-preview input[type="checkbox"] { margin-right: 4px; cursor: pointer; }
+.sl-info-notes-live.is-preview .task-list-item { list-style: none; }
+.sl-info-notes-live.is-preview a { color: var(--interactive-accent); }
+.sl-info-notes-live.is-empty {
+    padding: 16px 8px;
+    border: 1px dashed var(--background-modifier-border);
+    cursor: pointer;
+}
+.sl-info-notes-live.is-empty:hover {
+    border-color: var(--interactive-accent);
+    background: var(--background-primary);
+}
+.sl-info-notes-placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+}
+
+/* Issue #200 — placeholder shown in the Notes sidebar view when a scene has
+   no notes file yet. Clicking it creates the file lazily (no empty files
+   spawned just by opening a scene). */
+.sl-notes-placeholder {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 24px;
+}
+.sl-notes-placeholder p {
+    margin: 0;
+    font-style: italic;
+}
+.sl-notes-create-btn {
+    cursor: pointer;
+}
+
+/* Dedicated Synopsis / Notes inspector tabs: full-width, full-height,
+   no resize handle on the textarea — the textarea grows to fill the
+   available tab pane and scrolls internally. The active inspector panel
+   is `position: absolute; inset: 0` so `height: 100%` here resolves
+   against the panels host, giving the inner flex chain a real height. */
+.sl-inspector-panel.is-active.sl-inspector-panel-synopsis,
+.sl-inspector-panel.is-active.sl-inspector-panel-notes {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+}
+.sl-inspector-panel-synopsis .sl-info-panel,
+.sl-inspector-panel-notes .sl-info-panel,
+.sl-notes-view .sl-inspector-panel-notes.sl-info-panel,
+.sl-notes-view .sl-inspector-panel-notes {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.sl-inspector-panel-synopsis .sl-info-title,
+.sl-inspector-panel-notes .sl-info-title {
+    flex: 0 0 auto;
+}
+.sl-inspector-panel-synopsis .sl-info-section,
+.sl-inspector-panel-notes .sl-info-section {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.sl-inspector-panel-synopsis .sl-info-synopsis-textarea,
+.sl-inspector-panel-notes .sl-info-notes-textarea,
+.sl-inspector-panel-notes .sl-info-notes-container,
+.sl-inspector-panel-notes .sl-info-notes-live,
+.sl-notes-view .sl-info-notes-textarea,
+.sl-notes-view .sl-info-notes-container,
+.sl-notes-view .sl-info-notes-live {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    resize: none;
+    overflow: auto;
+    box-sizing: border-box;
+}
+
+/* Standalone Notes sidebar view — give the host a real height so the
+   inner flex chain on `.sl-inspector-panel-notes` has something to fill. */
+.view-content.sl-notes-view-host {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.sl-notes-view {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 10px 12px;
+    box-sizing: border-box;
+}
+
+.sl-notes-editor-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 2px 8px;
+}
+.sl-notes-editor-title {
+    flex: 1 1 auto;
+    font-weight: 600;
+    font-size: var(--font-ui-medium);
+    color: var(--text-normal);
+}
+.sl-notes-open-btn {
+    flex: 0 0 auto;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+.sl-notes-open-btn:hover {
+    color: var(--interactive-accent);
+}
+.sl-notes-editor-host {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    overflow: hidden;
+}
+.sl-notes-embedded-split.sl-notes-embedded-split {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+.sl-notes-embedded-split.sl-notes-embedded-split .workspace-tabs,
+.sl-notes-embedded-split.sl-notes-embedded-split .workspace-tab-container,
+.sl-notes-embedded-split.sl-notes-embedded-split .workspace-leaf,
+.sl-notes-embedded-split.sl-notes-embedded-split .workspace-leaf-content,
+.sl-notes-embedded-split.sl-notes-embedded-split .view-content,
+.sl-notes-embedded-split.sl-notes-embedded-split .markdown-source-view,
+.sl-notes-embedded-split.sl-notes-embedded-split .markdown-reading-view,
+.sl-notes-embedded-split.sl-notes-embedded-split .cm-editor {
+    height: 100%;
+    min-height: 0;
+    width: 100%;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+.sl-notes-embedded-split.sl-notes-embedded-split .view-header,
+.sl-notes-embedded-split.sl-notes-embedded-split .workspace-tab-header-container,
+.sl-notes-embedded-split.sl-notes-embedded-split .workspace-leaf-resize-handle {
+    display: none;
+}
+.sl-notes-embedded-split.sl-notes-embedded-split .view-content {
+    padding: 0;
+    overflow: hidden;
+}
+.sl-notes-embedded-split.sl-notes-embedded-split .markdown-source-view .cm-scroller.cm-scroller,
+.sl-notes-embedded-split.sl-notes-embedded-split .markdown-reading-view .cm-scroller.cm-scroller,
+.sl-notes-embedded-split.sl-notes-embedded-split .cm-editor .cm-scroller.cm-scroller {
+    overflow: auto;
+}
+.sl-notes-embedded-split.sl-notes-embedded-split .cm-content,
+.sl-notes-embedded-split.sl-notes-embedded-split .markdown-preview-sizer {
+    min-height: 100%;
+}
+
+/* Standalone Synopsis sidebar view — same flex chain as Notes. */
+.view-content.sl-synopsis-view-host {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.sl-synopsis-view {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 10px 12px;
+    box-sizing: border-box;
+}
+
+/* Standalone Scene Details view — hosts the full InspectorComponent. */
+.view-content.sl-details-view-host {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.sl-details-view {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 10px 12px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+/* Tab bar layout updated: tabs are direct children of `.sl-inspector-tabbar`
+   with a generous gap. Pop-out is exposed via right-click context menu, not
+   a per-tab button, so no wrapper/popout styling is needed. */
+
+/* Status dropdown - info panel variant */
+.sl-info-status-dropdown {
+    position: relative;
+    flex: 1;
+}
+.sl-info-status-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: var(--font-ui-small);
+    color: var(--text-normal);
+    width: 100%;
+    justify-content: space-between;
+}
+.sl-info-status-button:hover {
+    background: var(--background-modifier-hover);
+}
+.sl-info-status-icon {
+    display: inline-flex;
+    align-items: center;
+}
+.sl-info-status-label {
+    flex: 1;
+    text-align: left;
+}
+.sl-info-status-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 2px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    box-shadow: var(--shadow-s);
+    z-index: 100;
+    overflow: hidden;
+}
+.sl-info-status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: var(--font-ui-small);
+}
+.sl-info-status-item:hover {
+    background: var(--background-modifier-hover);
+}
+.sl-info-status-item.active {
+    background: var(--background-secondary);
+    font-weight: 600;
+}

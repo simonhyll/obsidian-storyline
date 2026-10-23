@@ -1,0 +1,65 @@
+/* ── Drag and Drop in Project Library ── */
+
+.universe-selector-card {
+    position: relative;
+}
+
+.universe-selector-card.dragging {
+    opacity: 0.4;
+    transform: scale(0.95);
+}
+
+.universe-selector-card.drag-over {
+    outline: 2px dashed var(--text-accent);
+    outline-offset: 2px;
+}
+
+.universe-selector-section.drag-over {
+    background: color-mix(in srgb, var(--text-accent) 6%, var(--background-secondary));
+    border-radius: 4px;
+}
+
+.universe-selector-section.drag-over-standalone {
+    background: color-mix(in srgb, var(--text-accent) 3%, var(--background-secondary));
+    border-radius: 4px;
+}
+
+/* Drag handle on book cards */
+.universe-selector-drag-handle {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    z-index: 5;
+    cursor: grab;
+    opacity: 0.3;
+    padding: 2px;
+    border-radius: 3px;
+    color: var(--text-muted);
+}
+
+.universe-selector-drag-handle:hover {
+    opacity: 0.8;
+    background: var(--background-modifier-hover);
+}
+
+.universe-selector-drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Standalone drop zone */
+.universe-selector-standalone-zone {
+    border: 2px dashed var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 12px;
+    margin: 8px 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.universe-selector-standalone-zone.drag-over {
+    border-color: var(--text-accent);
+    background: color-mix(in srgb, var(--text-accent) 4%, var(--background-secondary));
+}
+

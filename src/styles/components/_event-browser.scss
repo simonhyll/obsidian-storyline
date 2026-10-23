@@ -1,0 +1,131 @@
+/* ── Event Browser ── */
+
+.event-browser-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.event-browser-row {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    cursor: pointer;
+}
+
+.event-browser-row:hover {
+    background: var(--background-modifier-hover);
+}
+
+.event-browser-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.event-scope-badge {
+    float: right;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    text-transform: uppercase;
+}
+
+/* ── Event Selector ── */
+
+.storyline-event-selector .event-selector-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.storyline-event-selector .event-selector-label {
+    cursor: pointer;
+}
+
+/* ── Event Card ── */
+
+.storyline-event-card {
+    padding: 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.event-card-header h4 {
+    margin: 0 0 4px 0;
+}
+
+.event-card-time,
+.event-card-location,
+.event-card-participants,
+.event-card-description {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+}
+
+.event-card-tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.event-card-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--background-secondary);
+}
+
+/* ── Event Browser Actions ── */
+
+.event-browser-actions {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.event-browser-empty {
+    padding: 12px;
+    color: var(--text-muted);
+}
+
+/* ── Inspector Event Linking ── */
+
+.inspector-event-list {
+    margin-top: 4px;
+}
+
+.inspector-event-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.inspector-event-row:hover {
+    background: var(--background-modifier-hover);
+}
+
+.inspector-event-label {
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    margin-right: 8px;
+}
+
+.inspector-event-empty {
+    font-size: 12px;
+    opacity: 0.5;
+}
+
+.inspector-link-events-btn {
+    margin-top: 4px;
+    font-size: 12px;
+    padding: 2px 8px;
+}

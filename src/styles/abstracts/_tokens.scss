@@ -1,0 +1,178 @@
+/* ============================================
+   Scene Cards Plugin - Main Styles
+   ============================================ */
+
+/* ─── Theme-aware color tokens ──────────────────────────────── */
+/* Light theme (default) */
+body {
+    /* Status colors */
+    --sl-status-idea:       #9E9E9E;
+    --sl-status-outlined:   #2196F3;
+    --sl-status-draft:      #FF9800;
+    --sl-status-written:    #4CAF50;
+    --sl-status-revised:    #9C27B0;
+    --sl-status-final:      #F44336;
+
+    /* Emotion colors */
+    --sl-emotion-tense:       #E53935;
+    --sl-emotion-suspenseful: #D32F2F;
+    --sl-emotion-joyful:      #43A047;
+    --sl-emotion-happy:       #66BB6A;
+    --sl-emotion-melancholic: #5C6BC0;
+    --sl-emotion-sad:         #7986CB;
+    --sl-emotion-romantic:    #EC407A;
+    --sl-emotion-mysterious:  #8E24AA;
+    --sl-emotion-angry:       #F44336;
+    --sl-emotion-hopeful:     #29B6F6;
+    --sl-emotion-peaceful:    #26A69A;
+    --sl-emotion-default:     #9E9E9E;
+
+    /* Act / POV accent palette */
+    --sl-act-1: #2196F3;
+    --sl-act-2: #4CAF50;
+    --sl-act-3: #FF9800;
+    --sl-act-4: #9C27B0;
+    --sl-act-5: #F44336;
+
+    /* Relationship map */
+    --sl-rel-ally:     #4CAF50;
+    --sl-rel-enemy:    #F44336;
+    --sl-rel-romantic: #E91E63;
+    --sl-rel-family:   #FF9800;
+
+    /* Character role badges */
+    --sl-role-protagonist:    #7c3aed;
+    --sl-role-antagonist:     #dc2626;
+    --sl-role-deuteragonist:  #2563eb;
+    --sl-role-mentor:         #059669;
+    --sl-role-sidekick:       #d97706;
+    --sl-role-love-interest:  #db2777;
+    --sl-role-foil:           #7c3aed;
+    --sl-role-supporting:     #6b7280;
+    --sl-role-minor:          #9ca3af;
+
+    /* Semantic / UI */
+    --sl-warning:    #FF9800;
+    --sl-error:      #E53935;
+    --sl-success:    #4CAF50;
+    --sl-info:       #2196F3;
+    --sl-badge-text: #ffffff;
+
+    /* Shadows & subtle overlays — use semi-transparent black on light */
+    --sl-shadow-sm:      0 2px 8px rgba(0,0,0,0.12);
+    --sl-shadow-md:      0 4px 12px rgba(0,0,0,0.15);
+    --sl-shadow-panel:   -2px 0 10px rgba(0,0,0,0.10);
+    --sl-border-subtle:  rgba(0,0,0,0.06);
+    --sl-hover-overlay:  rgba(0,0,0,0.04);
+    --sl-hover-overlay2: rgba(0,0,0,0.045);
+
+    /* PlotGrid palette (light pastels) */
+    --sl-palette-1: #fde8d8;
+    --sl-palette-2: #fdf6d8;
+    --sl-palette-3: #d8f5e0;
+    --sl-palette-4: #d8eafd;
+    --sl-palette-5: #ead8fd;
+    --sl-palette-6: #fdd8e8;
+    --sl-palette-7: #d8f5f5;
+    --sl-palette-8: #f5d8d8;
+    --sl-palette-9: #e8e8e8;
+
+    /* Grid defaults */
+    --sl-grid-border:   #e0e0e0;
+    --sl-grid-flash:    rgba(255,255,0,0.18);
+    --sl-checker-light: #ffffff;
+    --sl-checker-dark:  #dddddd;
+
+    /* Error/invalid tints */
+    --sl-error-tint:    rgba(244,67,54,0.10);
+    --sl-error-border:  rgba(229,83,83,0.28);
+    --sl-error-bg:      rgba(229,83,83,0.12);
+    --sl-warning-tint:  rgba(244,67,54,0.08);
+
+    /* Plotgrid selection outline */
+    --sl-focus-ring:    rgba(63,81,181,0.12);
+
+    /* POV hue lightness for HSL-generated colors */
+    --sl-pov-lightness: 55%;
+}
+
+/* Dark theme overrides */
+body.theme-dark {
+    --sl-status-idea:       #BDBDBD;
+    --sl-status-outlined:   #64B5F6;
+    --sl-status-draft:      #FFB74D;
+    --sl-status-written:    #81C784;
+    --sl-status-revised:    #CE93D8;
+    --sl-status-final:      #EF5350;
+
+    --sl-emotion-tense:       #EF5350;
+    --sl-emotion-suspenseful: #E57373;
+    --sl-emotion-joyful:      #66BB6A;
+    --sl-emotion-happy:       #81C784;
+    --sl-emotion-melancholic: #7986CB;
+    --sl-emotion-sad:         #9FA8DA;
+    --sl-emotion-romantic:    #F06292;
+    --sl-emotion-mysterious:  #BA68C8;
+    --sl-emotion-angry:       #EF5350;
+    --sl-emotion-hopeful:     #4FC3F7;
+    --sl-emotion-peaceful:    #4DB6AC;
+    --sl-emotion-default:     #BDBDBD;
+
+    --sl-act-1: #64B5F6;
+    --sl-act-2: #81C784;
+    --sl-act-3: #FFB74D;
+    --sl-act-4: #CE93D8;
+    --sl-act-5: #EF5350;
+
+    --sl-rel-ally:     #81C784;
+    --sl-rel-enemy:    #EF5350;
+    --sl-rel-romantic: #F06292;
+    --sl-rel-family:   #FFB74D;
+
+    --sl-role-protagonist:    #a78bfa;
+    --sl-role-antagonist:     #f87171;
+    --sl-role-deuteragonist:  #60a5fa;
+    --sl-role-mentor:         #34d399;
+    --sl-role-sidekick:       #fbbf24;
+    --sl-role-love-interest:  #f472b6;
+    --sl-role-foil:           #a78bfa;
+    --sl-role-supporting:     #9ca3af;
+    --sl-role-minor:          #d1d5db;
+
+    --sl-warning:    #FFB74D;
+    --sl-error:      #EF5350;
+    --sl-success:    #81C784;
+    --sl-info:       #64B5F6;
+    --sl-badge-text: #ffffff;
+
+    --sl-shadow-sm:      0 2px 8px rgba(0,0,0,0.35);
+    --sl-shadow-md:      0 4px 12px rgba(0,0,0,0.40);
+    --sl-shadow-panel:   -2px 0 10px rgba(0,0,0,0.35);
+    --sl-border-subtle:  rgba(255,255,255,0.08);
+    --sl-hover-overlay:  rgba(255,255,255,0.04);
+    --sl-hover-overlay2: rgba(255,255,255,0.06);
+
+    --sl-palette-1: #4a3328;
+    --sl-palette-2: #4a4528;
+    --sl-palette-3: #284a32;
+    --sl-palette-4: #283a4a;
+    --sl-palette-5: #3a284a;
+    --sl-palette-6: #4a2838;
+    --sl-palette-7: #284a4a;
+    --sl-palette-8: #4a2828;
+    --sl-palette-9: #3a3a3a;
+
+    --sl-grid-border:   rgba(255,255,255,0.12);
+    --sl-grid-flash:    rgba(255,255,100,0.12);
+    --sl-checker-light: #2a2a2a;
+    --sl-checker-dark:  #404040;
+
+    --sl-error-tint:    rgba(244,67,54,0.15);
+    --sl-error-border:  rgba(239,83,83,0.35);
+    --sl-error-bg:      rgba(239,83,83,0.18);
+    --sl-warning-tint:  rgba(255,183,77,0.12);
+
+    --sl-focus-ring:    rgba(100,130,230,0.20);
+
+    --sl-pov-lightness: 65%;
+}

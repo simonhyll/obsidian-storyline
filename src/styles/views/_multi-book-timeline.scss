@@ -1,0 +1,113 @@
+/* ── Multi-book Timeline ───────────────────────────────────── */
+
+/* Compact book selector button in toolbar */
+.story-line-book-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.story-line-book-selector-btn {
+    font-size: 12px;
+    padding: 4px 10px;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-normal);
+    white-space: nowrap;
+}
+
+.story-line-book-selector-btn:hover {
+    background: var(--background-modifier-hover);
+}
+
+/* Popover dropdown */
+.story-line-book-selector-popover {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.story-line-book-active-only {
+    font-size: 11px;
+    padding: 4px 8px;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.story-line-book-universe {
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    padding: 4px 0 2px 0;
+    margin-top: 4px;
+}
+
+.story-line-book-series {
+    font-weight: 500;
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 2px 0 2px 8px;
+}
+
+.story-line-book-group {
+    font-weight: 500;
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 4px 0 2px 0;
+    margin-top: 4px;
+}
+
+.story-line-book-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 4px;
+    border-radius: 3px;
+}
+
+.story-line-book-row:hover {
+    background: var(--background-modifier-hover);
+}
+
+.story-line-book-label {
+    cursor: pointer;
+    font-size: 12px;
+    flex: 1;
+}
+
+.story-line-book-label.is-active {
+    color: var(--text-accent);
+    font-weight: 500;
+}
+
+/* Book title badge on scene cards */
+.timeline-card-book-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    background: var(--text-accent);
+    color: var(--text-on-accent);
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+/* Multi-book warning */
+.timeline-multi-book-warning {
+    padding: 8px 12px;
+    margin: 8px 0;
+    background: color-mix(in srgb, var(--text-accent) 6%, var(--background-secondary));
+    border-left: 3px solid var(--text-accent);
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+}

@@ -1,0 +1,87 @@
+/* --- View Switcher Tabs --- */
+.story-line-view-switcher {
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+.story-line-view-tab.story-line-view-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px 4px;
+    margin: 0;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    outline: none;
+    color: var(--text-muted);
+    font-size: 0.82em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+.story-line-view-tab.story-line-view-tab:hover {
+    background: none;
+    color: var(--text-normal);
+}
+
+.story-line-view-tab.story-line-view-tab:focus,
+.story-line-view-tab.story-line-view-tab:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+
+.story-line-view-tab.story-line-view-tab.active {
+    background: none;
+    color: var(--interactive-accent);
+    border-bottom-color: var(--interactive-accent);
+    cursor: default;
+    font-weight: 600;
+}
+
+.view-tab-icon {
+    display: flex;
+    align-items: center;
+    line-height: 1;
+}
+
+.view-tab-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.view-tab-label {
+    line-height: 1;
+}
+
+/* Auto-hide view-tab labels when the toolbar is too narrow to fit them
+   alongside the icons (v1.10.17). The `sl-collapsed` class is toggled by a
+   ResizeObserver in `components/ViewSwitcher.ts` — see `installAutoHideLabels`.
+   CSS container queries can't be used directly because the switcher is
+   `width: auto` (= its content width), so the container never reports a
+   constrained width to query against. */
+body.sl-auto-hide-tab-labels .story-line-view-switcher.sl-collapsed .view-tab-label {
+    display: none;
+}
+body.sl-auto-hide-tab-labels .story-line-view-switcher.sl-collapsed .story-line-view-tab {
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+.story-line-group-control {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85em;
+}
+
+.story-line-add-btn {
+    font-size: 0.85em;
+    padding: 4px 12px;
+}

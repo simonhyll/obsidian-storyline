@@ -1,0 +1,2433 @@
+/* --- Responsive / Mobile --- */
+@media (max-width: 768px) {
+    .story-line-board {
+        flex-direction: column;
+    }
+
+    .story-line-column {
+        min-width: 100%;
+        max-width: 100%;
+    }
+
+    .story-line-inspector-panel {
+        width: 100%;
+        position: fixed;
+        bottom: 0;
+        top: auto;
+        height: 50vh;
+        border-left: none;
+        border-top: 1px solid var(--sc-card-border);
+    }
+
+    .story-line-filter-bar {
+        flex-wrap: wrap;
+    }
+
+    .story-line-search {
+        max-width: 100%;
+        width: 100%;
+    }
+}
+
+/* ============================================
+   Structure Modal (Acts & Chapters)
+   ============================================ */
+
+/* Quick Add Modal Compactness */
+.story-line-quick-add.story-line-quick-add h2 {
+    margin: 0 0 8px 0;
+}
+
+.story-line-quick-add.story-line-quick-add .setting-item {
+    padding: 4px 0;
+    margin: 0;
+    border-top: none;
+}
+
+.story-line-quick-add.story-line-quick-add .setting-item-info {
+    flex: 0 0 120px;
+    margin-right: 12px;
+}
+
+.story-line-quick-add.story-line-quick-add .setting-item-control {
+    flex: 1;
+    justify-content: flex-start;
+}
+
+.story-line-quick-add.story-line-quick-add .setting-item-control input[type="text"],
+.story-line-quick-add.story-line-quick-add .setting-item-control select,
+.story-line-quick-add.story-line-quick-add .setting-item-control textarea {
+    width: 100%;
+}
+
+.story-line-quick-add.story-line-quick-add .setting-item-name {
+    font-size: 0.9em;
+}
+
+.story-line-quick-add.story-line-quick-add .setting-item-description {
+    font-size: 0.8em;
+    margin-top: 2px;
+}
+
+.story-line-quick-add .story-line-act-chapter-row {
+    display: flex;
+    flex-direction: row;
+    gap: 24px;
+    align-items: center;
+    margin: 4px 0;
+}
+
+.story-line-quick-add .story-line-field-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex: 1;
+    gap: 8px;
+}
+
+.story-line-quick-add .story-line-field-label {
+    flex: 0 0 120px;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.story-line-quick-add .story-line-field-group:last-child .story-line-field-label {
+    flex: 0 0 60px;
+}
+
+.story-line-quick-add .story-line-field-input {
+    flex: 1;
+}
+
+.story-line-quick-add .story-line-wide-input {
+    width: 100%;
+    max-width: 100%;
+}
+
+.story-line-quick-add.story-line-quick-add .story-line-conflict-section {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: none;
+}
+
+.story-line-quick-add .story-line-conflict-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 4px;
+}
+
+.story-line-quick-add .story-line-conflict-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8em;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.story-line-quick-add.story-line-quick-add .story-line-button-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: none;
+}
+
+.structure-list {
+    margin: 8px 0 16px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.structure-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    gap: 8px;
+    border-radius: 4px;
+}
+
+.structure-row:hover {
+    background: var(--background-modifier-hover);
+}
+
+.structure-label {
+    font-weight: 500;
+    flex: 1;
+}
+
+.structure-count {
+    color: var(--text-muted);
+    font-size: 0.85em;
+}
+
+.structure-remove {
+    opacity: 0.4;
+    font-size: 1.1em;
+    cursor: pointer;
+    padding: 2px 6px;
+}
+
+.structure-remove:hover {
+    opacity: 1;
+    color: var(--text-error);
+}
+
+.structure-empty {
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 12px;
+    text-align: center;
+}
+
+.structure-add-row {
+    margin-bottom: 16px;
+}
+
+.structure-add-row .setting-item {
+    border-top: none;
+    padding-top: 4px;
+}
+
+.structure-input {
+    min-width: 120px;
+}
+
+.custom-structure-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 8px 0 16px;
+}
+
+.structure-custom-act {
+    padding: 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-secondary);
+}
+
+.structure-custom-act-header,
+.structure-custom-beat,
+.structure-custom-beat-options {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.structure-custom-act-header {
+    margin-bottom: 8px;
+}
+
+.structure-custom-act-number,
+.structure-custom-beat-number {
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+    flex: 0 0 auto;
+}
+
+.structure-custom-act-number {
+    font-weight: 600;
+}
+
+.structure-custom-name-input,
+.structure-custom-subtitle-input,
+.structure-custom-description-input {
+    min-width: 0;
+    padding: 5px 7px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font: inherit;
+}
+
+.structure-custom-name-input:focus,
+.structure-custom-subtitle-input:focus,
+.structure-custom-description-input:focus {
+    border-color: var(--interactive-accent);
+    outline: none;
+}
+
+.structure-custom-act-header .structure-custom-name-input {
+    flex: 1;
+    font-weight: 600;
+}
+
+.structure-custom-beats {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.structure-custom-beat {
+    align-items: flex-start;
+}
+
+.structure-custom-beat-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+    min-width: 0;
+}
+
+.structure-custom-beat-fields .structure-custom-name-input,
+.structure-custom-beat-fields .structure-custom-subtitle-input,
+.structure-custom-beat-fields .structure-custom-description-input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.structure-custom-description-input {
+    resize: vertical;
+}
+
+.structure-custom-beat-options {
+    justify-content: space-between;
+}
+
+.structure-custom-arc-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+}
+
+.structure-custom-act > button,
+.custom-structure-editor > button {
+    margin-top: 8px;
+}
+
+@media (max-width: 600px) {
+    .structure-custom-act {
+        padding: 8px;
+    }
+
+    .structure-custom-beat {
+        gap: 5px;
+    }
+}
+
+/* Inline label editor in structure modal */
+.structure-label-input {
+    flex: 1;
+    padding: 2px 6px;
+    font-size: 0.9em;
+    border: 1px solid var(--interactive-accent);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    outline: none;
+}
+
+.structure-edit {
+    opacity: 0.4;
+    font-size: 0.85em;
+    cursor: pointer;
+    padding: 2px 6px;
+}
+
+.structure-edit:hover {
+    opacity: 1;
+    color: var(--interactive-accent);
+}
+
+/* Item wrapper groups the row + description together */
+.structure-item-wrapper {
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-bottom: 6px;
+    margin-bottom: 2px;
+}
+
+.structure-item-wrapper:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+/* Description textarea in structure modal */
+.structure-description {
+    display: block;
+    width: 100%;
+    min-height: 36px;
+    max-height: 160px;
+    padding: 4px 10px;
+    margin-top: 2px;
+    font-size: 0.82em;
+    line-height: 1.4;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    resize: none;
+    overflow: hidden;
+    font-family: inherit;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.structure-description:focus {
+    border-color: var(--interactive-accent);
+    background: var(--background-primary);
+    color: var(--text-normal);
+    outline: none;
+}
+
+.structure-description::placeholder {
+    color: var(--text-faint);
+    font-style: italic;
+}
+
+/* ============================================
+   Beat Sheet Template Cards
+   ============================================ */
+
+/* ── Beat Sheet Template items (rendered as Setting items — issue #214) ── */
+
+/* Expandable beat list inside the Setting description */
+.beat-sheet-details {
+    margin-top: 4px;
+}
+
+.beat-sheet-details-summary {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.beat-sheet-details[open] .beat-sheet-details-summary {
+    color: var(--text-normal);
+}
+
+/* ── Beat Sheet List (compact rows) — kept for any external references ── */
+.beat-sheet-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 16px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    /* Issue #214: use overflow-y:auto instead of overflow:hidden so the list
+       never collapses to zero height on mobile (overflow:hidden with no explicit
+       height causes the flex container to be invisible in some WebKit layouts). */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: 45vh;
+}
+
+.beat-sheet-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    flex-wrap: wrap;
+    transition: background 0.12s ease;
+}
+.beat-sheet-row:last-child {
+    border-bottom: none;
+}
+.beat-sheet-row:hover {
+    background: var(--background-secondary);
+}
+
+.beat-sheet-row-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.beat-sheet-row-header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.beat-sheet-row-name {
+    font-weight: 600;
+    font-size: 0.95em;
+    color: var(--text-normal);
+}
+
+.beat-sheet-row-info {
+    font-size: 0.75em;
+    color: var(--text-faint);
+    white-space: nowrap;
+}
+
+.beat-sheet-row-summary {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    line-height: 1.3;
+    margin-top: 1px;
+}
+
+.beat-sheet-expand-btn {
+    font-size: 0.9em;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 4px;
+}
+.beat-sheet-expand-btn:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.beat-sheet-row .beat-sheet-beats-preview {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+    flex-basis: 100%;
+    margin-top: 0;
+}
+
+.beat-sheet-row.is-expanded .beat-sheet-beats-preview {
+    max-height: 600px;
+    margin-top: 6px;
+}
+
+.beat-sheet-beat-item {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+    padding: 2px 0;
+    font-size: 0.78em;
+    line-height: 1.3;
+}
+
+.beat-sheet-beat-act {
+    font-family: var(--font-monospace);
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--interactive-accent);
+    flex-shrink: 0;
+    min-width: 22px;
+}
+
+.beat-sheet-beat-label {
+    font-weight: 500;
+    color: var(--text-normal);
+    flex-shrink: 0;
+}
+
+.beat-sheet-beat-desc {
+    color: var(--text-muted);
+    font-size: 0.92em;
+}
+
+.beat-sheet-apply-btn {
+    flex-shrink: 0;
+    font-size: 0.8em;
+    padding: 3px 10px;
+}
+
+.structure-close-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+/* ============================================
+   Timeline — Empty entries & selected state
+   ============================================ */
+
+.timeline-entry.selected .timeline-card {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px var(--interactive-accent);
+}
+
+.timeline-entry-empty {
+    opacity: 0.6;
+}
+
+.timeline-card-empty {
+    border: 2px dashed var(--background-modifier-border);
+    background: transparent;
+    cursor: pointer;
+    text-align: center;
+    padding: 16px;
+}
+
+.timeline-card-empty:hover {
+    border-color: var(--interactive-accent);
+    opacity: 1;
+}
+
+.timeline-card-hint {
+    color: var(--text-muted);
+    font-size: 0.85em;
+    margin: 4px 0 0;
+}
+
+/* ============================================
+   Timeline Event Markers
+   Horizontal marker style: date/title above a thin line, description below
+   ============================================ */
+
+/* Event marker entry — uses .timeline-entry flex layout (seq + dot + card columns) */
+.timeline-entry-event-marker {
+    cursor: pointer;
+    background: transparent;
+    transition: background 0.15s ease;
+}
+
+.timeline-entry-event-marker:hover {
+    background: color-mix(in srgb, var(--text-accent) 4%, var(--background-secondary));
+}
+
+/* Event dot — accent color */
+.timeline-dot-event {
+    background: var(--text-accent);
+    border-radius: 50%;
+    width: 10px;
+    height: 10px;
+    opacity: 0.8;
+}
+
+/* Vertical content column inside .timeline-entry-card */
+.timeline-event-content {
+    display: flex;
+    flex-direction: column;
+    padding: 6px 12px;
+    max-width: 480px;
+    border-left: 2px solid var(--text-accent);
+    margin-left: 4px;
+    background: color-mix(in srgb, var(--text-accent) 2%, var(--background-secondary));
+    border-radius: 0 4px 4px 0;
+}
+
+/* Top row: event title only (date is in left column) */
+.timeline-event-top {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 3px;
+}
+
+.timeline-event-title {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+/* Horizontal marker line — thin, not a box */
+.timeline-event-marker-line {
+    height: 1px;
+    background: var(--text-accent);
+    opacity: 0.35;
+    margin: 3px 0;
+}
+
+/* Description below the line */
+.timeline-event-description {
+    font-size: 0.82em;
+    color: var(--text-muted);
+    line-height: 1.4;
+    margin-top: 2px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Event icon (for swimlane cards) */
+.timeline-event-icon {
+    margin-right: 4px;
+    color: var(--text-accent);
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+}
+
+/* Uncertain/unknown date badges */
+.timeline-date-uncertain {
+    opacity: 0.7;
+    font-style: italic;
+}
+
+.timeline-date-unknown {
+    opacity: 0.5;
+    color: var(--text-muted);
+}
+
+/* Swimlane event card */
+.swimlane-event-card {
+    border-left: 3px solid var(--text-accent);
+    background: color-mix(in srgb, var(--text-accent) 5%, var(--sc-card-bg, var(--background-primary)));
+}
+
+.swimlane-event-card:hover {
+    box-shadow: var(--sl-shadow-sm);
+}
+
+/* Mobile / narrow window adjustments */
+@media (max-width: 600px) {
+    .timeline-event-content {
+        max-width: 260px;
+        padding: 4px 8px;
+    }
+    .timeline-event-description {
+        -webkit-line-clamp: 2;
+    }
+}
+
+/* ============================================
+   Issue #237 — Shift Dates modal
+   ============================================ */
+
+.story-line-shift-dates {
+    max-width: 640px;
+}
+
+.story-line-shift-dates h3 {
+    margin-top: 18px;
+    margin-bottom: 8px;
+}
+
+.story-line-shift-preview {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 8px;
+    background: var(--background-secondary);
+}
+
+.story-line-shift-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+.story-line-shift-preview-table th,
+.story-line-shift-preview-table td {
+    text-align: left;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    vertical-align: top;
+}
+
+.story-line-shift-preview-table th {
+    font-weight: 600;
+    color: var(--text-muted);
+    position: sticky;
+    top: 0;
+    background: var(--background-secondary);
+}
+
+.story-line-shift-preview-table tr.row-skipped {
+    opacity: 0.6;
+}
+
+.story-line-shift-note {
+    color: var(--text-warning);
+    font-size: 0.85em;
+    margin-left: 4px;
+}
+
+.story-line-shift-warning {
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: var(--background-modifier-warning);
+    color: var(--text-warning);
+    font-size: 0.9em;
+}
+
+.story-line-shift-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 18px;
+    padding-top: 12px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.timeline-act-add-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.timeline-act-divider:hover .timeline-act-add-btn {
+    opacity: 1;
+}
+
+/* ============================================
+   Plot Grid view styles (added)
+   ============================================ */
+
+/* Root and layout */
+.plot-grid-root {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-family);
+}
+
+.plot-grid-wrapper {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.plot-grid-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: var(--background-primary);
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.plot-grid-toolbar-left { display:flex; align-items:center; gap:8px; }
+.plot-grid-toolbar-actions { display:flex; align-items:center; gap:6px; margin-left:auto; }
+
+.plot-grid-formatting-group { display:flex; gap:6px; align-items:center; }
+.plot-grid-formatting-group button { padding:6px 8px; border-radius:6px; border:1px solid transparent; background:transparent; cursor:pointer; }
+.plot-grid-formatting-group button:hover { background:var(--background-modifier-hover); }
+.plot-grid-formatting-group select { padding:6px; border-radius:6px; }
+
+.plot-grid-scroll-area { flex:1 1 auto; overflow:auto; position:relative; }
+
+.plot-grid-canvas {
+    position:relative;
+    transform-origin: top left;
+    box-sizing: border-box;
+    background: transparent;
+}
+
+/* Corner cell (top-left) */
+.plot-grid-corner {
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
+    position: sticky;
+    top: 0; left: 0; z-index: 12;
+    background: var(--background-secondary);
+    border-bottom: 1px solid var(--background-modifier-border);
+    border-right: 1px solid var(--background-modifier-border);
+    display:flex; align-items:center; justify-content:center; padding:6px;
+}
+
+/* Column headers */
+.plot-grid-col-header {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:6px 8px;
+    position:relative;
+    user-select:none;
+    border:1px solid var(--sl-border-subtle);
+    min-width:80px;
+    box-sizing:border-box;
+}
+.plot-grid-col-header:hover { background: var(--background-modifier-hover); }
+
+.plot-col-resize-handle {
+    position:absolute; right:0; top:0; bottom:0; width:6px; cursor:col-resize; z-index:20; background:transparent;
+}
+
+.plot-label-col-resize-handle {
+    position:absolute; right:0; top:0; bottom:0; width:6px; cursor:col-resize; z-index:20; background:transparent;
+}
+
+/* Row headers */
+.plot-grid-row-header {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:6px 8px;
+    position:relative;
+    user-select:none;
+    border:1px solid var(--sl-border-subtle);
+    min-height:40px;
+    box-sizing:border-box;
+}
+.plot-grid-row-header:hover { background: var(--background-modifier-hover); }
+
+.plot-row-resize-handle {
+    position:absolute; left:0; right:0; bottom:0; height:6px; cursor:row-resize; z-index:20; background:transparent;
+}
+
+/* Cells */
+.plot-grid-cell {
+    text-align: center;
+    padding:6px 8px;
+    box-sizing:border-box;
+    border:1px solid var(--background-modifier-border);
+    white-space:pre-wrap;
+    overflow:hidden;
+    position:relative;
+    display:flex; flex-direction:column; justify-content:flex-start;
+    background: var(--background-primary);
+}
+.plot-grid-cell .plot-grid-linked-badge {
+    position:absolute; top:6px; right:6px; font-size:14px; cursor:pointer;
+}
+.plot-grid-linked-subtitle { position:absolute; top:26px; right:6px; font-size:11px; color:var(--text-muted); }
+
+.plot-grid-cell .plot-grid-cell-content { pointer-events:none; }
+
+.plot-grid-cell.editing { padding:0; }
+.plot-grid-cell.editing textarea { width:100%; height:100%; border:none; padding:8px; box-sizing:border-box; resize:none; background:transparent; }
+
+/* The POV character pill inside a Plot Grid cell's tag row. The cell
+   background itself stays untouched; only this single pill is tinted amber
+   so the eye can find the POV character at a glance. */
+.pg-codex-tag.pg-codex-tag-pov {
+    background: #F5D491;
+    color: #2a2010;
+    font-weight: 600;
+}
+
+/* Selection visuals */
+.plot-grid-cell.selected { box-shadow: inset 0 0 0 2px var(--interactive-accent); }
+.plot-grid-row-header.selected { box-shadow: inset 4px 0 0 var(--interactive-accent); }
+.plot-grid-col-header.selected { box-shadow: inset 0 4px 0 var(--interactive-accent); }
+
+/* Formatting toolbar small tweaks */
+.plot-grid-toolbar button { padding:6px 10px; border-radius:6px; border:1px solid transparent; background:transparent; cursor:pointer; }
+.plot-grid-toolbar button:hover { background:var(--background-modifier-hover); }
+
+/* Empty state inside canvas */
+.plot-grid-empty { grid-column:1/-1; grid-row:1/-1; display:flex; align-items:center; justify-content:center; padding:24px; color:var(--text-muted); }
+
+/* Drag handle look */
+/* Flash helper (used by JS inline) */
+.plot-grid-flash {
+    transition: background-color 160ms ease;
+}
+
+/* Make color input tiny and unobtrusive when used */
+.plot-grid-col-header input[type="color"], .plot-grid-row-header input[type="color"] { width:20px; height:20px; padding:0; border:none; background:transparent; margin-left:6px; cursor:pointer; }
+
+/* Responsive */
+@media (max-width: 720px) {
+    .plot-grid-col-header { min-width: 90px; padding:4px; }
+    .plot-grid-toolbar { gap:6px; padding:6px; }
+}
+
+/* ── PlotGrid: Mini Scene Card inside cells ── */
+.plot-grid-mini-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 2px 0;
+    width: 100%;
+}
+
+.pg-mini-title-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.pg-mini-status-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    width: 14px;
+    height: 14px;
+}
+.pg-mini-status-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.pg-mini-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 600;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.pg-mini-meta {
+    font-size: 10px;
+    color: var(--text-muted);
+    overflow: hidden;
+    margin-top: 2px;
+}
+
+.pg-mini-desc {
+    display: -webkit-box;
+    line-clamp: 3;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.3;
+    font-style: italic;
+}
+
+/* Sticky-note styled cell in plotgrid */
+.pg-cell-note.pg-cell-note {
+    justify-content: flex-start;
+}
+.pg-cell-note-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.55;
+    margin-bottom: 2px;
+    color: inherit;
+}
+.pg-cell-note-icon {
+    display: inline-flex;
+    align-items: center;
+    width: 13px;
+    height: 13px;
+}
+.pg-cell-note-icon svg {
+    width: 13px;
+    height: 13px;
+}
+.pg-cell-note-body {
+    font-size: 13px;
+    line-height: 1.4;
+    color: #2b2510;
+    white-space: pre-wrap;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 8;
+    line-clamp: 8;
+    -webkit-box-orient: vertical;
+}
+
+/* Origin label on corkboard sticky notes (from plotgrid auto-note) */
+.story-line-corkboard-note-origin {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    opacity: 0.5;
+    padding: 2px 6px 0;
+    color: var(--sl-note-accent-strong, #3b3520);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.story-line-corkboard-note-origin-icon {
+    display: inline-flex;
+    align-items: center;
+    width: 12px;
+    height: 12px;
+}
+.story-line-corkboard-note-origin-icon svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* Drop target highlight when dragging a scene card over a cell */
+.plot-grid-cell.plot-grid-cell.plot-grid-drop-target {
+    outline: 2px dashed var(--interactive-accent);
+    outline-offset: -2px;
+    background: rgba(var(--interactive-accent-rgb, 99, 135, 210), 0.08);
+}
+
+/* ── PlotGrid: Act/Chapter Dividers ── */
+.plot-grid-divider {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 6px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--sl-border-subtle, var(--background-modifier-border));
+    user-select: none;
+    overflow: hidden;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.plot-grid-divider:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: -2px; }
+.plot-grid-divider-act {
+    background: var(--background-modifier-border);
+    font-size: 13px;
+    color: var(--text-normal);
+}
+.plot-grid-divider-chapter {
+    background: var(--background-modifier-hover);
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.plot-grid-divider-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    opacity: 0.6;
+}
+.plot-grid-divider-icon svg {
+    width: 14px;
+    height: 14px;
+}
+.plot-grid-divider-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ─── Cell Inspector Tabs ──────────────────────────────────── */
+.sl-cell-tab-bar {
+    display: flex;
+    gap: 0;
+    margin: 4px -12px 0;
+    padding: 0;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.sl-cell-tab {
+    position: relative;
+    flex: 1;
+    text-align: center;
+    padding: 10px 18px 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-bottom: none;
+    border-top: 3px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    user-select: none;
+}
+
+.sl-cell-tab:first-child {
+    border-left: none;
+}
+
+.sl-cell-tab:last-child {
+    border-right: none;
+}
+
+.sl-cell-tab:hover:not(.sl-cell-tab-active) {
+    color: var(--text-normal);
+    background: var(--background-modifier-hover);
+}
+
+.sl-cell-tab-active {
+    color: var(--interactive-accent);
+    background: var(--background-primary);
+    border-top-color: var(--interactive-accent);
+    font-weight: 600;
+}
+
+.sl-cell-tab-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--interactive-accent);
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.sl-cell-tab-body {
+    padding-top: 8px;
+    padding-bottom: 24px;
+}
+
+/* Hide the InspectorComponent's own header/close when embedded in a tab */
+.sl-cell-tab-body > .story-line-inspector > .inspector-header {
+    display: none;
+}
+
+/* Inspector panel positioning for PlotGrid wrapper */
+.plot-grid-wrapper .story-line-inspector-panel {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 20;
+}
+
+/* ─── Export Modal ──────────────────────────────────────────── */
+.modal.mod-storyline-export {
+    max-width: 420px;
+    width: 420px;
+}
+
+.storyline-export-modal {
+    max-width: 100%;
+}
+
+.storyline-export-project-name {
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+.storyline-export-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+/* ============================================
+   Timeline Mode Badges
+   ============================================ */
+
+/* Shared badge styling for timeline mode indicators */
+.timeline-mode-badge,
+.scene-card-timeline-mode,
+.inspector-timeline-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    line-height: 1.3;
+    white-space: nowrap;
+    margin-top: 2px;
+}
+
+.timeline-mode-badge svg,
+.scene-card-timeline-mode svg,
+.inspector-timeline-mode-badge svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* Scene card variant — compact, sits below title */
+.scene-card-timeline-mode {
+    margin: 2px 0 4px 0;
+    font-size: 9px;
+}
+
+.scene-card-strand,
+.timeline-strand-label,
+.inspector-strand-label {
+    opacity: 0.75;
+    font-weight: 400;
+}
+
+/* Inspector variant */
+.inspector-timeline-mode-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    margin: 4px 0;
+}
+
+/* Arc Point badge (issue #128) */
+.scene-card-arc-point-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    line-height: 1.3;
+    white-space: nowrap;
+    margin: 2px 0 4px 0;
+    background: var(--sl-arc-point-bg, rgba(255, 152, 0, 0.15));
+    color: var(--sl-arc-point-fg, #E65100);
+}
+.scene-card-arc-point-badge svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* ── Per-mode colors ── */
+.timeline-mode-flashback {
+    background: var(--sl-mode-flashback-bg, rgba(156, 39, 176, 0.15));
+    color: var(--sl-mode-flashback-fg, #9C27B0);
+}
+.timeline-mode-flash_forward {
+    background: var(--sl-mode-flashforward-bg, rgba(0, 150, 136, 0.15));
+    color: var(--sl-mode-flashforward-fg, #009688);
+}
+.timeline-mode-parallel {
+    background: var(--sl-mode-parallel-bg, rgba(33, 150, 243, 0.15));
+    color: var(--sl-mode-parallel-fg, #2196F3);
+}
+.timeline-mode-frame {
+    background: var(--sl-mode-frame-bg, rgba(121, 85, 72, 0.15));
+    color: var(--sl-mode-frame-fg, #795548);
+}
+.timeline-mode-simultaneous {
+    background: var(--sl-mode-simultaneous-bg, rgba(255, 152, 0, 0.15));
+    color: var(--sl-mode-simultaneous-fg, #FF9800);
+}
+.timeline-mode-timeskip {
+    background: var(--sl-mode-timeskip-bg, rgba(96, 125, 139, 0.15));
+    color: var(--sl-mode-timeskip-fg, #607D8B);
+}
+.timeline-mode-dream {
+    background: var(--sl-mode-dream-bg, rgba(103, 58, 183, 0.15));
+    color: var(--sl-mode-dream-fg, #673AB7);
+}
+.timeline-mode-mythic {
+    background: var(--sl-mode-mythic-bg, rgba(255, 193, 7, 0.15));
+    color: var(--sl-mode-mythic-fg, #F9A825);
+}
+.timeline-mode-circular {
+    background: var(--sl-mode-circular-bg, rgba(233, 30, 99, 0.15));
+    color: var(--sl-mode-circular-fg, #E91E63);
+}
+
+/* ── Dark theme adjustments ── */
+.theme-dark .timeline-mode-flashback {
+    background: rgba(186, 104, 200, 0.18);
+    color: #CE93D8;
+}
+.theme-dark .timeline-mode-flash_forward {
+    background: rgba(77, 182, 172, 0.18);
+    color: #80CBC4;
+}
+.theme-dark .timeline-mode-parallel {
+    background: rgba(100, 181, 246, 0.18);
+    color: #90CAF9;
+}
+.theme-dark .timeline-mode-frame {
+    background: rgba(161, 136, 127, 0.18);
+    color: #BCAAA4;
+}
+.theme-dark .timeline-mode-simultaneous {
+    background: rgba(255, 183, 77, 0.18);
+    color: #FFB74D;
+}
+.theme-dark .timeline-mode-timeskip {
+    background: rgba(144, 164, 174, 0.18);
+    color: #B0BEC5;
+}
+.theme-dark .timeline-mode-dream {
+    background: rgba(149, 117, 205, 0.18);
+    color: #B39DDB;
+}
+.theme-dark .timeline-mode-mythic {
+    background: rgba(255, 213, 79, 0.18);
+    color: #FFD54F;
+}
+.theme-dark .timeline-mode-circular {
+    background: rgba(240, 98, 146, 0.18);
+    color: #F48FB1;
+}
+
+/* ── Time Edit Modal ── */
+.time-edit-mode-section {
+    margin-top: 4px;
+    border-top: 1px solid var(--background-modifier-border);
+    padding-top: 8px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Detected Links (Inspector)
+   ═══════════════════════════════════════════════════════ */
+
+.inspector-detected-links {
+    border-top: 1px dashed var(--background-modifier-border);
+    padding-top: 6px;
+}
+
+.inspector-detected-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+    color: var(--text-muted);
+    font-size: 0.82em;
+}
+
+.inspector-detected-header svg {
+    width: 14px;
+    height: 14px;
+}
+
+.inspector-detected-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.inspector-detected-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.78em;
+    border: 1px dashed var(--background-modifier-border);
+    background: var(--background-secondary);
+    cursor: context-menu;
+}
+
+.inspector-detected-icon svg {
+    width: 12px;
+    height: 12px;
+}
+
+.detected-type-character {
+    border-color: var(--sl-sg-character, #2196F3);
+    color: var(--sl-sg-character, #2196F3);
+}
+
+.detected-type-location {
+    border-color: var(--sl-sg-location, #4CAF50);
+    color: var(--sl-sg-location, #4CAF50);
+}
+
+.detected-type-other {
+    border-color: var(--sl-sg-other, #FF9800);
+    color: var(--sl-sg-other, #FF9800);
+}
+
+.detected-type-prop {
+    border-color: var(--sl-sg-prop, #E91E63);
+    color: var(--sl-sg-prop, #E91E63);
+}
+
+/* Manual tag-type override indicator — subtle underline dot */
+.tag-overridden {
+    position: relative;
+}
+.tag-overridden::after {
+    content: '•';
+    position: absolute;
+    bottom: -2px;
+    right: 2px;
+    font-size: 10px;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.character-prop-tag.tag-overridden {
+    cursor: context-menu;
+}
+.inspector-detected-pill.tag-overridden {
+    cursor: context-menu;
+}
+
+/* Note: base `cursor: context-menu` is already set on `.character-prop-tag`
+   (line ~3114) and `.inspector-detected-pill` (line ~6837); duplicate
+   rules previously here were removed to silence stylelint warnings. */
+
+/* ═══════════════════════════════════════════════════════
+   Scene Card — Detected Badge
+   ═══════════════════════════════════════════════════════ */
+
+.scene-card-detected-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px 6px;
+    margin-top: 4px;
+    border-radius: 10px;
+    font-size: 0.72em;
+    color: var(--text-muted);
+    background: var(--background-modifier-hover);
+    border: 1px dashed var(--background-modifier-border);
+}
+
+.scene-card-detected-badge svg {
+    width: 11px;
+    height: 11px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Scene Card — Custom (universal) field badges
+   ═══════════════════════════════════════════════════════ */
+
+.scene-card-custom-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.scene-card-custom-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 0.72em;
+    color: var(--text-normal);
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.scene-card-custom-badge-label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Story Graph
+   ═══════════════════════════════════════════════════════ */
+
+.story-graph-container {
+    width: 100%;
+    min-height: 500px;
+    height: calc(100vh - 220px);
+    display: flex;
+    flex-direction: column;
+}
+
+.story-graph-empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted);
+}
+
+.story-graph-filters {
+    display: flex;
+    gap: 6px;
+    padding: 8px 0;
+    flex-wrap: wrap;
+}
+
+.story-graph-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 0.82em;
+    cursor: pointer;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-secondary);
+    color: var(--text-muted);
+    transition: background 0.15s, color 0.15s;
+}
+
+.story-graph-filter-btn.active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-color: var(--interactive-accent);
+}
+
+.story-graph-filter-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.story-graph-legend {
+    display: flex;
+    gap: 12px;
+    padding: 4px 0 8px;
+    flex-wrap: wrap;
+    font-size: 0.8em;
+    color: var(--text-muted);
+}
+
+.story-graph-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.story-graph-legend-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+}
+
+.story-graph-wrapper {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 450px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--background-primary);
+}
+
+.story-graph-svg {
+    display: block;
+}
+
+.story-graph-node {
+    cursor: grab;
+    transition: fill-opacity 0.15s;
+}
+
+.story-graph-node.story-graph-node:hover {
+    fill-opacity: 1;
+}
+
+.story-graph-legend-line.story-graph-legend-line {
+    background: transparent;
+    border-bottom: 3px solid;
+    border-radius: 0;
+    height: 0;
+    width: 14px;
+    margin-top: 5px;
+}
+
+/* ============================================
+   Settings — Collapsible Color Section
+   ============================================ */
+.story-line-declarative-settings-host {
+    display: block;
+    flex: 0 0 100%;
+    width: 100%;
+}
+
+.story-line-settings-section {
+    margin: 12px 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 0;
+}
+.story-line-settings-section > summary {
+    cursor: pointer;
+    padding: 12px 14px;
+    font-weight: 600;
+    font-size: 15px;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+.story-line-settings-section > summary::-webkit-details-marker {
+    display: none;
+}
+.story-line-settings-section > summary::before {
+    content: '▶';
+    font-size: 10px;
+    transition: transform 0.15s ease;
+}
+.story-line-settings-section[open] > summary::before {
+    transform: rotate(90deg);
+}
+.story-line-settings-section-body {
+    padding: 4px 14px 14px;
+}
+
+.story-line-color-section {
+    margin: 12px 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 0;
+}
+.story-line-color-section > summary {
+    cursor: pointer;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 14px;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+.story-line-color-section > summary::-webkit-details-marker {
+    display: none;
+}
+.story-line-color-section > summary::before {
+    content: '▶';
+    font-size: 10px;
+    transition: transform 0.15s ease;
+}
+.story-line-color-section[open] > summary::before {
+    transform: rotate(90deg);
+}
+.story-line-color-section > div {
+    padding: 4px 14px 14px;
+}
+
+/* ── DOCX Export Settings (collapsible, framed) ── */
+.story-line-docx-settings {
+    margin: 12px 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 0;
+}
+.story-line-docx-settings > summary {
+    cursor: pointer;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 14px;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+.story-line-docx-settings > summary::-webkit-details-marker {
+    display: none;
+}
+.story-line-docx-settings > summary::before {
+    content: '▶';
+    font-size: 10px;
+    transition: transform 0.15s ease;
+}
+.story-line-docx-settings[open] > summary::before {
+    transform: rotate(90deg);
+}
+.story-line-docx-settings > div {
+    padding: 4px 14px 14px;
+}
+
+/* ── PDF Export Settings (collapsible, framed) ── */
+.story-line-pdf-settings,
+.story-line-import-settings {
+    margin: 12px 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 0;
+}
+.story-line-pdf-settings > summary,
+.story-line-import-settings > summary {
+    cursor: pointer;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 14px;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+.story-line-pdf-settings > summary::-webkit-details-marker,
+.story-line-import-settings > summary::-webkit-details-marker {
+    display: none;
+}
+.story-line-pdf-settings > summary::before,
+.story-line-import-settings > summary::before {
+    content: '▶';
+    font-size: 10px;
+    transition: transform 0.15s ease;
+}
+.story-line-pdf-settings[open] > summary::before,
+.story-line-import-settings[open] > summary::before {
+    transform: rotate(90deg);
+}
+.story-line-pdf-settings > div,
+.story-line-import-settings > div {
+    padding: 4px 14px 14px;
+}
+
+/* ============================================
+   Character & Location — Portrait / Image
+   ============================================ */
+
+/* ── Character Overview Card Portrait ── */
+.character-card-portrait {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 8px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--background-modifier-hover);
+    border: 2px solid var(--background-modifier-border);
+    flex-shrink: 0;
+}
+.character-portrait-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.character-portrait-placeholder {
+    color: var(--text-faint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.character-portrait-placeholder svg {
+    width: 32px;
+    height: 32px;
+}
+
+/* ── Character Detail Portrait ── */
+.character-detail-portrait {
+    width: 96px;
+    height: 96px;
+    margin: 12px auto 6px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--background-modifier-hover);
+    border: 2px solid var(--background-modifier-border);
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.15s;
+}
+.character-detail-portrait:hover {
+    border-color: var(--interactive-accent);
+}
+.character-detail-portrait-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.character-detail-portrait-placeholder {
+    color: var(--text-faint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.character-detail-portrait-placeholder svg {
+    width: 48px;
+    height: 48px;
+}
+.character-portrait-change-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 9px;
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.55);
+    padding: 2px 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.character-detail-portrait:hover .character-portrait-change-label {
+    opacity: 1;
+}
+
+/* ── Location Tree Thumbnail ── */
+.location-tree-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    object-fit: cover;
+    vertical-align: middle;
+}
+
+/* ── Location Detail Portrait ── */
+.location-detail-portrait {
+    max-width: 240px;
+    margin-bottom: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+}
+.location-detail-portrait:hover {
+    border-color: var(--interactive-accent);
+}
+.location-detail-portrait-img {
+    width: 100%;
+    display: block;
+    border-radius: 8px;
+}
+.location-detail-portrait-placeholder {
+    width: 240px;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--background-secondary);
+    border: 2px dashed var(--background-modifier-border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+.location-detail-portrait-placeholder svg {
+    width: 36px;
+    height: 36px;
+}
+.location-portrait-change-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 9px;
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.55);
+    padding: 2px 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.location-detail-portrait:hover .location-portrait-change-label {
+    opacity: 1;
+}
+
+/* ============================================
+   Image Choice Modal
+   ============================================ */
+.storyline-image-choice-modal h3 {
+    margin-bottom: 12px;
+}
+.image-choice-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 16px;
+}
+.image-choice-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.image-choice-buttons button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    width: 100%;
+    justify-content: center;
+}
+.image-choice-btn-icon {
+    display: flex;
+    align-items: center;
+}
+.image-choice-btn-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Help View — right-split documentation pane
+   ═══════════════════════════════════════════════════════ */
+
+.storyline-help-container {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.storyline-help-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px 0;
+}
+
+.storyline-help-pdf-status {
+    color: var(--text-muted);
+    font-size: 0.85em;
+}
+
+.storyline-help-pdf-button {
+    min-width: 52px;
+}
+
+.storyline-help-content {
+    padding: 16px 20px 40px;
+    max-width: 100%;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* Headings */
+.storyline-help-content h1 {
+    font-size: 1.5em;
+    margin-top: 0;
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-bottom: 8px;
+}
+.storyline-help-content h2 {
+    font-size: 1.25em;
+    margin-top: 24px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-bottom: 6px;
+}
+.storyline-help-content h3 {
+    font-size: 1.1em;
+    margin-top: 20px;
+}
+.storyline-help-content h4 {
+    font-size: 1em;
+    margin-top: 16px;
+}
+
+/* Tables — horizontally scrollable in narrow pane */
+.storyline-help-content table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 12px 0;
+    max-width: 100%;
+}
+.storyline-help-content th,
+.storyline-help-content td {
+    padding: 6px 10px;
+    border: 1px solid var(--background-modifier-border);
+    text-align: left;
+    white-space: normal;
+    min-width: 60px;
+}
+.storyline-help-content th {
+    background: var(--background-secondary);
+    font-weight: 600;
+}
+
+/* Code blocks */
+.storyline-help-content code {
+    font-size: 12px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    background: var(--background-secondary);
+}
+.storyline-help-content pre {
+    overflow-x: auto;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    background: var(--background-secondary);
+}
+
+/* TOC links */
+.storyline-help-content ul a,
+.storyline-help-content ol a {
+    color: var(--text-accent);
+    text-decoration: none;
+}
+.storyline-help-content ul a:hover,
+.storyline-help-content ol a:hover {
+    text-decoration: underline;
+}
+
+/* Horizontal rules */
+.storyline-help-content hr {
+    border: none;
+    border-top: 1px solid var(--background-modifier-border);
+    margin: 24px 0;
+}
+
+/* Lists */
+.storyline-help-content li {
+    margin-bottom: 4px;
+}
+
+/* Error fallback */
+.storyline-help-error {
+    padding: 20px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ============================================
+   Mobile Support (iOS / iPadOS / Android)
+   ============================================ */
+
+/*
+ * .sl-mobile   — all mobile devices
+ * .sl-phone    — phone-sized screens
+ * .sl-tablet   — tablet-sized screens (iPad, etc.)
+ *
+ * Obsidian also provides body.is-mobile, body.is-phone, body.is-tablet
+ */
+
+/* ── Touch-friendly scene cards ────────────────────── */
+
+.sl-mobile .scene-card {
+    min-height: 64px;
+    padding: 10px 12px;
+    cursor: default;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    overflow: hidden;
+    flex: 0 0 auto;
+}
+
+/* Clamp conflict / summary text on mobile */
+.sl-mobile.sl-mobile .scene-card-conflict {
+    display: -webkit-box;
+    line-clamp: 3;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 3.9em;  /* 3 lines fallback: 3 × 1.3 line-height */
+}
+.sl-phone .scene-card-conflict {
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    max-height: 2.6em;  /* 2 lines fallback */
+}
+
+body /* Clamp title on mobile too, in case it's very long */
+.sl-mobile.sl-mobile .scene-card-title {
+    display: -webkit-box;
+    line-clamp: 3;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 3.9em;  /* 3 lines fallback */
+}
+.sl-phone .scene-card-title {
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    max-height: 2.6em;  /* 2 lines fallback */
+}
+
+.sl-mobile .scene-card.touch-dragging {
+    opacity: 0.4;
+    box-shadow: 0 0 0 2px var(--interactive-accent);
+}
+
+/* Drop indicators for scene cards (touch drag-and-drop) */
+.scene-card.drop-above {
+    box-shadow: 0 -3px 0 0 var(--sc-accent, var(--interactive-accent));
+    z-index: 2;
+}
+.scene-card.drop-below {
+    box-shadow: 0 3px 0 0 var(--sc-accent, var(--interactive-accent));
+    z-index: 2;
+}
+
+.sl-touch-ghost {
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    transition: transform 0.1s ease;
+}
+
+/* ── Board layout: stack columns vertically on phones ── */
+
+.sl-phone .story-line-board {
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px;
+}
+
+.sl-phone .story-line-column {
+    min-width: 100%;
+    max-width: 100%;
+}
+
+.sl-phone .story-line-column-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--background-secondary) !important;
+    padding: 8px 12px;
+    isolation: isolate;
+}
+
+/* Tablets: allow 3 columns side-by-side */
+.sl-tablet .story-line-board {
+    flex-wrap: wrap;
+}
+
+.sl-tablet .story-line-column {
+    min-width: 30%;
+    max-width: 32%;
+    flex: 1 1 30%;
+}
+
+/* ── Toolbar mobile adjustments ──────────────────── */
+
+.sl-mobile .story-line-toolbar {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px 8px;
+}
+
+/*
+ * The desktop overlay is not needed on mobile. A large upward overlay can
+ * instead cover Obsidian's native top edge and make the StoryLine tabs look
+ * detached from the top of the phone viewport.
+ */
+.sl-mobile .story-line-toolbar::before {
+    height: 0;
+}
+
+/*
+ * Ensure the sticky toolbar stays above content on mobile even when
+ * the scroll container is scrolled by the keyboard-reveal handler.
+ * A higher z-index keeps it painted above the form fields.
+ */
+.sl-mobile .story-line-toolbar {
+    z-index: 20;
+}
+
+.sl-mobile .story-line-view-switcher {
+    flex-wrap: wrap;
+    gap: 2px;
+}
+
+.sl-mobile .story-line-view-tab {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 6px 8px;
+}
+
+/* Hide tab labels on phones, keep icons */
+.sl-phone .view-tab-label {
+    display: none;
+}
+
+/* ── Inspector as bottom sheet on mobile ───────────── */
+
+.sl-mobile .story-line-inspector-panel {
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    max-height: 60vh;
+    height: auto;
+    border-left: none;
+    border-top: 2px solid var(--interactive-accent);
+    border-radius: 12px 12px 0 0;
+    overflow-y: auto;
+    z-index: 100;
+    background: var(--background-primary);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Drag handle at top of the bottom sheet */
+.sl-mobile .inspector-drag-handle {
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 8px auto;
+    background: var(--text-muted);
+    border-radius: 2px;
+    opacity: 0.4;
+}
+
+/* Inspector action buttons: stack vertically, full width */
+.sl-mobile .inspector-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+}
+
+.sl-mobile .inspector-actions button {
+    width: 100%;
+    min-height: 44px;
+}
+
+/* ── Filters on mobile ─────────────────────────────── */
+
+.sl-mobile .story-line-filter-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
+    overflow: visible;
+}
+
+.sl-mobile .story-line-main-area {
+    height: auto;
+    min-height: calc(100% - 52px);
+    overflow-x: hidden;
+    overflow-y: visible;
+}
+
+.sl-mobile .story-line-filters-container {
+    height: auto;
+    min-height: 52px;
+    overflow: visible;
+    flex: 0 0 auto;
+}
+
+.sl-mobile .story-line-filter-bar {
+    height: auto;
+    min-height: 52px;
+}
+
+.sl-mobile .story-line-arc-filter,
+.sl-mobile .story-line-active-filter {
+    min-height: 44px;
+    height: auto;
+    overflow: visible;
+    flex: 0 1 auto;
+}
+
+.sl-mobile .story-line-arc-filter-btn,
+.sl-mobile .story-line-active-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+.sl-mobile .story-line-search {
+    max-width: 100%;
+    width: 100%;
+}
+
+.sl-mobile .filter-dropdown,
+.sl-mobile .filter-select {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* ── Bulk action bar on mobile ─────────────────────── */
+
+.sl-mobile .story-line-bulk-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+}
+
+.sl-mobile .bulk-bar-btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px 12px;
+}
+
+/* ── Character view grid: single column on phones ──── */
+
+.sl-phone .character-grid {
+    grid-template-columns: 1fr;
+}
+
+.sl-tablet .character-grid {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* Hide map/story-graph toggle buttons on mobile */
+.sl-mobile .character-mode-btn[data-mode="map"],
+.sl-mobile .character-mode-btn[data-mode="story-graph"] {
+    display: none;
+}
+
+/* ── Issue #233 discussion (Reddit #4): hidden fields on mobile ──────
+ * The per-field hide/move buttons and the hide-category button use
+ * opacity:0 + :hover to stay out of the way on desktop. Touch devices
+ * have no hover, so the buttons were invisible and users couldn't hide
+ * fields — and hidden fields appeared because the toggle was unreachable.
+ * Always show them at reduced opacity on mobile. */
+.sl-mobile .field-hide-btn,
+.sl-mobile .field-move-btn,
+.sl-mobile .character-section-hide-cat-btn {
+    opacity: 0.55;
+}
+.sl-mobile .field-hide-btn:hover,
+.sl-mobile .field-move-btn:hover,
+.sl-mobile .character-section-hide-cat-btn:hover {
+    opacity: 1;
+}
+
+/* ── Location view: touch-friendly tree ────────────── */
+
+.sl-mobile .location-tree-node {
+    min-height: 44px;
+    padding: 8px 12px;
+}
+
+/* ── Timeline view adjustments ─────────────────────── */
+
+.sl-mobile .timeline-zoom-controls button {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.sl-phone .timeline-swimlane-header {
+    font-size: 12px;
+    min-width: 80px;
+}
+
+/* ── Stats view: stack cards on phones ─────────────── */
+
+.sl-phone .stats-overview {
+    flex-direction: column;
+}
+
+.sl-phone .stats-card {
+    width: 100%;
+}
+
+/* ── Quick Add modal on mobile ─────────────────────── */
+
+.sl-mobile .story-line-quick-add .setting-item {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.sl-mobile .story-line-quick-add .setting-item-info {
+    flex: none;
+    margin-right: 0;
+    margin-bottom: 4px;
+}
+
+/* ── General mobile touch improvements ─────────────── */
+
+.sl-mobile button,
+.sl-mobile select,
+.sl-mobile input {
+    min-height: 44px;
+}
+
+.sl-mobile .dropdown {
+    min-height: 44px;
+}
+
+/* No extra top padding needed — Obsidian’s nav bar handles the notch. */
+
+/* Prevent text selection during interactions */
+.sl-mobile .story-line-board,
+.sl-mobile .story-line-column-body {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Desktop-only notice shown in views disabled on mobile */
+.sl-mobile-unavailable {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.sl-mobile-unavailable h3 {
+    margin-bottom: 8px;
+    color: var(--text-normal);
+}
+
+.sl-mobile-unavailable p {
+    max-width: 300px;
+    line-height: 1.5;
+}
+
+/* ── Compact mobile layout: remove empty space ── */

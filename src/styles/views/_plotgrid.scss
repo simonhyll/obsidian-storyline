@@ -1,0 +1,1275 @@
+
+/* Remove inspector panel padding on mobile (it overlays instead) */
+.sl-mobile.story-line-board-container,
+.sl-mobile.story-line-timeline-container,
+.sl-mobile.story-line-storyline-container,
+.sl-mobile.story-line-character-container,
+.sl-mobile.story-line-stats-container,
+.sl-mobile.story-line-location-container {
+    padding-right: 0;
+}
+
+/* Compact the title row on mobile */
+.sl-mobile .story-line-view-title {
+    font-size: 0.95em;
+    margin: 0;
+}
+
+/* ── Phone-specific toolbar compaction ────────────── */
+
+/* Hide the "StoryLine" title row on phones — Obsidian's nav bar already shows the title */
+.sl-phone .story-line-title-row {
+    display: none;
+}
+
+/* Tighter toolbar on phones */
+.sl-phone .story-line-toolbar {
+    padding: 4px 8px;
+    gap: 2px;
+}
+
+/* Smaller view-switcher tabs on phone */
+.sl-phone .story-line-view-tab {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 4px 6px;
+}
+
+/* Toolbar controls row: compact single line */
+.sl-phone .story-line-toolbar-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: nowrap;
+    width: 100%;
+    font-size: 0.85em;
+}
+
+/* Make the "Group by" dropdown smaller on phone */
+.sl-phone .story-line-group-control {
+    font-size: 0.8em;
+}
+.sl-phone .story-line-group-control select {
+    min-height: 32px;
+    padding: 2px 4px;
+}
+
+/* Smaller "+ New Scene" button on phone */
+.sl-phone .story-line-add-btn {
+    font-size: 0.8em;
+    padding: 4px 8px;
+    min-height: 32px;
+    white-space: nowrap;
+}
+
+/* Smaller filter bar on mobile */
+.sl-mobile .story-line-filters-container {
+    padding: 8px 8px 6px;
+}
+
+/* Compact filter bar on phone */
+.sl-phone .story-line-filter-bar {
+    padding: 4px 8px;
+    gap: 4px;
+}
+
+/* Smaller search box on phone */
+.sl-phone .story-line-search {
+    padding: 3px 6px;
+    font-size: 0.8em;
+}
+
+/* Compact sort controls on phone */
+.sl-phone .story-line-sort {
+    font-size: 0.8em;
+    gap: 2px;
+}
+
+/* ── Issue #190: mobile keyboard / overflow fixes ─────── */
+
+/*
+ * Use dynamic viewport height units where supported so the layout
+ * shrinks when the soft keyboard appears, instead of the keyboard
+ * covering the bottom of the content. `dvh` is the live viewport
+ * (excluding keyboard); `vh` is the legacy fallback.
+ */
+@supports (height: 100dvh) {
+    .sl-mobile.story-line-board-container,
+    .sl-mobile.story-line-timeline-container,
+    .sl-mobile.story-line-storyline-container,
+    .sl-mobile.story-line-character-container,
+    .sl-mobile.story-line-location-container,
+    .sl-mobile.story-line-codex-container,
+    .sl-mobile.story-line-stats-container,
+    .sl-mobile.story-line-manuscript-container,
+    .sl-mobile .story-line-main-area,
+    .sl-mobile .sl-scene-inspector-sidebar,
+    .sl-mobile .sl-inspector-panels,
+    .sl-mobile .sl-inspector-panel.is-active {
+        height: 100dvh;
+        max-height: 100dvh;
+    }
+    /* But the view containers themselves should fill their leaf, not the
+       whole viewport — cap with min-height so flex children still scroll.
+       Issue #190 follow-up: the previous block accidentally set the view
+       containers to 100dvh AND then back to 100%, which caused layout
+       thrash on iOS when the keyboard appeared (the codex/character
+       detail forms could blank out). Now only the inspector panels use
+       100dvh; the view containers always use 100% of their leaf. */
+    .sl-mobile.story-line-board-container,
+    .sl-mobile.story-line-timeline-container,
+    .sl-mobile.story-line-storyline-container,
+    .sl-mobile.story-line-character-container,
+    .sl-mobile.story-line-location-container,
+    .sl-mobile.story-line-codex-container,
+    .sl-mobile.story-line-stats-container {
+        height: 100%;
+        max-height: 100%;
+    }
+    .sl-mobile.story-line-manuscript-container {
+        height: 100%;
+        max-height: 100%;
+    }
+    /* Override the 100dvh above for view containers — the inspector panels
+       keep 100dvh so they shrink with the keyboard, but the view containers
+       must stay at 100% of their leaf or their flex children (toolbar +
+       scroll area) lose their pinned toolbar when the keyboard appears. */
+    .sl-mobile .sl-scene-inspector-sidebar,
+    .sl-mobile .sl-inspector-panels,
+    .sl-mobile .sl-inspector-panel.is-active {
+        height: 100dvh;
+        max-height: 100dvh;
+    }
+}
+
+/*
+ * Inspector bottom sheet on mobile: cap its height to the dynamic
+ * viewport so it never extends behind the keyboard, and make sure its
+ * inner content scrolls rather than the sheet growing off-screen.
+ */
+.sl-mobile .story-line-inspector-panel {
+    max-height: 60dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Pad the bottom so the last field clears the keyboard + safe area. */
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 40vh);
+    /* But cap total padding so short sheets don't waste space. */
+    box-sizing: border-box;
+}
+
+/* When a field inside the inspector is focused, the global JS handler
+   scrolls it into view; ensure the scroll container is the panel. */
+.sl-mobile .story-line-inspector-panel:focus-within {
+    scroll-margin-bottom: 45dvh;
+}
+
+/*
+ * Corkboard note editor textarea: when focused on mobile, ensure it
+ * sits above the keyboard. The corkboard camera is panned by JS
+ * (panCorkboardToRevealNote); this just keeps the textarea itself
+ * scrollable if it grows tall.
+ */
+.sl-mobile .story-line-corkboard-note-text {
+    max-height: 50dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/*
+ * Board view toolbar: on phones the controls row can overrun the
+ * screen width, causing horizontal scroll and making the sidebar
+ * toggle unreachable. Allow the controls to wrap and the toolbar to
+ * scroll vertically instead of overflowing horizontally.
+ */
+.sl-phone .story-line-toolbar {
+    flex-wrap: wrap;
+    overflow-x: hidden;
+    overflow-y: visible;
+    max-height: none;
+}
+
+.sl-phone .story-line-toolbar-controls {
+    flex-wrap: wrap;
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+}
+
+/* Keep the view-switcher on its own line on phones so it doesn't
+   compete with the controls for width. */
+.sl-phone .story-line-view-switcher {
+    width: 100%;
+    flex: 1 1 100%;
+}
+
+/* Keep the editor formatter inside the phone viewport. Its controls remain
+ * available through horizontal scrolling instead of widening the manuscript
+ * leaf and hiding the navigation toolbar. */
+.sl-phone .sl-fmt-toolbar {
+    justify-content: flex-start;
+    max-width: calc(100% - 16px);
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    margin-left: 8px;
+    margin-right: 8px;
+    box-sizing: border-box;
+}
+
+/*
+ * Timeline view: the swimlane grid can overflow horizontally on
+ * phones. Make sure the container scrolls rather than pushing the
+ * toolbar off-screen.
+ */
+.sl-phone .story-line-timeline-container .swimlane-timeline {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Timeline zoom controls: wrap on phones so they don't overflow. */
+.sl-phone .timeline-zoom-controls {
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Time Navigation Controls
+   ═══════════════════════════════════════════════════════════ */
+
+.story-line-time-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    padding-left: 8px;
+    border-left: 1px solid var(--background-modifier-border);
+}
+
+.story-line-jump-to-date {
+    display: flex;
+    align-items: center;
+}
+
+.story-line-year-input {
+    width: 60px;
+    padding: 2px 4px;
+    font-size: 12px;
+    text-align: center;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background-color: var(--background-primary);
+    color: var(--text-normal);
+}
+
+.story-line-year-input:focus {
+    border-color: var(--interactive-accent);
+    outline: none;
+}
+
+.story-line-time-period {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 0 4px;
+    min-width: 80px;
+    text-align: center;
+}
+
+/* Temporal axis ruler */
+.story-line-temporal-ruler {
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+    padding: 4px 0;
+    overflow-x: auto;
+    border-top: 1px solid var(--background-modifier-border);
+    min-height: 28px;
+}
+
+.story-line-time-marker {
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 2px 6px;
+    cursor: pointer;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.story-line-time-marker:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.story-line-time-marker-major {
+    font-weight: 600;
+    color: var(--text-normal);
+    font-size: 11px;
+}
+
+/*
+ * Codex / Character / Location detail forms: on phones the side
+ * panel stacks below the form. Make sure the form area scrolls
+ * independently and the last fields clear the keyboard.
+ */
+.sl-phone .codex-detail-layout,
+.sl-phone .character-detail-layout,
+.sl-phone .location-detail-layout {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 40dvh;
+}
+
+/*
+ * Issue #190 follow-up — ensure the scrollable content area of each
+ * view fills the remaining flex space below the toolbar on mobile, so
+ * the toolbar stays pinned and only the content scrolls. Without this,
+ * iOS WebKit can let the content area expand beyond its flex allotment
+ * and push the toolbar off-screen when the keyboard appears.
+ */
+.sl-mobile .story-line-codex-content,
+.sl-mobile .story-line-character-content,
+.sl-mobile .story-line-location-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/*
+ * Generic: any StoryLine scroll container should leave breathing room
+ * at the bottom equal to roughly half the viewport, so a focused field
+ * near the end of the content can be scrolled above the keyboard.
+ */
+.sl-mobile .story-line-storyline-content,
+.sl-mobile .story-line-codex-container .story-line-main-area,
+.sl-mobile .sl-inspector-panel.is-active {
+    padding-bottom: 40dvh;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Story Navigator — compact sidebar panel
+   ═══════════════════════════════════════════════════════════ */
+
+.sl-navigator {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    font-size: 13px;
+}
+
+/* ── Scene Details button ── */
+.sl-nav-details-row {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    padding: 4px 8px 0;
+    justify-content: flex-end;
+}
+
+.sl-nav-details-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    color: var(--text-muted);
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-s);
+}
+
+.sl-nav-details-btn:hover {
+    color: var(--text-normal);
+    background: var(--background-modifier-hover);
+}
+
+.sl-nav-details-btn .svg-icon {
+    width: 18px;
+    height: 18px;
+}
+
+/* ── Toolbar ── */
+.sl-nav-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    flex-shrink: 0;
+}
+
+.sl-nav-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+    background: var(--background-modifier-form-field);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 2px 6px;
+}
+
+.sl-nav-search-icon {
+    flex-shrink: 0;
+    color: var(--text-faint);
+    display: flex;
+    align-items: center;
+}
+.sl-nav-search-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.sl-nav-search {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 12px;
+    color: var(--text-normal);
+    width: 100%;
+    padding: 2px 0;
+}
+
+.sl-nav-sort-btn {
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: var(--text-muted);
+    transition: background 0.15s, color 0.15s;
+}
+.sl-nav-sort-btn:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+.sl-nav-sort-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ── Plotline filter (collapsible list) ── */
+.sl-nav-chip-section {
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding: 4px 0;
+}
+
+.sl-nav-chip-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    user-select: none;
+    transition: color 0.15s;
+}
+.sl-nav-chip-toggle:hover {
+    color: var(--text-muted);
+}
+.sl-nav-chip-toggle.has-filter .sl-nav-chip-toggle-label {
+    color: var(--interactive-accent);
+}
+.sl-nav-chip-toggle-icon {
+    font-size: 9px;
+    width: 10px;
+    text-align: center;
+}
+
+.sl-nav-plotline-list {
+    padding: 2px 0 4px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.sl-nav-plotline-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 14px;
+    cursor: pointer;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    border-radius: 4px;
+    margin: 0 4px;
+    transition: background 0.1s, color 0.1s;
+}
+.sl-nav-plotline-item:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+.sl-nav-plotline-item.is-active {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+    font-weight: 600;
+}
+
+.sl-nav-plotline-dot {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+.sl-nav-plotline-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sl-nav-plotline-count {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Scene list ── */
+.sl-nav-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 2px 0;
+}
+
+.sl-nav-empty {
+    padding: 20px 12px;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 12px;
+}
+
+/* Act group header */
+.sl-nav-act-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    user-select: none;
+}
+.sl-nav-act-header:hover {
+    color: var(--text-normal);
+}
+.sl-nav-act-toggle {
+    font-size: 10px;
+    width: 12px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.sl-nav-act-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.sl-nav-act-count {
+    font-size: 10px;
+    color: var(--text-faint);
+    font-weight: 400;
+}
+
+/* Issue #113 — Chapter sub-group header. Same uppercase, weighted style as
+   act headers so the navigator looks consistent when grouping by chapter. */
+.sl-nav-chapter-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    user-select: none;
+}
+.sl-nav-chapter-header:hover {
+    color: var(--text-normal);
+}
+.sl-nav-chapter-toggle {
+    font-size: 10px;
+    width: 12px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.sl-nav-chapter-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.sl-nav-chapter-count {
+    font-size: 10px;
+    color: var(--text-faint);
+    font-weight: 400;
+}
+/* Scenes wrapper — visually nests rows under their chapter header. */
+.sl-nav-chapter-body {
+    padding-left: 14px;
+    border-left: 1px solid var(--background-modifier-border);
+    margin: 0 6px 4px 14px;
+}
+.sl-nav-chapter-body .sl-nav-row {
+    margin: 0;
+}
+
+/* Scene row */
+.sl-nav-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    margin: 0 4px;
+    transition: background 0.1s;
+    min-height: 26px;
+}
+.sl-nav-row:hover {
+    background: var(--background-modifier-hover);
+}
+.sl-nav-row:active {
+    background: var(--background-modifier-active-hover, var(--background-modifier-hover));
+}
+.sl-nav-row.is-pinned {
+    border-left: 2px solid var(--interactive-accent);
+    padding-left: 8px;
+}
+
+.sl-nav-status-dot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.sl-nav-seq {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: var(--text-faint);
+    min-width: 18px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.sl-nav-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-normal);
+    font-size: 12.5px;
+}
+
+.sl-nav-wc {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Bottom progress bar ── */
+.sl-nav-bottom {
+    flex-shrink: 0;
+    padding: 6px 10px 8px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.sl-nav-progress-bar {
+    height: 4px;
+    background: var(--background-modifier-border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.sl-nav-progress-fill {
+    height: 100%;
+    background: var(--interactive-accent);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.sl-nav-progress-label {
+    font-size: 10px;
+    color: var(--text-faint);
+    text-align: center;
+}
+
+/* ============================================
+   Inline Suggest / Autocomplete
+   ============================================ */
+
+/* Dropdown container (appended to document.body, position: fixed) */
+.sl-suggest-dropdown {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.sl-suggest-item {
+    padding: 6px 12px;
+    font-size: 0.88em;
+    cursor: pointer;
+    color: var(--text-normal);
+    /* Allow long hierarchical labels (e.g. "Forest > Old House > Scary Room")
+       to wrap instead of being clipped, so sibling locations that share a
+       short name under different parents stay distinguishable. A title
+       attribute is also set in JS for hover. */
+    white-space: normal;
+    word-break: break-word;
+}
+
+.sl-suggest-item:hover,
+.sl-suggest-item.sl-suggest-active {
+    background: var(--background-modifier-hover);
+}
+
+.sl-suggest-highlight {
+    color: var(--interactive-accent);
+    font-weight: 600;
+}
+
+.sl-suggest-new {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ── Tag-Pill Container ── */
+.sl-tag-pill-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.sl-tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    background: var(--background-modifier-border);
+    color: var(--text-normal);
+    line-height: 1.4;
+}
+
+.sl-tag-pill-highlighted.sl-tag-pill-highlighted {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.sl-tag-pill-badge {
+    font-size: 10px;
+    opacity: 0.85;
+}
+
+.sl-tag-pill-remove {
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    opacity: 0.6;
+    margin-left: 1px;
+}
+
+.sl-tag-pill-remove:hover {
+    opacity: 1;
+    color: var(--text-error);
+}
+
+.sl-tag-pill-input {
+    flex: 1 0 80px;
+    min-width: 80px;
+    max-width: 200px;
+    border: none;
+    background: transparent;
+    color: var(--text-normal);
+    font-size: 12px;
+    padding: 2px 4px;
+    outline: none;
+}
+
+.sl-tag-pill-input::placeholder {
+    color: var(--text-faint);
+    font-style: italic;
+}
+
+/* ── Autocomplete single-value display ── */
+.sl-autocomplete-container {
+    display: inline-flex;
+    align-items: center;
+    min-width: 120px;
+}
+
+.sl-autocomplete-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.85em;
+    background: var(--background-modifier-border);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.sl-autocomplete-display:hover {
+    background: var(--background-modifier-hover);
+}
+
+.sl-autocomplete-value {
+    color: var(--text-normal);
+}
+
+.sl-autocomplete-clear {
+    cursor: pointer;
+    font-size: 13px;
+    opacity: 0.5;
+    line-height: 1;
+}
+
+.sl-autocomplete-clear:hover {
+    opacity: 1;
+    color: var(--text-error);
+}
+
+.sl-autocomplete-input {
+    width: 100%;
+    min-width: 120px;
+    max-width: 200px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 0.85em;
+    padding: 3px 8px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.sl-autocomplete-input:focus {
+    border-color: var(--interactive-accent);
+}
+
+/* QuickAdd modal autocomplete containers */
+.sl-quickadd-autocomplete {
+    min-width: 180px;
+}
+
+.sl-quickadd-tagpill {
+    min-width: 200px;
+    max-width: 320px;
+}
+
+/* ═══════════════════════════════════════════════════
+   CODEX VIEW
+   ═══════════════════════════════════════════════════ */
+
+.story-line-codex-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.story-line-codex-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+}
+
+/* ── Category tabs ──────────────────────────────────── */
+
+.codex-category-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    padding: 4px 0 0;
+    border-bottom: none;
+    margin-bottom: 8px;
+    align-items: center;
+}
+
+.codex-tab.codex-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px 4px;
+    margin: 0;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    outline: none;
+    color: var(--text-muted);
+    font-size: 0.82em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+.codex-tab.codex-tab:hover {
+    background: none;
+    color: var(--text-normal);
+}
+.codex-tab.codex-tab.active {
+    background: none;
+    color: var(--interactive-accent);
+    border-bottom-color: var(--interactive-accent);
+    font-weight: 600;
+}
+.codex-tab.codex-tab:focus,
+.codex-tab.codex-tab:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+.codex-tab-icon {
+    display: flex;
+    align-items: center;
+    line-height: 1;
+}
+.codex-tab-icon svg { width: 14px; height: 14px; }
+.codex-tab-label { white-space: nowrap; line-height: 1; }
+.codex-tab-badge {
+    display: none;
+}
+.codex-tab.active .codex-tab-badge {
+    display: none;
+}
+
+/* Pseudo-tabs (Characters / Locations) — same style as regular tabs */
+
+/* ── Search + Sort row (shared) ─────────────────────── */
+
+.codex-search-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.codex-search-input {
+    width: 33%;
+    min-width: 120px;
+    padding: 6px 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 13px;
+}
+
+/* ── Overview list (text-based) ──────────────────────── */
+
+.codex-sort-label {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.codex-sort-select {
+    font-size: 12px;
+    padding: 3px 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    cursor: pointer;
+}
+
+/* Series book filter toggle (CharacterView, LocationView) */
+.codex-book-filter {
+    font-size: 12px;
+    padding: 3px 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 999px;
+    background: var(--background-primary);
+    color: var(--text-muted);
+    cursor: pointer;
+    margin-left: auto;
+}
+.codex-book-filter.active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-color: var(--interactive-accent);
+}
+
+.codex-entry-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.codex-visual-group {
+    margin: 14px 0;
+    padding: 0 10px 10px;
+    border: 1px solid var(--background-modifier-border-hover);
+    border-radius: 6px;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.codex-visual-group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.character-overview-grid.codex-visual-group-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.codex-visual-group-drop-target {
+    border-color: var(--interactive-accent);
+    background: var(--background-modifier-hover);
+}
+
+.codex-visual-group.codex-group-dragging {
+    opacity: 0.6;
+}
+
+.codex-visual-group.codex-group-drag-over {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 -2px 0 var(--interactive-accent);
+}
+
+.codex-entry-group-heading {
+    margin: 0 -10px 3px;
+    padding: 8px 10px 6px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: grab;
+    user-select: none;
+}
+
+.codex-entry-group-heading:active {
+    cursor: grabbing;
+}
+
+.codex-entry-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+.codex-entry-row[draggable="true"] {
+    cursor: grab;
+}
+.codex-entry-row.is-dragging {
+    opacity: 0.55;
+    cursor: grabbing;
+}
+.codex-entry-row.codex-entry-drag-over {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: -2px;
+}
+.codex-entry-row:hover {
+    background: var(--background-modifier-hover);
+}
+
+.codex-entry-icon {
+    flex-shrink: 0;
+    opacity: 0.5;
+}
+.codex-entry-icon svg { width: 16px; height: 16px; }
+
+.codex-entry-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-normal);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.codex-entry-type-badge {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    white-space: nowrap;
+}
+
+.codex-entry-pct {
+    font-size: 11px;
+    color: var(--text-faint);
+    min-width: 32px;
+    text-align: right;
+}
+
+.codex-entry-group-select {
+    max-width: 150px;
+    margin-left: auto;
+    font-size: 11px;
+}
+
+/* ── Empty state ────────────────────────────────────── */
+
+.codex-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+}
+.codex-empty-state p { margin-bottom: 12px; }
+
+/* ── Detail view ────────────────────────────────────── */
+
+.codex-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.codex-back-btn.codex-back-btn,
+.codex-back-link.codex-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    box-shadow: none;
+    outline: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 0;
+}
+.codex-back-btn svg,
+.codex-back-link svg { width: 18px; height: 18px; }
+.codex-back-btn.codex-back-btn:hover,
+.codex-back-link.codex-back-link:hover { color: var(--interactive-accent); background: none; }
+.codex-detail-header-right {
+    display: flex;
+    gap: 8px;
+}
+.codex-detail-action-btn.codex-detail-action-btn {
+    background: none;
+    border: none;
+    box-shadow: none;
+    outline: none;
+    padding: 2px;
+    cursor: pointer;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0;
+}
+.codex-detail-action-btn.codex-detail-action-btn:hover { color: var(--text-normal); background: none; }
+.codex-detail-action-btn.codex-detail-action-btn:focus,
+.codex-detail-action-btn.codex-detail-action-btn:focus-visible { outline: none; box-shadow: none; }
+.codex-detail-action-btn svg { width: 16px; height: 16px; }
+.codex-detail-delete-btn:hover { color: var(--text-error); }
+
+.codex-detail-type-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+.codex-detail-type-icon svg { width: 14px; height: 14px; }
+
+/* Portrait */
+.codex-detail-portrait {
+    margin-bottom: 16px;
+    cursor: pointer;
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 240px;
+}
+.codex-detail-img {
+    width: 100%;
+    display: block;
+    border-radius: 8px;
+}
+.codex-detail-portrait-placeholder {
+    width: 240px;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--background-secondary);
+    border: 2px dashed var(--background-modifier-border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+/* Layout: form + side panel */
+.codex-detail-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 20px;
+}
+@media (max-width: 700px) {
+    .codex-detail-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.codex-detail-form { min-width: 0; }
+.codex-detail-side { min-width: 0; }
+
+/* ── Field sections ─────────────────────────────────── */
+
+.codex-section {
+    margin-bottom: 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.codex-section-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--background-secondary);
+    cursor: pointer;
+    user-select: none;
+}
