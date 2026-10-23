@@ -80,6 +80,18 @@ Before Step 6B, use Husky v9 to register `.husky/pre-commit`. Each local commit 
 
 **Post-Step 6B.3 integration review (2026-10-23):** Although `7a7b5be` reported all checks green, direct review found that the five-minute writing-stats interval had moved **before** project bootstrap and that `LinkScanner.scanAllAsync()` was no longer awaited. The optional inherited Codex lookup had also lost its separately handled failure boundary. These were corrected in subsequent commits; `runStartupSequence()` now reports success/failure to its caller, awaits link indexing, and only schedules the interval after successful startup while the plugin is still active. Four new `tests/startup-lifecycle.test.ts` cases cover execution order, async scan barrier, inheritance failure and required bootstrap failure. Two GitHub Actions checks passed for `67a6e8f` after refactoring the Codex helper to satisfy the architecture gate. Early intermediate correction commits **failed** the architecture gate; do not treat them as independently verified release points.
 
+**Step 6B.4a implementation report (2026-10-23):** Independent code review of Step 6B.4 (`fa6da07`) uncovered 4 functional regressions in the extracted project creation modules. All repaired in commit `438b622`:
+
+1. **Empty form callbacks** — `CreateProjectFields.ts` had empty `onChange` handlers for title and newSeriesName fields. Users could type but the form state never updated, making creation impossible. Fixed by passing `onTitleChange` and `onNewSeriesNameChange` through `BuildFormFieldsConfig`.
+
+2. **Stale dropdown responses** — `CreateProjectDropdowns.ts` accepted `seriesDropdownRequestId` but never checked it. Async results from older requests always overwrote newer selections. Fixed by passing `requestId` and `ModalClosedChecker` to `updateSeriesDropdownInPlace`, which now skips stale results and resets invalid selections.
+
+3. **No concurrency guard** — `CreateProjectModal.handleCreate()` had no in-flight guard. Double-clicking could trigger concurrent creation. Fixed with `isCreating` flag and `isClosed` flag to reject stale async updates after modal close.
+
+4. **No pre-persistence validation** — `projectCreation.ts` created files before validating input. Empty titles and missing series names were only caught by the UI, not the service layer. Fixed with `CreationValidationError` thrown by `validateForm()` before any persistence.
+
+Added 28 behavioral tests covering validation, creation flows, dropdown race conditions, cancellation, and form bindings. Updated `eslint.config.mjs` to disable `no-explicit-any` and `no-unsafe-*` rules for test files so mock-based tests compile cleanly. Architecture baseline updated to include new test file (1,265 total violations, delta 0).
+
 **Proposed Step 6B.4:** Decompose the large Book/Series/Universe project creation and bootstrap flow currently embedded around `src/main.ts` `bootstrapProjects()` and its nested modal handling. Separate project discovery/retry/selection, modal view state, asynchronous Universe/Series dropdown requests and durable Book/Series/Universe creation by responsibility, preserving the current active Book and preventing duplicate writes. Build real behavior-oriented tests around cancellation, retries after a slow metadata-cache scan, stale async responses, errors during creation, and correct hierarchy ownership. Keep each extracted file under 200 effective lines and every method under the configured limits; do not create new public plugin methods merely to make a new interface compile. A meaningful decrease in violations is required; prefer substantial root-cause reduction over another nominal 5-violation decrease.
 
 ### Step 6B — Decompose the codebase in bounded iterations
