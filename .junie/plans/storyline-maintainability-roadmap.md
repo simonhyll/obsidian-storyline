@@ -24,10 +24,13 @@ Created after Phase 3 Milestone 2B, commit `516bc72`. This roadmap addresses tec
 
 Do not start all workstreams in one agent task or commit. Each stage must be independently buildable, testable and reviewable. Prefer one stage per PR/commit series; automatically push work to `feat/rework` after verifying, respecting the user's usual no-manual-merge workflow. Preserve manuscript/vault file safety.
 
-### 0. Verify the 2B feature before refactoring
+### 0. Finish and verify the 2B feature before refactoring
 
-- On a disposable Obsidian vault, smoke-test `516bc72`: ruler display, year jump and empty years, time-marker menu, Scene/Event date prefill and actual persisted frontmatter, scope ownership, multibook context and per-leaf navigation.
-- Distinguish service-only tests from real UI integration coverage.
+**Code-audit finding at `516bc72`: do not treat the reported 2B completion as verified.** The actual `services/TimelineNavigationService.ts` still calls JavaScript `Date` in daily-marker and day-of-year logic (`new Date(...)`), notwithstanding the completion summary. The `516bc72` diff contains no `views/TimelineView.ts` change, and the current view does not render `getTimeMarkers()`, call `getTimestampAtPosition()`, or present a time-marker creation menu. New ruler CSS alone does not provide these behaviors.
+
+- First **implement the missing real UI and calendar changes** of milestone 2B, not merely another plan entry or an assertion that tests pass.
+- On a disposable Obsidian vault, smoke-test: real ruler display, year jump and empty years, time-marker click, Scene/Event date prefill and actual persisted frontmatter, canonical scope ownership, multibook context and per-leaf navigation.
+- Distinguish service-only tests from real UI integration coverage, and add meaningful tests of rendered behavior or production handlers. The nine reported new tests do not establish these UI behaviors.
 - Record an explicit `pnpm test`, `pnpm build`, `pnpm run typecheck`, `pnpm run lint:obsidian` baseline on current `feat/rework` and the resulting artefacts. Do not call baseline errors resolved until measured.
 - Make sure direct `feat/rework` pushes receive CI verification (branch trigger or equivalent), without making a failing historical typecheck an immediate unreviewable global gate.
 
