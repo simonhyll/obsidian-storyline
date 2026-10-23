@@ -1,6 +1,6 @@
 import esbuild from "esbuild";
 import process from "process";
-import { mkdirSync, readFileSync, watch, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, watch, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as sass from "sass";
@@ -49,7 +49,7 @@ function compileScss() {
   writeFileSync(resolve(distDir, "manifest.json"), manifestContent);
 
   // Compile SCSS to dist/styles.css
-  const result = sass.compile("src/styles/main.scss", {
+  const result = sass.compile(resolve(__dirname, "assets", "scss", "main.scss"), {
     style: prod ? "compressed" : "expanded",
     sourceMap: false,
   });
@@ -65,38 +65,48 @@ if (prod) {
   compileScss();
   await context.watch();
 
-  // esbuild watches the TS dependency graph but does not watch SCSS or
-  // the manifest. Watch their containing directories so changes trigger
-  // a recompilation.
-  const sourceAssets = [
-    { dir: resolve(__dirname, "assets"), file: "manifest.json" },
-    { dir: resolve(__dirname, "src", "styles"), ext: ".scss" },
-  ];
+  // Sass imports nested partials, but esbuild only watches TypeScript.
+  // Watch EVERY SCSS directory individually: recursive fs.watch() is not
+  // supported consistently on Linux/macOS/Windows. Refresh the directory
+  // watchers when modules or directories are added or removed.
+  const scssRoot = resolve(__dirname, "assets", "scss");
+  const scssWatchers = new Map();
+  function watchScssDirectories(dir) {
+    if (!scssWatchers.has(dir)) {
+      scssWatchers.set(dir, watch(dir, (_event, filename) => {
+        if (filename === null || filename.toString().endsWith(".scss")) {
+          scheduleCompile();
+        } else {
+          // A newly created/renamed nested folder must be watched too.
+          scheduleCompile();
+        }
+      }));
+    }
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        watchScssDirectories(resolve(dir, entry.name));
+      }
+    }
+  }
   let compileTimer;
   const scheduleCompile = () => {
     clearTimeout(compileTimer);
     compileTimer = setTimeout(() => {
       try {
+        // Re-discover directories before compiling so new modules are watched.
+        watchScssDirectories(scssRoot);
         compileScss();
       } catch (error) {
         console.error("[esbuild] Failed to compile SCSS:", error);
       }
     }, 150);
   };
-  for (const { dir, file, ext } of sourceAssets) {
-    watch(dir, (_event, changedFile) => {
-      if (changedFile === null) {
-        scheduleCompile();
-        return;
-      }
-      const name = changedFile.toString();
-      if (file && name === file) {
-        scheduleCompile();
-      } else if (ext && name.endsWith(ext)) {
-        scheduleCompile();
-      }
-    });
-  }
+  watchScssDirectories(scssRoot);
+  watch(resolve(__dirname, "assets"), (_event, filename) => {
+    if (filename === null || filename.toString() === "manifest.json") {
+      scheduleCompile();
+    }
+  });
   console.log("[esbuild] Watching TypeScript and source assets for changes...");
   console.log("[esbuild] Output: dist/main.js, dist/manifest.json, dist/styles.css");
 }
