@@ -46,12 +46,20 @@ if (!isCommit(base)) {
     throw new Error('No valid base commit for incremental ESLint comparison.');
 }
 const commonAncestor = git('merge-base', base, 'HEAD');
-const paths = execFileSync(
-    'git', ['diff', '--name-only', '-z', '--diff-filter=ACMR', commonAncestor, 'HEAD', '--', '*.ts'],
+const records = execFileSync(
+    'git', ['diff', '--name-status', '-z', '-M', '--diff-filter=ACMR', commonAncestor, 'HEAD', '--', '*.ts'],
     { encoding: 'buffer' },
 ).toString('utf8').split('\0').filter(Boolean);
+const changes = [];
+for (let i = 0; i < records.length;) {
+    const status = records[i++];
+    const previousPath = status.startsWith('R') || status.startsWith('C') ? records[i++] : null;
+    const filename = records[i++];
+    if (!filename) throw new Error(`Malformed git diff name-status output: ${status}`);
+    changes.push({ filename, previousPath: previousPath ?? filename });
+}
 
-if (paths.length === 0) {
+if (changes.length === 0) {
     console.log('[lint:changed] No changed TypeScript files.');
     process.exit(0);
 }
@@ -71,11 +79,11 @@ async function diagnostics(content, filename) {
     return result[0]?.messages.filter(m => m.severity === 2) ?? [];
 }
 
-for (const filename of paths) {
+for (const { filename, previousPath } of changes) {
     const currentContent = readFileSync(filename, 'utf8');
     let previousContent = '';
     try {
-        previousContent = execFileSync('git', ['show', `${commonAncestor}:${filename}`], {
+        previousContent = execFileSync('git', ['show', `${commonAncestor}:${previousPath}`], {
             encoding: 'utf8',
             stdio: ['ignore', 'pipe', 'ignore'],
         });
@@ -107,5 +115,5 @@ for (const filename of paths) {
     }
 }
 
-console.log(`[lint:changed] ${paths.length} changed TS files; ${oldErrors} historical errors, ${currentErrors} current errors, ${newErrors} new errors.`);
+console.log(`[lint:changed] ${changes.length} changed TS files; ${oldErrors} historical errors, ${currentErrors} current errors, ${newErrors} new errors.`);
 if (newErrors > 0) process.exitCode = 1;
