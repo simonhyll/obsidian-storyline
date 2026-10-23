@@ -8,6 +8,7 @@ import { TimeSpanService } from '../../../src/services/TimeSpanService';
 import { TimelineNavigationService } from '../../../src/services/TimelineNavigationService';
 import type { Scene } from '../../../src/models/Scene';
 import type { Event } from '../../../src/models/Event';
+import { deriveProjectFoldersFromFilePath } from '../../../src/models/StoryLineProject';
 import type { StoryLineProject } from '../../../src/models/StoryLineProject';
 import { createEvent } from '../../../src/models/Event';
 
@@ -23,27 +24,43 @@ function makeScene(title: string, storyDate: string, bookId: string, filePath: s
   } as unknown as Scene;
 }
 
-Given(/(\d+) Books belong to the same Universe/, function (this: TestWorld, count: string) {
-  count = parseInt(count, 10);
+function createBook(title: string, bookId: string, universeId: string): StoryLineProject {
+  const filePath = `StoryLine/${title}/${title}.md`;
+  return {
+    title,
+    filePath,
+    ...deriveProjectFoldersFromFilePath(filePath),
+    bookId,
+    universeId,
+    created: '2024-01-01',
+    description: '',
+    definedActs: [],
+    definedChapters: [],
+    actLabels: {},
+    chapterLabels: {},
+    actDescriptions: {},
+    chapterDescriptions: {},
+    filterPresets: [],
+    corkboardPositions: {},
+  };
+}
+
+Given(/(\\d+) Books belong to the same Universe/, function (this: TestWorld, count: string) {
+  const bookCount = Number.parseInt(count, 10);
   this.universeId = 'universe-123';
-  for (let i = 0; i < count; i++) {
-    const book: StoryLineProject = {
-      title: `Book ${i + 1}`,
-      filePath: `StoryLine/Book ${i + 1}/Book ${i + 1}.md`,
-      sceneFolder: `StoryLine/Book ${i + 1}/Scenes`,
-      bookId: `book-${i + 1}`,
-      universeId: this.universeId,
-      created: '2024-01-01',
-    };
-    this.books.push(book);
+  for (let i = 0; i < bookCount; i++) {
+    this.books.push(createBook(`Book ${i + 1}`, `book-${i + 1}`, this.universeId));
   }
   this.activeBook = this.books[0];
 });
 
 Given('their Scenes have different dates', function (this: TestWorld) {
+  const bookA = this.books[0];
+  const bookB = this.books[1];
+  if (!bookA?.bookId || !bookB?.bookId) throw new Error('Expected two books with IDs');
   this.scenes = [
-    makeScene('Scene A', '2000-01-15', this.books[0].bookId, 'StoryLine/Book 1/Scenes/Scene A.md'),
-    makeScene('Scene B', '2000-03-20', this.books[1].bookId, 'StoryLine/Book 2/Scenes/Scene B.md'),
+    makeScene('Scene A', '2000-01-15', bookA.bookId, 'StoryLine/Book 1/Scenes/Scene A.md'),
+    makeScene('Scene B', '2000-03-20', bookB.bookId, 'StoryLine/Book 2/Scenes/Scene B.md'),
   ];
 });
 
@@ -99,22 +116,8 @@ Given('Books belong to different Universes', function (this: TestWorld) {
   this.universeId = 'universe-alpha';
   this.universeId2 = 'universe-beta';
   this.books = [
-    {
-      title: 'Alpha Book',
-      filePath: 'StoryLine/Alpha Book/Alpha Book.md',
-      sceneFolder: 'StoryLine/Alpha Book/Scenes',
-      bookId: 'alpha-book',
-      universeId: this.universeId,
-      created: '2024-01-01',
-    } as unknown as StoryLineProject,
-    {
-      title: 'Beta Book',
-      filePath: 'StoryLine/Beta Book/Beta Book.md',
-      sceneFolder: 'StoryLine/Beta Book/Scenes',
-      bookId: 'beta-book',
-      universeId: this.universeId2,
-      created: '2024-01-01',
-    } as unknown as StoryLineProject,
+    createBook('Alpha Book', 'alpha-book', this.universeId),
+    createBook('Beta Book', 'beta-book', this.universeId2),
   ];
   this.activeBook = this.books[0];
 });
@@ -126,12 +129,12 @@ When('the author opens the multi-book selector', function (this: TestWorld) {
     b => b.universeId === this.activeBook?.universeId
   );
   // Store for verification
-  this.timelineItems = compatibleBooks.map(b => ({ scene: undefined, event: undefined, timestamp: undefined }));
+  this.selectableBooks = compatibleBooks;
 });
 
 Then('only compatible Books are selectable', function (this: TestWorld) {
   // Only the active book's universe members should be selectable
-  const compatible = this.books.filter(b => b.universeId === this.activeBook?.universeId);
+  const compatible = this.selectableBooks;
   if (compatible.length !== 1) {
     throw new Error(`Expected 1 compatible book, got ${compatible.length}`);
   }
