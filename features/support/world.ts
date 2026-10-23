@@ -1,12 +1,13 @@
 /**
- * Cucumber test world — holds shared state between steps.
- * Uses real production services with mocked Obsidian vault.
+ * Cucumber test world — holds per-scenario state.
+ * All mutable state lives here; step definitions must NOT use module-level variables.
  */
 import type { TimelineNavItem } from '../../src/services/TimelineNavigationService';
 import type { Event } from '../../src/models/Event';
 import type { Scene } from '../../src/models/Scene';
 import type { StoryLineProject } from '../../src/models/StoryLineProject';
 import type { TimeSpan } from '../../src/models/TimeSpan';
+import type { CreationFormState } from '../../src/services/projectCreation';
 
 export interface TestWorld {
   /** Scenes created during the scenario */
@@ -25,7 +26,7 @@ export interface TestWorld {
   createdFiles: Map<string, string>;
   /** Timeline items after sorting (scenes + events merged) */
   timelineItems: TimelineNavItem[];
-  /** Simulated compatible Book choice, not a rendered Obsidian selector */
+  /** Simulated compatible Book choice */
   selectableBooks: StoryLineProject[];
   /** Whether the last creation was cancelled */
   cancelled: boolean;
@@ -35,26 +36,44 @@ export interface TestWorld {
   eventName?: string;
   /** TimeSpan for date-related scenarios */
   timeSpan?: TimeSpan;
-  /** Characters created during the scenario */
-  characters: any[];
-  /** Locations created during the scenario */
-  locations: any[];
-  /** Codex categories */
-  codexCategories: string[];
   /** Project settings */
   settings: Map<string, string>;
   /** Changelog preview output */
   changelogOutput?: string;
+  /** Changelog error output */
+  changelogError?: string;
   /** Last error thrown */
   lastError?: Error;
   /** Created project result */
   createdProject?: StoryLineProject;
   /** Form state for project creation */
-  formState?: any;
-  /** Dropdown request IDs for race condition tests */
-  dropdownRequestIds: number[];
+  formState?: CreationFormState;
   /** Series list for dropdown tests */
-  seriesList: any[];
+  seriesList: Array<{ name: string; seriesUuid: string }>;
   /** Universes list */
-  universesList: any[];
+  universesList: Array<{ id: string; name: string }>;
+  /** Last parsed TimeSpan (for timespan steps) */
+  lastParseResult?: TimeSpan | null;
+  /** Comparison result (for timespan steps) */
+  compareResult?: number;
+  /** Last validation error (for timespan steps) */
+  lastValidationError?: string | null;
+  /** Exported file count (for export steps) */
+  exportedCount?: number;
+  /** Whether platform is desktop (for import-export steps) */
+  isDesktop?: boolean;
+  /** Book title entered for project creation */
+  bookTitle?: string;
+  /** Series name entered for project creation */
+  seriesName?: string;
+  /** Universe name entered for project creation */
+  universeName?: string;
+  /** Number of times create was called (concurrency guard) */
+  createCount?: number;
+  /** Last event for management steps */
+  lastEvent?: Event;
+  /** Scene title for scene steps */
+  sceneTitle?: string;
+  /** Scene UUID for scene steps */
+  sceneUuid?: string;
 }

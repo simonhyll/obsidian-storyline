@@ -2,13 +2,11 @@
  * Step definitions for event ownership and scene creation safety scenarios.
  * Exercises real EventManager, TimeSpanService, and createEvent.
  */
-import { Given, When, Then, After } from '@cucumber/cucumber';
+import { Given, When, Then } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
 import { TimeSpanService } from '../../src/services/TimeSpanService';
-import { EventManager } from '../../src/services/EventManager';
 import { createEvent } from '../../src/models/Event';
 import type { StoryLineProject } from '../../src/models/StoryLineProject';
-import type { App } from 'obsidian';
 
 Given('the author has a Universe with an Events folder', function (this: TestWorld) {
   this.universeId = 'universe-test';
@@ -22,15 +20,12 @@ When('they create a canonical Event named {string}', function (this: TestWorld, 
 Then('the Event has date {string}', function (this: TestWorld, dateStr: string) {
   const tss = new TimeSpanService();
   const parsed = tss.parse(dateStr);
-  if (!parsed) {
-    throw new Error(`Failed to parse date: ${dateStr}`);
-  }
+  if (!parsed) throw new Error(`Failed to parse date: ${dateStr}`);
   const event = createEvent(this.eventName || 'Untitled', 'StoryLine/Events/test-event.md', {
     ownerId: this.universeId,
     timeSpan: parsed,
   });
   this.events = [event];
-  // Simulate file persistence
   this.createdFiles.set(event.filePath, `---\ntype: event\nid: ${event.id}\nname: ${event.name}\n---`);
 });
 
@@ -48,12 +43,9 @@ Then('its UUID, TimeSpan and ownership are correct', function (this: TestWorld) 
   if (event.ownerId !== this.universeId) {
     throw new Error(`Event ownership incorrect: expected ${this.universeId}, got ${event.ownerId}`);
   }
-  // Verify TimeSpan is valid using real service
   const tss = new TimeSpanService();
   const error = tss.validateTimeSpan(event.timeSpan);
-  if (error) {
-    throw new Error(`Invalid TimeSpan: ${error}`);
-  }
+  if (error) throw new Error(`Invalid TimeSpan: ${error}`);
 });
 
 // Scene creation safety
@@ -93,8 +85,6 @@ Given('the author is viewing multiple Books', function (this: TestWorld) {
 });
 
 When('they create a new Scene named {string}', function (this: TestWorld, name: string) {
-  // Scene creation requires explicit book selection
-  // The production code requires the active book to be set
   if (!this.activeBook?.bookId) {
     throw new Error('Cannot create scene without an owning Book ID');
   }
@@ -122,7 +112,6 @@ Then('the correct owning Book must be explicitly established', function (this: T
 Then('no Scene is accidentally written into another Book', function (this: TestWorld) {
   const scene = this.scenes[0];
   if (!scene) throw new Error('No scene created');
-  // Verify the scene path is under the active book's scene folder
   const expectedPrefix = this.activeBook?.sceneFolder;
   if (!scene.filePath.startsWith(expectedPrefix!)) {
     throw new Error(`Scene path ${scene.filePath} is not under ${expectedPrefix}`);
@@ -137,22 +126,13 @@ Given('an Event or Scene creation dialog is open', function (this: TestWorld) {
 
 When('the author cancels', function (this: TestWorld) {
   this.cancelled = true;
-  // No files should be created on cancellation
 });
 
 Then('no files are created or modified', function (this: TestWorld) {
   if (!this.cancelled) throw new Error('Cancellation was not triggered');
-  // Verify no new files were created
   const beforeCount = this.filesBeforeCreation.size;
   const afterCount = this.createdFiles.size;
   if (afterCount !== beforeCount) {
     throw new Error(`Files changed after cancellation: ${beforeCount} → ${afterCount}`);
   }
 });
-
-// Declare eventName property
-declare module '../support/world' {
-  interface TestWorld {
-    eventName?: string;
-  }
-}

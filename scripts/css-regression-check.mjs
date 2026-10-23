@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 
-const baseline = readFileSync(resolve(root, 'quality/baselines/css-baseline.css'), 'utf8');
+const baseline = readFileSync(resolve(root, 'scripts/baselines/css-baseline.css'), 'utf8');
 const compiled = readFileSync(resolve(root, 'dist/styles.css'), 'utf8');
 
 // Parse both CSS files

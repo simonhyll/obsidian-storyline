@@ -56,7 +56,7 @@ The `max-lines*` core rules count physical, **effective source lines**, not arbi
 
 Top offenders: `tests/universe-integration.test.ts` (217 violations), `src/main.ts` (121), `src/views/CharacterView.ts` (66), `src/views/TimelineView.ts` (62), `src/views/PlotgridView.ts` (61).
 
-**Regression gate:** `scripts/architecture-gate.cjs` compares current violations against `tests/architecture-baseline.json`. Fails on new files with violations or increased violations in existing files. Integrated into CI as `pnpm lint:architecture`.
+**Regression gate:** `scripts/architecture-gate.cjs` compares current violations against `scripts/baselines/architecture-baseline.json`. Fails on new files with violations or increased violations in existing files. Integrated into CI as `pnpm lint:architecture`.
 
 **Autofix safety:** Verified in isolated checkout — `pnpm lint --fix` does not break TypeScript compilation or tests. The `@typescript-eslint/no-explicit-any` rule has `fixToUnknown: false` to prevent destructive type changes.
 

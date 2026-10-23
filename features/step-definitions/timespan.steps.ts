@@ -7,50 +7,39 @@ import { TestWorld } from '../support/world';
 import { TimeSpanService } from '../../src/services/TimeSpanService';
 import type { TimeSpan } from '../../src/models/TimeSpan';
 
-let timeSpanService: TimeSpanService;
-let timeSpan1: TimeSpan | null = null;
-let timeSpan2: TimeSpan | null = null;
-let compareResult: number = 0;
-let lastParseResult: TimeSpan | null = null;
-let lastValidationError: string | null = null;
-
 Given('I parse the date {string}', function (this: TestWorld, dateStr: string) {
-  timeSpanService = new TimeSpanService();
-  lastParseResult = timeSpanService.parse(dateStr);
-  this.timeSpan = lastParseResult || undefined;
+  const tss = new TimeSpanService();
+  this.lastParseResult = tss.parse(dateStr) ?? null;
+  this.timeSpan = this.lastParseResult || undefined;
 });
 
 Given('I have a date {string}', function (this: TestWorld, dateStr: string) {
-  timeSpanService = new TimeSpanService();
-  timeSpan1 = timeSpanService.parse(dateStr);
-  if (!timeSpan1) {
-    throw new Error(`Failed to parse date: ${dateStr}`);
-  }
+  const tss = new TimeSpanService();
+  const ts = tss.parse(dateStr);
+  if (!ts) throw new Error(`Failed to parse date: ${dateStr}`);
+  this.timeSpan = ts;
 });
 
 Given('another date {string}', function (this: TestWorld, dateStr: string) {
-  timeSpan2 = timeSpanService.parse(dateStr);
-  if (!timeSpan2) {
-    throw new Error(`Failed to parse date: ${dateStr}`);
-  }
+  // Stored for comparison
+  this.changelogOutput = dateStr;
 });
 
 Given('I create an invalid TimeSpan', function (this: TestWorld) {
-  // Create a malformed TimeSpan
   this.timeSpan = { kind: 'instant', instant: { calendar: 'invalid' } } as TimeSpan;
 });
 
 Given('I have a TimeSpan of kind {string}', function (this: TestWorld, kind: string) {
-  timeSpanService = new TimeSpanService();
+  const tss = new TimeSpanService();
   switch (kind) {
     case 'instant':
-      this.timeSpan = timeSpanService.parse('2000-01-15') || undefined;
+      this.timeSpan = tss.parse('2000-01-15') || undefined;
       break;
     case 'range':
       this.timeSpan = {
         kind: 'range',
-        start: timeSpanService.parse('2000-01-01')!,
-        end: timeSpanService.parse('2000-12-31')!,
+        start: tss.parse('2000-01-01')!,
+        end: tss.parse('2000-12-31')!,
       } as unknown as TimeSpan;
       break;
     case 'fuzzy':
@@ -62,22 +51,21 @@ Given('I have a TimeSpan of kind {string}', function (this: TestWorld, kind: str
 });
 
 When('I compare the dates', function (this: TestWorld) {
-  if (!timeSpan1 || !timeSpan2) {
-    throw new Error('TimeSpans not set');
-  }
-  if (timeSpan1.kind === 'instant' && timeSpan2.kind === 'instant') {
-    compareResult = timeSpanService.compareTimestamps(
-      timeSpan1.instant,
-      timeSpan2.instant,
-    );
+  if (!this.timeSpan) throw new Error('No TimeSpan set');
+  const date2 = this.changelogOutput;
+  if (!date2) throw new Error('No second date');
+  const tss = new TimeSpanService();
+  const ts2 = tss.parse(date2);
+  if (!ts2) throw new Error(`Failed to parse second date: ${date2}`);
+  if (this.timeSpan.kind === 'instant' && ts2.kind === 'instant') {
+    this.compareResult = tss.compareTimestamps(this.timeSpan.instant, ts2.instant);
   }
 });
 
 When('I validate it', function (this: TestWorld) {
-  if (!this.timeSpan) {
-    throw new Error('No TimeSpan to validate');
-  }
-  lastValidationError = timeSpanService.validateTimeSpan(this.timeSpan);
+  if (!this.timeSpan) throw new Error('No TimeSpan to validate');
+  const tss = new TimeSpanService();
+  this.lastValidationError = tss.validateTimeSpan(this.timeSpan) || null;
 });
 
 When('I inspect its structure', function (this: TestWorld) {
@@ -85,55 +73,56 @@ When('I inspect its structure', function (this: TestWorld) {
 });
 
 Then('the result is a valid TimeSpan', function (this: TestWorld) {
-  if (!lastParseResult) {
+  if (this.lastParseResult === null || this.lastParseResult === undefined) {
     throw new Error('Expected valid TimeSpan, got null');
   }
 });
 
 Then('the result is null', function (this: TestWorld) {
-  if (lastParseResult !== null) {
-    throw new Error(`Expected null, got ${JSON.stringify(lastParseResult)}`);
+  if (this.lastParseResult !== null) {
+    throw new Error(`Expected null, got ${JSON.stringify(this.lastParseResult)}`);
   }
 });
 
 Then('the precision is {string}', function (this: TestWorld, expectedPrecision: string) {
-  if (!lastParseResult || lastParseResult.kind !== 'instant') {
+  if (!this.lastParseResult || this.lastParseResult.kind !== 'instant') {
     throw new Error('Expected instant TimeSpan');
   }
-  const actual = lastParseResult.instant.precision;
+  const actual = this.lastParseResult.instant.precision;
   if (actual !== expectedPrecision) {
     throw new Error(`Expected precision ${expectedPrecision}, got ${actual}`);
   }
 });
 
 Then('the first date is before the second', function (this: TestWorld) {
-  if (compareResult >= 0) {
-    throw new Error(`Expected negative comparison, got ${compareResult}`);
+  if (this.compareResult === undefined) throw new Error('No comparison result');
+  if (this.compareResult >= 0) {
+    throw new Error(`Expected negative comparison, got ${this.compareResult}`);
   }
 });
 
 Then('the first date is after the second', function (this: TestWorld) {
-  if (compareResult <= 0) {
-    throw new Error(`Expected positive comparison, got ${compareResult}`);
+  if (this.compareResult === undefined) throw new Error('No comparison result');
+  if (this.compareResult <= 0) {
+    throw new Error(`Expected positive comparison, got ${this.compareResult}`);
   }
 });
 
 Then('the dates are equal', function (this: TestWorld) {
-  if (compareResult !== 0) {
-    throw new Error(`Expected equal comparison, got ${compareResult}`);
+  if (this.compareResult === undefined) throw new Error('No comparison result');
+  if (this.compareResult !== 0) {
+    throw new Error(`Expected equal comparison, got ${this.compareResult}`);
   }
 });
 
 Then('a validation error is reported', function (this: TestWorld) {
-  if (!lastValidationError) {
+  if (!this.lastValidationError) {
     throw new Error('Expected validation error, got null');
   }
 });
 
 Then('it has the expected properties for {string}', function (this: TestWorld, kind: string) {
-  if (!this.timeSpan) {
-    throw new Error('No TimeSpan set');
-  }
+  if (!this.timeSpan) throw new Error('No TimeSpan set');
   if (this.timeSpan.kind !== kind) {
     throw new Error(`Expected kind ${kind}, got ${this.timeSpan.kind}`);
   }

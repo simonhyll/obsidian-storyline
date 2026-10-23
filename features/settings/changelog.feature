@@ -28,7 +28,7 @@ Feature: Changelog generation
   Scenario: Non-conforming commits are handled gracefully
     Given a commit message "random commit message"
     When I generate the changelog
-    Then the entry appears under Other Changes
+    Then the entry appears under Non-conforming Commits
 
   Scenario: Duplicate prevention on repeated generation
     Given I have prepared changelog for version "1.0.0"

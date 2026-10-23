@@ -187,7 +187,7 @@ The repository enforces structural limits on all hand-authored TypeScript and Ja
 
 These rules apply to `.ts`, `.mjs`, and `.cjs` files. Generated `dist/` artifacts are excluded.
 
-The historical backlog is tracked in `tests/architecture-baseline.json`. The regression gate (`pnpm lint:architecture`) fails if new files introduce violations or existing files increase their violation count. Step 6B will progressively decompose oversized modules until the baseline reaches zero.
+The historical backlog is tracked in `scripts/baselines/architecture-baseline.json`. The regression gate (`pnpm lint:architecture`) fails if new files introduce violations or existing files increase their violation count. Step 6B will progressively decompose oversized modules until the baseline reaches zero.
 
 ### JSDoc standards
 

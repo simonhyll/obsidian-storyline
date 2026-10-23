@@ -4,7 +4,7 @@
  * Architecture regression gate for StoryLine.
  *
  * Compares the current ESLint architecture rule violations against a stored
- * baseline (quality/baselines/architecture-baseline.json) and fails if:
+ * baseline (scripts/baselines/architecture-baseline.json) and fails if:
  *
  * 1. A newly created file has any architecture violations.
  * 2. An existing file's violation count increases.
@@ -13,7 +13,7 @@
  * Usage:
  *   node scripts/architecture-gate.mjs [--baseline <path>] [--update]
  *
- * --baseline <path>  Path to the baseline JSON file (default: quality/baselines/architecture-baseline.json)
+ * --baseline <path>  Path to the baseline JSON file (default: scripts/baselines/architecture-baseline.json)
  * --update           Update the baseline file with current violations (use carefully)
  */
 
@@ -38,7 +38,7 @@ function parseArgs() {
   const args = process.argv.slice(2);
   const baseline = args.includes("--baseline")
     ? resolve(ROOT, args[args.indexOf("--baseline") + 1])
-    : resolve(ROOT, "quality", "baselines", "architecture-baseline.json");
+    : resolve(ROOT, "scripts", "baselines", "architecture-baseline.json");
   const update = args.includes("--update");
   return { baseline, update };
 }

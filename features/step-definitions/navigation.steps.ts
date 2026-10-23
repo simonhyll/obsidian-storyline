@@ -6,15 +6,11 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
 import { TimeSpanService } from '../../src/services/TimeSpanService';
 import { TimelineNavigationService } from '../../src/services/TimelineNavigationService';
-import { createScene } from '../support/vault-fixture';
-import { createBook } from '../support/vault-fixture';
-
-let navService: TimelineNavigationService | null = null;
-let selectedIndex: number = -1;
+import { createScene, createBook } from '../support/vault-fixture';
 
 Given('the timeline contains {int} scenes', function (this: TestWorld, count: number) {
   const tss = new TimeSpanService();
-  navService = new TimelineNavigationService(tss);
+  const nav = new TimelineNavigationService(tss);
   this.scenes = [];
   for (let i = 0; i < count; i++) {
     const scene = createScene(
@@ -25,27 +21,33 @@ Given('the timeline contains {int} scenes', function (this: TestWorld, count: nu
     );
     this.scenes.push(scene);
   }
-  navService.updateItems(this.scenes, []);
+  nav.updateItems(this.scenes, []);
+  this.timelineItems = nav.getItems();
 });
 
 Given('I am viewing the first scene', function (this: TestWorld) {
-  selectedIndex = 0;
+  if (this.timelineItems.length > 0) {
+    (this.timelineItems[0] as unknown as Record<string, unknown>)._selected = true;
+  }
 });
 
 Given('I am viewing the third scene', function (this: TestWorld) {
-  selectedIndex = 2;
+  if (this.timelineItems.length >= 3) {
+    (this.timelineItems[2] as unknown as Record<string, unknown>)._selected = true;
+  }
 });
 
 Given('I am viewing the last scene', function (this: TestWorld) {
-  if (this.scenes.length > 0) {
-    selectedIndex = this.scenes.length - 1;
+  if (this.timelineItems.length > 0) {
+    (this.timelineItems[this.timelineItems.length - 1] as unknown as Record<string, unknown>)._selected = true;
   }
 });
 
 Given('an empty timeline', function (this: TestWorld) {
   const tss = new TimeSpanService();
-  navService = new TimelineNavigationService(tss);
-  navService.updateItems([], []);
+  const nav = new TimelineNavigationService(tss);
+  nav.updateItems([], []);
+  this.timelineItems = nav.getItems();
 });
 
 Given('2 books in the same universe', function (this: TestWorld) {
@@ -73,91 +75,92 @@ Given('scenes with different dates from both books', function (this: TestWorld) 
 });
 
 When('I navigate to the first item', function (this: TestWorld) {
-  if (!navService) throw new Error('Navigation service not initialized');
-  const items = navService.getItems();
-  if (items.length > 0) {
-    selectedIndex = 0;
+  if (this.timelineItems.length > 0) {
+    (this.timelineItems[0] as unknown as Record<string, unknown>)._selected = true;
   }
 });
 
 When('I navigate to the last item', function (this: TestWorld) {
-  if (!navService) throw new Error('Navigation service not initialized');
-  const items = navService.getItems();
-  if (items.length > 0) {
-    selectedIndex = items.length - 1;
+  if (this.timelineItems.length > 0) {
+    (this.timelineItems[this.timelineItems.length - 1] as unknown as Record<string, unknown>)._selected = true;
   }
 });
 
 When('I navigate forward', function (this: TestWorld) {
-  if (!navService) throw new Error('Navigation service not initialized');
-  const items = navService.getItems();
-  if (selectedIndex < items.length - 1) {
-    selectedIndex++;
+  const currentIdx = this.timelineItems.findIndex(i => (i as unknown as Record<string, unknown>)._selected);
+  if (currentIdx >= 0 && currentIdx < this.timelineItems.length - 1) {
+    (this.timelineItems[currentIdx] as unknown as Record<string, unknown>)._selected = false;
+    (this.timelineItems[currentIdx + 1] as unknown as Record<string, unknown>)._selected = true;
   }
 });
 
 When('I navigate backward', function (this: TestWorld) {
-  if (!navService) throw new Error('Navigation service not initialized');
-  if (selectedIndex > 0) {
-    selectedIndex--;
+  const currentIdx = this.timelineItems.findIndex(i => (i as unknown as Record<string, unknown>)._selected);
+  if (currentIdx > 0) {
+    (this.timelineItems[currentIdx] as unknown as Record<string, unknown>)._selected = false;
+    (this.timelineItems[currentIdx - 1] as unknown as Record<string, unknown>)._selected = true;
   }
 });
 
 When('I filter to show only the first book', function (this: TestWorld) {
   if (!this.activeBook) throw new Error('No active book');
-  this.scenes = this.scenes.filter(s => (s as any).bookId === this.activeBook?.bookId);
-  if (navService) {
-    navService.updateItems(this.scenes, []);
-  }
+  this.scenes = this.scenes.filter(s => (s as unknown as Record<string, unknown>).bookId === this.activeBook?.bookId);
+  const tss = new TimeSpanService();
+  const nav = new TimelineNavigationService(tss);
+  nav.updateItems(this.scenes, []);
+  this.timelineItems = nav.getItems();
 });
 
 When('I view the multi-book timeline', function (this: TestWorld) {
-  if (!navService) throw new Error('Navigation service not initialized');
   const tss = new TimeSpanService();
-  navService = new TimelineNavigationService(tss);
-  navService.updateItems(this.scenes, []);
-  this.timelineItems = navService.getItems();
+  const nav = new TimelineNavigationService(tss);
+  nav.updateItems(this.scenes, []);
+  this.timelineItems = nav.getItems();
 });
 
 When('I request the items', function (this: TestWorld) {
-  if (!navService) throw new Error('Navigation service not initialized');
-  this.timelineItems = navService.getItems();
+  // Items are already in this.timelineItems
 });
 
 Then('the first scene is selected', function (this: TestWorld) {
-  if (selectedIndex !== 0) {
-    throw new Error(`Expected index 0, got ${selectedIndex}`);
+  if (!(this.timelineItems[0] as unknown as Record<string, unknown>)?._selected) {
+    throw new Error('First scene is not selected');
   }
 });
 
 Then('the last scene is selected', function (this: TestWorld) {
-  if (this.scenes.length > 0 && selectedIndex !== this.scenes.length - 1) {
-    throw new Error(`Expected index ${this.scenes.length - 1}, got ${selectedIndex}`);
+  if (this.timelineItems.length > 0 && !(this.timelineItems[this.timelineItems.length - 1] as unknown as Record<string, unknown>)?._selected) {
+    throw new Error('Last scene is not selected');
   }
 });
 
 Then('the second scene is selected', function (this: TestWorld) {
-  if (selectedIndex !== 1) {
-    throw new Error(`Expected index 1, got ${selectedIndex}`);
+  if (!(this.timelineItems[1] as unknown as Record<string, unknown>)?._selected) {
+    throw new Error('Second scene is not selected');
   }
 });
 
 Then('no new scene is selected', function (this: TestWorld) {
-  // Navigation at boundary should not change index
+  const selected = this.timelineItems.filter(i => (i as unknown as Record<string, unknown>)._selected);
+  if (selected.length !== 1) {
+    throw new Error('Expected exactly one selected item');
+  }
 });
 
 Then('only scenes from the first book are visible', function (this: TestWorld) {
   if (!this.activeBook) throw new Error('No active book');
   for (const scene of this.scenes) {
-    if ((scene as any).bookId !== this.activeBook.bookId) {
-      throw new Error(`Scene from wrong book: ${(scene as any).bookId}`);
+    if ((scene as unknown as Record<string, unknown>).bookId !== this.activeBook.bookId) {
+      throw new Error(`Scene from wrong book: ${String((scene as unknown as Record<string, unknown>).bookId)}`);
     }
   }
 });
 
 Then('all scenes appear in chronological order', function (this: TestWorld) {
   const tss = new TimeSpanService();
-  const timestamps = this.timelineItems.map(item => item.timestamp).filter((t): t is NonNullable<typeof t> => t != null);
+  const timestamps = this.timelineItems
+    .map(item => item.timestamp)
+    .filter((t): t is NonNullable<typeof t> => t != null);
   for (let i = 1; i < timestamps.length; i++) {
     if (tss.compareTimestamps(timestamps[i - 1], timestamps[i]) > 0) {
       throw new Error(`Timeline not chronological at item ${i}`);

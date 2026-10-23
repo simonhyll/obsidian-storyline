@@ -110,7 +110,13 @@ const ARCH_RULES = new Set(['max-lines', 'max-lines-per-function', 'complexity',
 const eslint = new ESLint();
 // lintFiles(), unlike lintText() on old revisions, retains valid TS project
 // context and matches diagnostics from `pnpm lint`.
-const results = await eslint.lintFiles(changes.map(({ filename }) => filename));
+const existingFiles = changes
+  .filter(({ filename }) => {
+    try { require('node:fs').accessSync(filename); return true; }
+    catch { return false; }
+  })
+  .map(({ filename }) => filename);
+const results = await eslint.lintFiles(existingFiles);
 let totalCurrent = 0;
 let newErrors = 0;
 for (const result of results) {
