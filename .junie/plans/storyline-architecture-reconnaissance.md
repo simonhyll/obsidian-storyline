@@ -1398,17 +1398,19 @@ Fix five remaining areas: shared chronological projection for swimlane mode, boo
 ### * Step 16: Phase 3 Milestone 2B — Temporal Axis & Date-Based Creation
 Complete the interactive temporal axis, calendar correctness, and date-based content creation.
 
-- ✓ Rewrote TimelineNavigationService — eliminated all JavaScript Date usage; daily markers use TimeSpanService.getDaysInMonth() for calendar-aware day advancement
+- [ ] Remove remaining JavaScript Date arithmetic from TimelineNavigationService (current source still uses new Date(...) in daily markers and day-of-year calculations)
 - ✓ Made TimeSpanService.getDaysInMonth and isLeapYear public for test and navigation access
 - ✓ Per-leaf navigation instances — each TimelineView creates its own TimelineNavigationService, isolating state across tabs
-- ✓ Temporal axis ruler UI — clickable time markers with context menu for creating Scenes and Events at selected dates
-- ✓ Date-based Scene creation — creates scene in active book with pre-filled TimeSpan
-- ✓ Date-based Event creation — opens EventModal with pre-filled TimeSpan
+- [ ] Render an actual temporal ruler in TimelineView, wire clickable time markers to navigation and creation (CSS alone is not implementation)
+- [ ] Implement and test date-based Scene creation from the ruler with persisted frontmatter, correct book ownership and cancellation behavior
+- [ ] Implement and test date-based canonical Event creation from the ruler with explicit owner scope, prefilled TimeSpan and one persisted file
 - ✓ CSS styling — temporal ruler with major/minor markers, hover effects
-- ✓ 9 new behavioral tests: calendar-aware daily markers (7), per-leaf isolation (2)
+- [ ] Add actual rendered ruler and date-creation behavior tests. Nine service tests were added in 516bc72 but do not prove the described UI/calendar implementation
 - ✓ Build verification — pnpm run build passes
 - ✓ Test verification — 412/412 tests pass (403 existing + 9 new)
 - ✓ Typecheck verification — 27 errors (all pre-existing baseline)
+
+- **Audit note (2026-10-23):** Commit `516bc72` does not modify TimelineView.ts, so its reported ruler/creation UI is not present; TimelineNavigationService still contains JavaScript Date. Existing completion claims for these items are superseded by the unchecked tasks above. See [storyline-maintainability-roadmap.md](storyline-maintainability-roadmap.md) step 0.
 
 ### * Step 17: Maintainability Modernization — before Phase 3 Saved Views
 **Detailed plan:** [storyline-maintainability-roadmap.md](storyline-maintainability-roadmap.md).
