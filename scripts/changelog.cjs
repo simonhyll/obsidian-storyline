@@ -23,68 +23,13 @@
 
 const { spawnSync } = require("child_process");
 const { readFileSync, writeFileSync } = require("fs");
-const { resolve, dirname } = require("path");
-
-// ---------------------------------------------------------------------------
-// Conventional Commits parsing (pure regex, no external dependency)
-// ---------------------------------------------------------------------------
-
-const TYPES = {
-  feat: "features",
-  fix: "bugFixes",
-  perf: "performance",
-  refactor: "refactor",
-  docs: "docs",
-  style: "style",
-  test: "test",
-  build: "build",
-  ci: "ci",
-  chore: "chore",
-};
-
-/**
- * Conventional Commits header regex.
- * Groups: 1=type, 2=scope, 3=breaking bang, 4=subject
- */
-const HEADER_RE =
-  /^(feat|fix|perf|refactor|docs|style|test|build|ci|chore)(\(([\w$/.-]*)\))?(!)?\s?:\s*(.*)$/;
-
-/**
- * Parse a raw Git log line (format: %h|%s%n%b) into a classified commit.
- * Returns { section, type, scope, subject, hash, breaking } or null.
- */
-function parseLine(line) {
-  // Format: <hash>|<subject>\n<body>
-  const firstNewline = line.indexOf("\n");
-  const header = firstNewline >= 0 ? line.slice(0, firstNewline) : line;
-  const body = firstNewline >= 0 ? line.slice(firstNewline + 1) : "";
-
-  const pipeIdx = header.indexOf("|");
-  if (pipeIdx < 0) return null;
-
-  const hash = header.slice(0, pipeIdx);
-  const subjectLine = header.slice(pipeIdx + 1);
-
-  const match = subjectLine.match(HEADER_RE);
-  if (!match) return null;
-
-  const [, type, , scope, breakingBang, subject] = match;
-
-  // Check body for BREAKING CHANGE: note
-  const hasBreakingNote = /^\s*BREAKING CHANGE\s*:/im.test(body);
-  const breaking = breakingBang === "!" || hasBreakingNote;
-
-  const section = TYPES[type] ?? "other";
-
-  return {
-    section,
-    type,
-    scope: scope ?? null,
-    subject: subject ?? "",
-    hash,
-    breaking,
-  };
-}
+const { resolve } = require("path");
+const {
+  generateEntries,
+  generateMarkdown,
+  insertVersionSection,
+  hasVersionSection,
+} = require("../dist/services/changelog");
 
 // ---------------------------------------------------------------------------
 // Git helpers (spawnSync — no shell required)
@@ -148,174 +93,6 @@ function tagExists(tag) {
 }
 
 // ---------------------------------------------------------------------------
-// Changelog generation
-// ---------------------------------------------------------------------------
-
-/**
- * Omitted sections — internal maintenance noise that is not useful in
- * release notes.
- */
-const OMITTED_SECTIONS = new Set(["style", "build", "ci", "chore", "test"]);
-
-/**
- * Generate changelog entries from a list of raw commit blocks.
- * Returns { features, bugFixes, performance, refactor, docs, breakingChanges, other, nonconforming }
- */
-function generateEntries(commitBlocks) {
-  const entries = {
-    features: [],
-    bugFixes: [],
-    performance: [],
-    refactor: [],
-    docs: [],
-    breakingChanges: [],
-    other: [],
-    nonconforming: [],
-  };
-
-  for (const block of commitBlocks) {
-    const classified = parseLine(block);
-
-    if (!classified) {
-      // Non-conforming commit — extract hash and subject for reference
-      const firstNewline = block.indexOf("\n");
-      const header = firstNewline >= 0 ? block.slice(0, firstNewline) : block;
-      const pipeIdx = header.indexOf("|");
-      if (pipeIdx >= 0) {
-        const hash = header.slice(0, pipeIdx);
-        const subject = header.slice(pipeIdx + 1);
-        entries.nonconforming.push({ hash, subject });
-      }
-      continue;
-    }
-
-    const item = {
-      scope: classified.scope,
-      subject: classified.subject,
-      hash: classified.hash,
-    };
-
-    if (classified.breaking) {
-      entries.breakingChanges.push(item);
-    }
-
-    switch (classified.section) {
-      case "features":
-        entries.features.push(item);
-        break;
-      case "bugFixes":
-        entries.bugFixes.push(item);
-        break;
-      case "performance":
-        entries.performance.push(item);
-        break;
-      case "refactor":
-        entries.refactor.push(item);
-        break;
-      case "docs":
-        entries.docs.push(item);
-        break;
-      default:
-        if (!OMITTED_SECTIONS.has(classified.section)) {
-          entries.other.push(item);
-        }
-        break;
-    }
-  }
-
-  return entries;
-}
-
-/**
- * Format a single entry as a Markdown bullet.
- */
-function formatEntry(item) {
-  const scope = item.scope ? `**${item.scope}** ` : "";
-  return `- ${scope}${item.subject} (\`${item.hash}\`)`;
-}
-
-/**
- * Generate the full Markdown changelog section for a version.
- */
-function generateMarkdown(version, entries) {
-  const lines = [`## Version ${version}`, ""];
-
-  if (entries.breakingChanges.length > 0) {
-    lines.push("### ⚠️ Breaking Changes");
-    lines.push("");
-    for (const item of entries.breakingChanges) {
-      lines.push(formatEntry(item));
-    }
-    lines.push("");
-  }
-
-  if (entries.features.length > 0) {
-    lines.push("### Features");
-    lines.push("");
-    for (const item of entries.features) {
-      lines.push(formatEntry(item));
-    }
-    lines.push("");
-  }
-
-  if (entries.bugFixes.length > 0) {
-    lines.push("### Bug Fixes");
-    lines.push("");
-    for (const item of entries.bugFixes) {
-      lines.push(formatEntry(item));
-    }
-    lines.push("");
-  }
-
-  if (entries.performance.length > 0) {
-    lines.push("### Performance");
-    lines.push("");
-    for (const item of entries.performance) {
-      lines.push(formatEntry(item));
-    }
-    lines.push("");
-  }
-
-  if (entries.refactor.length > 0) {
-    lines.push("### Refactoring");
-    lines.push("");
-    for (const item of entries.refactor) {
-      lines.push(formatEntry(item));
-    }
-    lines.push("");
-  }
-
-  if (entries.docs.length > 0) {
-    lines.push("### Documentation");
-    lines.push("");
-    for (const item of entries.docs) {
-      lines.push(formatEntry(item));
-    }
-    lines.push("");
-  }
-
-  if (entries.other.length > 0) {
-    lines.push("### Other Changes");
-    lines.push("");
-    for (const item of entries.other) {
-      lines.push(formatEntry(item));
-    }
-    lines.push("");
-  }
-
-  if (entries.nonconforming.length > 0) {
-    lines.push("### Non-conforming Commits");
-    lines.push("");
-    for (const item of entries.nonconforming) {
-      lines.push(`- ${item.subject} (\`${item.hash}\`)`);
-    }
-    lines.push("");
-  }
-
-  return lines.join("\n");
-}
-
-// ---------------------------------------------------------------------------
 // CHANGELOG.md manipulation
 // ---------------------------------------------------------------------------
 
@@ -331,41 +108,14 @@ function insertIntoChangelog(version, markdown) {
   const content = readFileSync(CHANGELOG_PATH, "utf8");
 
   // Check for duplicate version
-  const versionHeader = `## Version ${version}`;
-  if (content.includes(versionHeader)) {
+  if (hasVersionSection(content, version)) {
     console.error(
       `Error: CHANGELOG.md already contains a section for ${version}. Remove it manually or use a different version.`
     );
     process.exit(1);
   }
 
-  // Find the position after the Support section
-  // The support section ends with the PayPal link line
-  const supportEnd = content.indexOf("[![Donate");
-  if (supportEnd >= 0) {
-    // Find the end of the PayPal link line
-    const lineEnd = content.indexOf("\n", supportEnd);
-    if (lineEnd >= 0) {
-      const before = content.slice(0, lineEnd);
-      const after = content.slice(lineEnd);
-      const newContent = `${before}\n\n${markdown}${after}`;
-      writeFileSync(CHANGELOG_PATH, newContent, "utf8");
-      return;
-    }
-  }
-
-  // Fallback: insert after the first line (title)
-  const firstNewline = content.indexOf("\n");
-  if (firstNewline >= 0) {
-    const before = content.slice(0, firstNewline);
-    const after = content.slice(firstNewline);
-    const newContent = `${before}\n\n${markdown}${after}`;
-    writeFileSync(CHANGELOG_PATH, newContent, "utf8");
-    return;
-  }
-
-  // Last resort: prepend
-  const newContent = `${markdown}\n${content}`;
+  const newContent = insertVersionSection(content, version, markdown);
   writeFileSync(CHANGELOG_PATH, newContent, "utf8");
 }
 

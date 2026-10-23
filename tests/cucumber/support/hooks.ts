@@ -21,6 +21,12 @@ Before(function (this: TestWorld) {
   this.settings = new Map();
   this.changelogOutput = undefined;
   this.changelogError = undefined;
+  this.changelogCommits = undefined;
+  this.classifiedCommit = undefined;
+  this.changelogContent = undefined;
+  this.changelogContentModified = undefined;
+  this.existingTag = undefined;
+  this.filesModified = undefined;
   this.lastError = undefined;
   this.createdProject = undefined;
   this.formState = undefined;
@@ -38,4 +44,9 @@ Before(function (this: TestWorld) {
   this.lastEvent = undefined;
   this.sceneTitle = undefined;
   this.sceneUuid = undefined;
+  this.mockDepsLog = undefined;
+  this.dropdownResults = undefined;
+  this.latestRequestId = undefined;
+  this.navService = undefined;
+  this.lastNavigationResult = undefined;
 });

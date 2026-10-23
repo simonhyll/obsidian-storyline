@@ -8,6 +8,7 @@ import type { Scene } from '../../../src/models/Scene';
 import type { StoryLineProject } from '../../../src/models/StoryLineProject';
 import type { TimeSpan } from '../../../src/models/TimeSpan';
 import type { CreationFormState } from '../../../src/services/projectCreation';
+import type { ClassifiedCommit } from '../../../src/services/changelog';
 
 export interface TestWorld {
   /** Scenes created during the scenario */
@@ -42,6 +43,18 @@ export interface TestWorld {
   changelogOutput?: string;
   /** Changelog error output */
   changelogError?: string;
+  /** Changelog commit blocks for preview testing */
+  changelogCommits?: string[];
+  /** Classified commit from parsing */
+  classifiedCommit?: ClassifiedCommit;
+  /** Changelog content for duplicate-prevention testing */
+  changelogContent?: string;
+  /** Whether changelog content was modified */
+  changelogContentModified?: boolean;
+  /** Existing git tag for tag-protection testing */
+  existingTag?: string;
+  /** Whether files were modified (for preview test) */
+  filesModified?: boolean;
   /** Last error thrown */
   lastError?: Error;
   /** Created project result */
@@ -76,4 +89,14 @@ export interface TestWorld {
   sceneTitle?: string;
   /** Scene UUID for scene steps */
   sceneUuid?: string;
+  /** Mock dependency call log for project creation tests */
+  mockDepsLog?: Array<{ action: string; args?: unknown[] }>;
+  /** Dropdown results for async race testing */
+  dropdownResults?: Array<{ name: string; seriesUuid: string }>;
+  /** Latest request ID for async race testing */
+  latestRequestId?: number;
+  /** Timeline navigation service instance */
+  navService?: import('../../../src/services/TimelineNavigationService').TimelineNavigationService;
+  /** Last navigation result (navigateNext/navigatePrevious) */
+  lastNavigationResult?: import('../../../src/services/TimelineNavigationService').TimelineNavItem | null;
 }
