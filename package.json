@@ -11,7 +11,7 @@
     "test:watch": "vitest",
     "lint": "eslint \"**/*.ts\"",
     "lint:obsidian": "eslint \"**/*.ts\"",
-    "lint:changed": "git diff --name-only HEAD~1 --diff-filter=d -- '*.ts' | xargs -r eslint",
+    "lint:changed": "node scripts/lint-changed.mjs",
     "vault:install": "node scripts/sync-vault.mjs",
     "vault:watch": "node scripts/sync-vault.mjs --watch"
   },
