@@ -69,7 +69,8 @@ import {
 	removeObsoleteLegacyKeys,
 	PROJECT_DATA_KEYS,
 	hasProjectDataKeys,
-	stripProjectDataKeys,
+	stripSpecificProjectDataKeys,
+	KEY_TO_SYSTEM_FILE,
 	mergePlotgridData,
 	mergePlotlineData,
 	mergeCharacterData,
@@ -2441,40 +2442,69 @@ export default class SceneCardsPlugin extends Plugin {
         const projects = this.sceneManager.getProjects();
 
         // ── Phase 1: legacy frontmatter migrations (definedActs, etc.) ──
-        // Only delete legacy entries for projects that were successfully migrated.
-        // Unmigrated entries are preserved so the next startup can retry.
+        // Only delete legacy entries after successful persistence.
+        // Conflicting and deferred entries are preserved so the next startup can retry.
         if (raw.definedActs && typeof raw.definedActs === 'object') {
-            const { migratedPaths, unmigratedPaths } = migrateProjectField(
+            const results = migrateProjectField(
                 raw.definedActs,
                 projects,
                 'definedActs',
             );
-            // Persist each migrated project
-            for (const path of migratedPaths) {
-                const project = projects.find(p => p.filePath === path);
-                if (project) {
-                    await this.sceneManager.saveProjectFrontmatter(project);
+            // Persist only the projects whose entries were copied.
+            // Track which ones actually succeeded.
+            const persistedPaths = new Set<string>();
+            for (const entry of results) {
+                if (entry.outcome === 'copied') {
+                    const project = projects.find(p => p.filePath === entry.path);
+                    if (project) {
+                        try {
+                            await this.sceneManager.saveProjectFrontmatter(project);
+                            persistedPaths.add(entry.path);
+                        } catch {
+                            // Persistence failed — do not remove the legacy entry.
+                        }
+                    }
                 }
             }
-            // Only remove successfully migrated entries; preserve unmigrated ones
-            if (removeMigratedEntries(raw, 'definedActs', migratedPaths, unmigratedPaths)) {
+            // Mark entries whose persistence failed as deferred so they are preserved.
+            const adjustedResults = results.map(entry => {
+                if (entry.outcome === 'copied' && !persistedPaths.has(entry.path)) {
+                    return { path: entry.path, outcome: 'deferred' as const };
+                }
+                return entry;
+            });
+            if (removeMigratedEntries(raw, 'definedActs', adjustedResults)) {
                 dirty = true;
             }
         }
 
         if (raw.definedChapters && typeof raw.definedChapters === 'object') {
-            const { migratedPaths, unmigratedPaths } = migrateProjectField(
+            const results = migrateProjectField(
                 raw.definedChapters,
                 projects,
                 'definedChapters',
             );
-            for (const path of migratedPaths) {
-                const project = projects.find(p => p.filePath === path);
-                if (project) {
-                    await this.sceneManager.saveProjectFrontmatter(project);
+            const persistedPaths = new Set<string>();
+            for (const entry of results) {
+                if (entry.outcome === 'copied') {
+                    const project = projects.find(p => p.filePath === entry.path);
+                    if (project) {
+                        try {
+                            await this.sceneManager.saveProjectFrontmatter(project);
+                            persistedPaths.add(entry.path);
+                        } catch {
+                            // Persistence failed — do not remove the legacy entry.
+                        }
+                    }
                 }
             }
-            if (removeMigratedEntries(raw, 'definedChapters', migratedPaths, unmigratedPaths)) {
+            const adjustedResults = results.map(entry => {
+                if (entry.outcome === 'copied' && !persistedPaths.has(entry.path)) {
+                    return { path: entry.path, outcome: 'deferred' as const };
+                }
+                return entry;
+            });
+            if (removeMigratedEntries(raw, 'definedChapters', adjustedResults)) {
                 dirty = true;
             }
         }
@@ -2522,6 +2552,11 @@ export default class SceneCardsPlugin extends Plugin {
                 void e;
             }
 
+            // ── Strip only the keys whose System file writes succeeded ──
+            // Track which System file writes succeeded, then only remove
+            // the legacy keys that map to those successfully written files.
+            const successfulSystemFiles = new Set<string>();
+
             // ── plotgrid.json (rows/columns/cells/zoom/stickyHeaders) ──
             // Only write legacy plotgrid data if System/plotgrid.json is empty.
             // If it already has data (e.g. from gen_plotgrid.ps1), keep it.
@@ -2534,13 +2569,14 @@ export default class SceneCardsPlugin extends Plugin {
                     const pgData = mergePlotgridData(raw, existingContent);
                     if (pgData) {
                         await adapter.write(pgPath, JSON.stringify(pgData, null, 2));
+                        successfulSystemFiles.add('plotgrid.json');
                     }
                 } catch (e) {
                     void e;
                 }
             }
 
-            // ── plotlines.json (tagColors, tagTypeOverrides) ──
+            // ── plotlines.json (tagColors, tagTypeOverrides, etc.) ──
             {
                 try {
                     const path = `${sysFolder}/plotlines.json`;
@@ -2549,6 +2585,7 @@ export default class SceneCardsPlugin extends Plugin {
                         : null;
                     const merged = mergePlotlineData(raw, existingContent, this.settings as unknown as Record<string, unknown>);
                     await adapter.write(path, JSON.stringify(merged, null, 2));
+                    successfulSystemFiles.add('plotlines.json');
                 } catch (e) {
                     void e;
                 }
@@ -2563,6 +2600,7 @@ export default class SceneCardsPlugin extends Plugin {
                         : null;
                     const merged = mergeCharacterData(raw, existingContent, this.settings as unknown as Record<string, unknown>);
                     await adapter.write(path, JSON.stringify(merged, null, 2));
+                    successfulSystemFiles.add('characters.json');
                 } catch (e) {
                     void e;
                 }
@@ -2578,14 +2616,24 @@ export default class SceneCardsPlugin extends Plugin {
                     const merged = mergeStatsData(raw, existingContent);
                     if (merged) {
                         await adapter.write(path, JSON.stringify(merged, null, 2));
+                        successfulSystemFiles.add('stats.json');
                     }
                 } catch (e) {
                     void e;
                 }
             }
 
-            // ── Strip migrated keys from raw and save ──
-            if (stripProjectDataKeys(raw)) {
+            // Only strip legacy keys whose destination System file was written successfully.
+            const keysToStrip: string[] = [];
+            for (const key of PROJECT_DATA_KEYS) {
+                if (key in raw) {
+                    const targetFile = KEY_TO_SYSTEM_FILE[key];
+                    if (targetFile && successfulSystemFiles.has(targetFile)) {
+                        keysToStrip.push(key);
+                    }
+                }
+            }
+            if (keysToStrip.length > 0 && stripSpecificProjectDataKeys(raw, keysToStrip)) {
                 dirty = true;
             }
             // Do NOT set _systemMigrationDone here — that happens in

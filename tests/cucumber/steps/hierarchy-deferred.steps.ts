@@ -1,13 +1,16 @@
 /**
- * Step definitions for legacy migration and project restart scenarios.
+ * Step definitions for legacy migration scenario.
  *
  * Uses real production migration functions from `legacyMigration.ts` and
  * real production SceneManager with an in-memory vault to test actual
  * persistence behavior.
+ *
+ * Exercises the same per-entry outcome logic (copied, equivalent,
+ * conflicting, deferred) used by SceneCardsPlugin.migrateProjectDataFromSettings().
  */
 import { Given, When, Then } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
-import { setupHierarchyTest, createReloadedSceneManager } from '../support/hierarchy-test-helpers';
+import { setupHierarchyTest } from '../support/hierarchy-test-helpers';
 import { parseFrontmatter } from '../support/in-memory-vault';
 import {
   assertLegacyKeysRemoved,
@@ -19,7 +22,6 @@ import {
   migrateProjectField,
   removeMigratedEntries,
 } from '../../../src/services/legacyMigration';
-import type { StoryLineProject } from '../../../src/models/StoryLineProject';
 
 // ── Legacy settings migration ──
 //
@@ -67,34 +69,38 @@ When('I load the plugin', async function (this: TestWorld) {
   const projects = sceneManager.getProjects();
 
   // Migrate definedActs using production logic
-  const actsResult = migrateProjectField(
+  const actsResults = migrateProjectField(
     legacyData.definedActs as Record<string, unknown>,
     projects,
     'definedActs',
   );
-  // Persist each migrated project
-  for (const path of actsResult.migratedPaths) {
-    const project = projects.find(p => p.filePath === path);
-    if (project) {
-      await sceneManager.saveProjectFrontmatter(project);
+  // Persist only the projects whose entries were copied
+  for (const entry of actsResults) {
+    if (entry.outcome === 'copied') {
+      const project = projects.find(p => p.filePath === entry.path);
+      if (project) {
+        await sceneManager.saveProjectFrontmatter(project);
+      }
     }
   }
   // Only remove successfully migrated entries
-  removeMigratedEntries(legacyData, 'definedActs', actsResult.migratedPaths, actsResult.unmigratedPaths);
+  removeMigratedEntries(legacyData, 'definedActs', actsResults);
 
   // Migrate definedChapters using production logic
-  const chaptersResult = migrateProjectField(
+  const chaptersResults = migrateProjectField(
     legacyData.definedChapters as Record<string, unknown>,
     projects,
     'definedChapters',
   );
-  for (const path of chaptersResult.migratedPaths) {
-    const project = projects.find(p => p.filePath === path);
-    if (project) {
-      await sceneManager.saveProjectFrontmatter(project);
+  for (const entry of chaptersResults) {
+    if (entry.outcome === 'copied') {
+      const project = projects.find(p => p.filePath === entry.path);
+      if (project) {
+        await sceneManager.saveProjectFrontmatter(project);
+      }
     }
   }
-  removeMigratedEntries(legacyData, 'definedChapters', chaptersResult.migratedPaths, chaptersResult.unmigratedPaths);
+  removeMigratedEntries(legacyData, 'definedChapters', chaptersResults);
 });
 
 Then('the settings are migrated to the new format', async function (this: TestWorld) {
@@ -118,6 +124,3 @@ Then('the settings are migrated to the new format', async function (this: TestWo
   assertMigratedChapters(frontmatter, [5, 10, 15]);
   assertBookUuidPreserved(frontmatter, book.bookId!);
 });
-
-// ── Project restoration after restart ──
-// (Moved to hierarchy-restart.steps.ts to stay under 200-line budget)

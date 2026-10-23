@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "description": "Architecture debt baseline for StoryLine Step 6A",
-  "generatedAt": "2026-10-23T21:56:13.165Z",
+  "generatedAt": "2026-10-23T22:16:48.608Z",
   "files": {
     "src/components/AddFieldModal.ts": {
       "violations": [
@@ -795,23 +795,23 @@
       "violations": [
         {
           "rule": "max-lines-per-function",
-          "line": 140
+          "line": 141
         },
         {
           "rule": "complexity",
-          "line": 140
+          "line": 141
         },
         {
           "rule": "max-statements",
-          "line": 140
+          "line": 141
         },
         {
           "rule": "max-depth",
-          "line": 231
+          "line": 232
         },
         {
           "rule": "max-depth",
-          "line": 235
+          "line": 236
         },
         {
           "rule": "max-lines",
@@ -819,235 +819,251 @@
         },
         {
           "rule": "complexity",
-          "line": 312
+          "line": 313
         },
         {
           "rule": "max-statements",
-          "line": 312
+          "line": 313
         },
         {
           "rule": "complexity",
-          "line": 506
+          "line": 507
         },
         {
           "rule": "max-statements",
-          "line": 506
+          "line": 507
         },
         {
           "rule": "complexity",
-          "line": 577
+          "line": 578
         },
         {
           "rule": "complexity",
-          "line": 675
+          "line": 676
         },
         {
           "rule": "max-statements",
-          "line": 675
+          "line": 676
         },
         {
           "rule": "complexity",
-          "line": 749
+          "line": 750
         },
         {
           "rule": "max-statements",
-          "line": 749
+          "line": 750
         },
         {
           "rule": "max-depth",
-          "line": 866
+          "line": 867
         },
         {
           "rule": "complexity",
-          "line": 930
+          "line": 931
         },
         {
           "rule": "complexity",
-          "line": 949
+          "line": 950
         },
         {
           "rule": "complexity",
-          "line": 987
+          "line": 988
         },
         {
           "rule": "max-depth",
-          "line": 1048
+          "line": 1049
         },
         {
           "rule": "max-lines-per-function",
-          "line": 1063
+          "line": 1064
         },
         {
           "rule": "complexity",
-          "line": 1063
+          "line": 1064
         },
         {
           "rule": "max-statements",
-          "line": 1063
+          "line": 1064
         },
         {
           "rule": "max-depth",
-          "line": 1186
+          "line": 1187
         },
         {
           "rule": "complexity",
-          "line": 1299
+          "line": 1300
         },
         {
           "rule": "complexity",
-          "line": 1361
+          "line": 1362
         },
         {
           "rule": "max-depth",
-          "line": 1374
+          "line": 1375
         },
         {
           "rule": "max-depth",
-          "line": 1414
+          "line": 1415
         },
         {
           "rule": "max-depth",
-          "line": 1417
+          "line": 1418
         },
         {
           "rule": "max-statements",
-          "line": 1447
+          "line": 1448
         },
         {
           "rule": "max-depth",
-          "line": 1462
+          "line": 1463
         },
         {
           "rule": "complexity",
-          "line": 1703
+          "line": 1704
         },
         {
           "rule": "complexity",
-          "line": 1861
+          "line": 1862
         },
         {
           "rule": "max-lines-per-function",
-          "line": 1913
+          "line": 1914
         },
         {
           "rule": "complexity",
-          "line": 1947
+          "line": 1948
         },
         {
           "rule": "max-depth",
-          "line": 1967
+          "line": 1968
         },
         {
           "rule": "max-lines-per-function",
-          "line": 2109
+          "line": 2110
         },
         {
           "rule": "complexity",
-          "line": 2109
+          "line": 2110
         },
         {
           "rule": "max-statements",
-          "line": 2109
+          "line": 2110
         },
         {
           "rule": "max-depth",
-          "line": 2144
+          "line": 2145
         },
         {
           "rule": "max-depth",
-          "line": 2148
+          "line": 2149
         },
         {
           "rule": "complexity",
-          "line": 2324
+          "line": 2325
         },
         {
           "rule": "complexity",
-          "line": 2366
+          "line": 2367
         },
         {
           "rule": "max-lines-per-function",
-          "line": 2426
+          "line": 2427
         },
         {
           "rule": "complexity",
-          "line": 2426
+          "line": 2427
         },
         {
           "rule": "max-statements",
-          "line": 2426
+          "line": 2427
+        },
+        {
+          "rule": "max-depth",
+          "line": 2459
+        },
+        {
+          "rule": "max-depth",
+          "line": 2460
+        },
+        {
+          "rule": "max-depth",
+          "line": 2491
+        },
+        {
+          "rule": "max-depth",
+          "line": 2492
         },
         {
           "rule": "complexity",
-          "line": 2611
+          "line": 2659
         },
         {
           "rule": "max-statements",
-          "line": 2611
+          "line": 2659
         },
         {
           "rule": "max-depth",
-          "line": 2640
+          "line": 2688
         },
         {
           "rule": "max-depth",
-          "line": 2641
+          "line": 2689
         },
         {
           "rule": "max-depth",
-          "line": 2647
+          "line": 2695
         },
         {
           "rule": "max-depth",
-          "line": 2651
+          "line": 2699
         },
         {
           "rule": "max-depth",
-          "line": 2656
+          "line": 2704
         },
         {
           "rule": "max-depth",
-          "line": 2666
+          "line": 2714
         },
         {
           "rule": "max-lines-per-function",
-          "line": 2797
+          "line": 2845
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3091
+          "line": 3139
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3272
+          "line": 3320
         },
         {
           "rule": "complexity",
-          "line": 3272
+          "line": 3320
         },
         {
           "rule": "max-statements",
-          "line": 3272
+          "line": 3320
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3418
+          "line": 3466
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3494
+          "line": 3542
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3643
+          "line": 3691
         },
         {
           "rule": "max-statements",
-          "line": 3643
+          "line": 3691
         },
         {
           "rule": "max-lines-per-function",
-          "line": 3821
+          "line": 3869
         }
       ]
     },
@@ -2828,14 +2844,6 @@
         {
           "rule": "complexity",
           "line": 445
-        }
-      ]
-    },
-    "src/services/legacyMigration.ts": {
-      "violations": [
-        {
-          "rule": "complexity",
-          "line": 192
         }
       ]
     },
@@ -4959,15 +4967,15 @@
       "violations": [
         {
           "rule": "max-lines-per-function",
-          "line": 93
+          "line": 100
         },
         {
           "rule": "max-statements",
-          "line": 93
+          "line": 100
         },
         {
           "rule": "complexity",
-          "line": 93
+          "line": 100
         }
       ]
     },
@@ -4989,15 +4997,15 @@
     }
   },
   "summary": {
-    "totalFilesWithViolations": 80,
-    "totalViolations": 1166,
+    "totalFilesWithViolations": 79,
+    "totalViolations": 1169,
     "byRule": {
       "max-params": 46,
       "max-lines-per-function": 282,
-      "complexity": 304,
+      "complexity": 303,
       "max-statements": 228,
       "max-lines": 63,
-      "max-depth": 243
+      "max-depth": 247
     }
   }
 }

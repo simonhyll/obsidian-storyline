@@ -21,25 +21,32 @@ Given('an existing active book {string}', async function (this: TestWorld, title
   const dataStore = createPluginDataStore();
   this.pluginDataStore = dataStore;
 
+  // Wire plugin.saveSettings() to the data store so that production
+  // setActiveProject() persists through the real saveSettings callback.
+  plugin.saveSettings = async () => {
+    await dataStore.saveData(plugin.settings as unknown as Record<string, unknown>);
+  };
+
   // Create two books; Book A first, Book B second.
   // Book B will be set as active, so it is NOT the first discovered.
   const bookA = await sceneManager.createProject('Book Alpha');
   const bookB = await sceneManager.createProject(title);
 
-  // Set Book B as active — this persists activeProjectFile in settings
+  // Set Book B as active — production setActiveProject() calls
+  // plugin.saveSettings(), which persists to the data store.
   await sceneManager.setActiveProject(bookB);
+
+  // Verify that saveSettings was actually called and persisted
+  const persisted = await dataStore.loadData();
+  if (!persisted || !persisted.activeProjectFile) {
+    throw new Error('setActiveProject did not persist activeProjectFile via saveSettings');
+  }
 
   // Create scenes in each book (names match their owners)
   await sceneManager.setActiveProject(bookA);
   const sceneA = await sceneManager.createScene({ title: 'Scene in Alpha' });
   await sceneManager.setActiveProject(bookB);
   const sceneB = await sceneManager.createScene({ title: 'Scene in Beta' });
-
-  // Persist the settings (including activeProjectFile) to the data store
-  await dataStore.saveData({
-    storyLineRoot: plugin.settings.storyLineRoot,
-    activeProjectFile: bookB.filePath,
-  });
 
   // Store references for assertions
   this.bookA = bookA;

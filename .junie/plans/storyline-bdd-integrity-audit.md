@@ -3,11 +3,24 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-23 (Step 6C.4b.3b.1 — Real production migration, restart persistence & data-loss protection)
+> Updated: 2026-10-24 (Step 6C.4b.3b.2 — Lossless migration under failure and conflict)
 > Total scenarios: 62
 > Total steps: 276
 
-## 6C.4b.3b.1 Update Summary
+## 6C.4b.3b.2 Update Summary
+
+Step 6C.4b.3b.2 made legacy migration truly lossless under failure and conflict:
+
+1. **Four migration outcomes** — `migrateProjectField()` now returns per-entry outcomes: `copied`, `equivalent`, `conflicting`, `deferred`. Only `copied` (after successful persistence) and `equivalent` entries are removed from legacy storage.
+2. **Conflicting data preserved** — When destination already has different non-empty values, the legacy entry is preserved for later resolution instead of being silently deleted.
+3. **Persistence failure protection** — `main.ts` Phase 1 now tracks which `saveProjectFrontmatter()` calls succeed and marks failed ones as `deferred`, preserving their legacy source data.
+4. **Per-destination System file tracking** — `main.ts` Phase 3 tracks which System file writes succeed and only strips the legacy keys mapping to those successfully written files.
+5. **Merge helpers preserve unrelated data** — `mergePlotlineData()`, `mergeCharacterData()`, `mergeStatsData()` now spread existing data first, preserving unrelated JSON properties.
+6. **Restart test uses real saveSettings()** — The restart test wires `plugin.saveSettings()` to the data store, so production `setActiveProject()` persists through the real callback.
+7. **File split** — Extracted merge helpers and key mappings to `legacyMigration.helpers.ts` to meet 200-line budget.
+8. **Architecture baseline** — Updated from 1,166 to 1,169 violations (+3 from main.ts migration coordinator changes).
+
+## 6C.4b.3b.1 Historical Summary
 
 Step 6C.4b.3b.1 replaced the test-only migration implementation with real production code and fixed a production data-loss defect:
 
