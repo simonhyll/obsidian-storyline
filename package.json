@@ -5,6 +5,7 @@
   "main": "dist/main.js",
   "scripts": {
     "postinstall": "node scripts/postinstall.mjs",
+    "prepare": "husky",
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
     "typecheck": "tsc --noEmit",
@@ -14,6 +15,7 @@
     "lint": "eslint \"**/*.ts\"",
     "lint:obsidian": "eslint \"**/*.ts\"",
     "lint:changed": "node scripts/lint-changed.mjs",
+    "lint:staged": "node scripts/lint-changed.mjs --staged",
     "lint:architecture": "node scripts/architecture-gate.cjs",
     "changelog:preview": "node scripts/changelog.cjs preview",
     "changelog:prepare": "node scripts/changelog.cjs prepare",
@@ -43,6 +45,7 @@
     "esbuild": "^0.28.1",
     "eslint": "^9.39.4",
     "eslint-plugin-obsidianmd": "^0.4.1",
+    "husky": "^9.1.7",
     "obsidian": "^1.12.3",
     "sass": "^1.106.1",
     "ts-node": "^10.9.2",

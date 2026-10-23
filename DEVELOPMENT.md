@@ -158,6 +158,20 @@ This updates the installed plugin's three files; it is not a general migration o
 
 `.github/workflows/release.yml` is manually dispatched with an existing intended version. It verifies `assets/manifest.json`, `package.json` and `versions.json`, builds on GitHub Actions, and uploads `dist/main.js`, `dist/styles.css` and `dist/manifest.json` as **flat** release assets. It does not commit generated `dist/` files. Inspect release/version metadata and tag behavior before running this workflow, especially for versions already published.
 
+## Mandatory local quality checks (Husky)
+
+`pnpm install --frozen-lockfile` installs Husky v9 via the package `prepare` script. In an existing checkout, run `pnpm exec husky` to register `.husky/pre-commit`.
+
+Each local commit runs **in this order**:
+
+1. `pnpm lint:staged`: lint only changed staged TS/JS/MJS/CJS lines (legacy full-file errors are still tracked). Partially staged source files with unstaged changes are rejected to avoid validating code different from the index.
+2. `pnpm lint:architecture`: compare all current architectural violations to the recorded baseline; refuse increased debt.
+3. `pnpm typecheck`: require zero TypeScript errors.
+
+A failure **must block the commit**. Junie must not use `--no-verify`, `HUSKY=0`, altered `core.hooksPath`, force options, temporary hook deletion, or other ways to bypass checks. Repair the code or rules correctly, never hide new violations by inflating the baseline. `pnpm lint` still has historical errors, so it is *not* the pre-commit gate during Step 6B.
+
+**Important technical limitation:** local hooks do not execute on GitHub API writes, and Git clients can bypass them. The independent build/test/typecheck/lint/architecture GitHub Actions checks must therefore be green before a pushed commit is accepted as finished. See `.github/workflows/ci.yml`.
+
 ## Architecture lint budgets
 
 The repository enforces structural limits on all hand-authored TypeScript and JavaScript code:

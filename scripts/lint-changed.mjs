@@ -18,6 +18,7 @@ import { resolve } from 'node:path';
 
 const QUALITY_BASELINE = 'd42b83c4d6952f9150fbbd1b81fde87a243a5ac7';
 const args = process.argv.slice(2);
+const staged = args.includes('--staged');
 const baseIndex = args.indexOf('--base');
 if (baseIndex >= 0 && !args[baseIndex + 1]) {
     throw new Error('Missing Git revision after --base');
@@ -37,16 +38,16 @@ function isAncestor(a, b) {
 }
 
 let base = requestedBase;
-if (!validCommit(base) || /^0+$/.test(base)) {
+if (!staged && (!validCommit(base) || /^0+$/.test(base))) {
     console.warn(`[lint:changed] Unknown base "${base}"; falling back to HEAD~1.`);
     base = 'HEAD~1';
 }
-if (!validCommit(base)) throw new Error('No valid Git baseline for lint comparison.');
+if (!staged && !validCommit(base)) throw new Error('No valid Git baseline for lint comparison.');
 
-base = git('merge-base', base, 'HEAD');
+if (!staged) base = git('merge-base', base, 'HEAD');
 // Enabling the gate must not reclassify older errors as newly introduced if
 // GitHub batches multiple feature-branch pushes into one comparison.
-if (validCommit(QUALITY_BASELINE) &&
+if (!staged && validCommit(QUALITY_BASELINE) &&
     isAncestor(base, QUALITY_BASELINE) && isAncestor(QUALITY_BASELINE, 'HEAD')) {
     base = QUALITY_BASELINE;
 }
@@ -54,8 +55,10 @@ if (validCommit(QUALITY_BASELINE) &&
 // Use -z so path names with spaces and renames work; Git also reports old/new
 // paths for R/C entries, but lint only uses the CURRENT filename.
 const tokens = execFileSync('git', [
-    'diff', '--name-status', '-z', '-M', '--diff-filter=ACMR',
-    base, 'HEAD', '--', '*.ts',
+    'diff', ...(staged ? ['--cached'] : []), '--name-status',
+    '-z', '-M', '--diff-filter=ACMR',
+    ...(staged ? ['HEAD'] : [base, 'HEAD']),
+    '--', '*.ts', '*.js', '*.mjs', '*.cjs',
 ], { encoding: 'buffer' }).toString('utf8').split('\0').filter(Boolean);
 const changes = [];
 for (let i = 0; i < tokens.length;) {
@@ -66,13 +69,27 @@ for (let i = 0; i < tokens.length;) {
     changes.push({ filename, oldPath: oldPath ?? filename });
 }
 if (changes.length === 0) {
-    console.log('[lint:changed] No changed TypeScript files.');
+    console.log('[lint:changed] No changed source files.');
     process.exit(0);
 }
 
+// ESLint reads the working tree, not Git's index. Do not allow a partially
+// staged source file to be validated against different working-tree bytes.
+if (staged) {
+    for (const { filename } of changes) {
+        try {
+            execFileSync('git', ['diff', '--quiet', '--', filename], { stdio: 'ignore' });
+        } catch {
+            console.error(`[lint:changed] ${filename} has unstaged edits; stage or discard them before committing.`);
+            process.exit(1);
+        }
+    }
+}
+
 function changedLineNumbers(filename, oldPath) {
-    const diff = git('diff', '--no-ext-diff', '--no-color', '--unified=0',
-        '-M', base, 'HEAD', '--', oldPath, filename);
+    const diff = git('diff', ...(staged ? ['--cached'] : []),
+        '--no-ext-diff', '--no-color', '--unified=0', '-M',
+        ...(staged ? ['HEAD'] : [base, 'HEAD']), '--', oldPath, filename);
     const lines = new Set();
     const re = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm;
     for (const m of diff.matchAll(re)) {
@@ -101,5 +118,5 @@ for (const result of results) {
         console.error(`${result.filePath}:${finding.line}:${finding.column}: ${finding.ruleId ?? 'ESLint'}: ${finding.message}`);
     }
 }
-console.log(`[lint:changed] ${changes.length} changed TS files; ${totalCurrent} existing/current errors in affected files; ${newErrors} errors on changed lines.`);
+console.log(`[lint:changed] ${changes.length} changed source files (${staged ? 'staged' : 'committed'}); ${totalCurrent} existing/current errors in affected files; ${newErrors} errors on changed lines.`);
 if (newErrors > 0) process.exitCode = 1;

@@ -62,6 +62,12 @@ Top offenders: `tests/universe-integration.test.ts` (217 violations), `src/main.
 
 **JSDoc standards:** Documented in DEVELOPMENT.md. JSDoc comment lines excluded from 200-line file budget via ESLint `skipComments: true`.
 
+### Mandatory Husky pre-commit gate
+
+Before Step 6B, use Husky v9 to register `.husky/pre-commit`. Each local commit must pass `pnpm lint:staged` (staged-line ESLint checks), `pnpm lint:architecture` (baseline-aware debt checks) and `pnpm typecheck` (zero errors). Full `pnpm lint` still has historical backlog; never use that as the staged gate until the project is clean.
+
+**Junie must NEVER bypass or disable these checks** with `--no-verify`, `HUSKY=0`, alternative hooksPath, forced commits/pushes, or updated baselines that conceal violations. If a gate fails, fix the source or the tool configuration. Run/verify remote GitHub Actions too; GitHub API commits do not invoke local Git hooks, and CI must be the authoritative remote gate.
+
 ### Step 6B — Decompose the codebase in bounded iterations
 
 Use the machine-readable debt ranking rather than arbitrary filenames. At the starting point the largest files by GitHub blob size include `src/main.ts` (~238 KB), `BoardView.ts`, `CharacterView.ts`, `PlotgridView.ts`, `settings.ts`, `SceneManager.ts`, `TimelineView.ts`, `CodexView.ts`, `StatsView.ts` and `LocationView.ts`. **Byte size is only a rough priority signal**; derive accurate effective LOC and complexity using ESLint.

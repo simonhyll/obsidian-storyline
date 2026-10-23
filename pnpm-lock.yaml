@@ -227,6 +227,9 @@ importers:
       eslint-plugin-obsidianmd:
         specifier: ^0.4.1
         version: 0.4.2(@eslint/js@9.39.5)(@eslint/json@0.14.0)(@typescript-eslint/parser@8.72.0(eslint@9.39.5(supports-color@11.0.0))(supports-color@11.0.0)(typescript@5.3.3))(eslint@9.39.5(supports-color@11.0.0))(obsidian@1.14.4(@codemirror/state@6.7.6)(@codemirror/view@6.43.15))(supports-color@11.0.0)(typescript-eslint@8.72.0(eslint@9.39.5(supports-color@11.0.0))(supports-color@11.0.0)(typescript@5.3.3))
+      husky:
+        specifier: ^9.1.7
+        version: 9.1.7
       obsidian:
         specifier: ^1.12.3
         version: 1.14.4(@codemirror/state@6.7.6)(@codemirror/view@6.43.15)
@@ -1513,6 +1516,11 @@ packages:
   hosted-git-info@9.0.3:
     resolution: {integrity: sha512-Hc+ghLoSt6QaYZUv0WBiIvmMDZuZZ7oaDvdH8MbfOO4lOsxdXLEvuC6ePoGs9H1X9oCLyq6+NVN0MKqD+ydxyg==}
     engines: {node: ^20.17.0 || >=22.9.0}
+
+  husky@9.1.7:
+    resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   ignore@5.3.2:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
@@ -3969,6 +3977,8 @@ snapshots:
   hosted-git-info@9.0.3:
     dependencies:
       lru-cache: 11.5.3
+
+  husky@9.1.7: {}
 
   ignore@5.3.2: {}
 
