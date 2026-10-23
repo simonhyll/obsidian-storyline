@@ -61,6 +61,8 @@ export class TimelineNavigationService {
     private timeSpanService: TimeSpanService;
     private state: TimelineNavigationState;
     private items: TimelineNavItem[] = [];
+    /** Stable identity so next/previous visits every item sharing a timestamp. */
+    private focusedItemKey: string | null = null;
 
     constructor(timeSpanService: TimeSpanService) {
         this.timeSpanService = timeSpanService;
@@ -81,6 +83,7 @@ export class TimelineNavigationService {
     /** Set the selected date. */
     setSelectedDate(date: Timestamp | null) {
         this.state.selectedDate = date;
+        this.focusedItemKey = null;
     }
 
     /** Get the selected date. */
@@ -131,6 +134,10 @@ export class TimelineNavigationService {
 
         // Sort items by timestamp
         this.items.sort((a, b) => this.compareItems(a, b));
+        if (this.focusedItemKey &&
+            !this.items.some(item => this.getItemKey(item) === this.focusedItemKey)) {
+            this.focusedItemKey = null;
+        }
 
         // Calculate visible range
         this.calculateVisibleRange();
@@ -164,6 +171,7 @@ export class TimelineNavigationService {
         if (day) timestamp.day = day;
 
         this.state.selectedDate = timestamp;
+        this.focusedItemKey = null;
         this.centerVisibleRangeOn(timestamp);
     }
 
@@ -175,11 +183,12 @@ export class TimelineNavigationService {
         if (this.items.length === 0) return null;
 
         // Find current position
-        let currentIndex = this.findCurrentIndex();
+        let currentIndex = this.getFocusedIndex();
 
         if (currentIndex > 0) {
             currentIndex--;
             const item = this.items[currentIndex];
+            this.focusedItemKey = this.getItemKey(item);
             if (item.timestamp) {
                 this.state.selectedDate = item.timestamp;
             }
@@ -197,11 +206,12 @@ export class TimelineNavigationService {
         if (this.items.length === 0) return null;
 
         // Find current position
-        let currentIndex = this.findCurrentIndex();
+        let currentIndex = this.getFocusedIndex();
 
         if (currentIndex < this.items.length - 1) {
             currentIndex++;
             const item = this.items[currentIndex];
+            this.focusedItemKey = this.getItemKey(item);
             if (item.timestamp) {
                 this.state.selectedDate = item.timestamp;
             }
@@ -247,6 +257,21 @@ export class TimelineNavigationService {
 
         // Return the closest index
         return Math.max(0, high);
+    }
+
+    /** Resolve an item by stable source identity rather than its timestamp. */
+    private getItemKey(item: TimelineNavItem): string | null {
+        if (item.scene) return `scene:${item.scene.filePath}`;
+        if (item.event) return `event:${item.event.id}`;
+        return null;
+    }
+
+    private getFocusedIndex(): number {
+        if (this.focusedItemKey) {
+            const index = this.items.findIndex(item => this.getItemKey(item) === this.focusedItemKey);
+            if (index !== -1) return index;
+        }
+        return this.findCurrentIndex();
     }
 
     // ── Time Markers ──
