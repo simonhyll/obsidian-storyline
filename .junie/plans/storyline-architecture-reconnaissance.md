@@ -1428,3 +1428,14 @@ Requested technical improvements, grouped into independent, verifiable stages:
 - [ ] Resume **Phase 3 Saved Views** after the structural and quality prerequisites have passed.
 
 Do not combine the entire modernization into one refactor, or confuse planning completion with implementation. Each stage needs a real tested commit pushed to `feat/rework`.
+
+### * Step 18: Architecture Lint Budgets and JSDoc Refactoring — before Saved Views
+
+**Detailed plan:** [storyline-architecture-hardening.md](storyline-architecture-hardening.md).
+
+- [ ] **Step 6A:** enforce architectural lint budgets for hand-authored TS/JS: 200 effective LOC/file (excluding blanks/comments); 50 effective LOC/function; complexity <=10; nesting <=3; statements <=25; parameters <=4. Require useful exported/public JSDoc with scoped exceptions. Audit initial violations and add a strict, baseline-aware CI gate so existing debt cannot increase.
+- [ ] Prove `pnpm lint --fix` cannot break TypeScript or tests in an isolated checkout; investigate the Obsidian lint preset and disable only the unsafe `any` → `unknown` fixer, not the diagnostic.
+- [ ] **Step 6B:** decompose `src/main.ts`, giant views/managers, import/export modules, tests and scripts in measured, independently verified waves; never use file-wide `eslint-disable` to pretend the 200-line target has been met.
+- [ ] Add actionable JSDoc to public/exported APIs, invariant-heavy helpers and asynchronous persistence behavior. Preserve Universe/Series/Book and canonical Event ownership.
+- [ ] Show monotonically decreasing violation counts across waves; finish with clean lint, zero typecheck errors, passing Vitest/Cucumber/CI, safe `dist/` packaging and vault smoke tests.
+- [ ] Only after these hardening checkpoints, resume **Saved Views**.
