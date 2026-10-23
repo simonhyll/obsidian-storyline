@@ -135,6 +135,12 @@ versions.json
 - Add optional commit-message validation (commitlint or similar), with a migration policy that does not retroactively invalidate existing history.
 - Acceptance: new conventional commits produce reproducible release notes, manual release packaging still works, no automatically created release or moved tag, and published changelog accurately reflects user-facing changes.
 
+### Deferred lint autofix configuration repair (after Step 5, before or alongside additional refactoring)
+
+The user explicitly requires `pnpm lint --fix` to be safe to run without breaking `pnpm run typecheck`. The current ESLint configuration has twice produced invalid `as any` → `as unknown` autofixes (commits `618021a` and `0926256`). This is **a tooling/configuration defect**, not expected author behavior.
+
+Do not repeat blanket suppression as a permanent fix. Audit Obsidian ESLint preset rules and fixers, disable or override only the unsafe automatic *fix behavior* where supported (while keeping diagnostics), introduce representative typed mock fixtures, and add a controlled CI fixture/regression that runs `lint --fix` in an isolated disposable checkout and confirms `typecheck` and tests still pass. This should not block Step 5 changelog automation; schedule as an explicitly tracked subsequent tooling task.
+
 ## Order of operations for Junie
 
 1. Verify current 2B implementation on a safe test vault and capture exact quality/tooling baselines.
