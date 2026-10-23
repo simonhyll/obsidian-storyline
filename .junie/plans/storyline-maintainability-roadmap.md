@@ -1,6 +1,6 @@
 # StoryLine — Maintainability & Tooling Roadmap
 
-Status: **in progress**. Steps 1A/1B (quality cleanup), 2 (source/distribution), 3 (SCSS), 4 (Cucumber BDD), and 5 (changelog automation) implemented. Saved Views and ESLint cleanup remain. Owner: development team / Junie. Target branch: `feat/rework`.
+Status: **in progress**. Steps 1A/1B (quality cleanup), 2 (source/distribution), 3 (SCSS), 4 (Cucumber BDD), and 5 (changelog automation) implemented; **Step 6A architecture linting and Step 6B maintainability refactor are next, before Saved Views**. Owner: development team / Junie. Target branch: `feat/rework`.
 
 Created after Phase 3 Milestone 2B, commit `516bc72`. This roadmap addresses technical debt before Saved Views expands view-state, persistence and UI complexity.
 
@@ -137,7 +137,13 @@ versions.json
 
 **Step 5 implementation report (2026-10-23):** Custom changelog script (`scripts/changelog.cjs`) implemented with pure-regex Conventional Commits parsing (no external parser dependency). Commands: `pnpm changelog:preview` (read-only) and `pnpm changelog:prepare <version>` (inserts into CHANGELOG.md). Duplicate 1.11.0 sections in CHANGELOG.md consolidated. Release workflow (`release.yml`) now **refuses to overwrite existing tags** instead of force-tagging. Conventional Commits guidelines documented in `DEVELOPMENT.md`. 25 automated tests cover parsing, preview, prepare, tag protection, duplicate prevention, and historical commit handling. CI validates changelog script syntax and preview. **Total tests: 455** (430 Vitest + 25 changelog).
 
-### Deferred lint autofix configuration repair (after Step 5, before or alongside additional refactoring)
+### Step 6 — Architecture lint budgets and JSDoc-led refactoring
+
+**Canonical plan:** [storyline-architecture-hardening.md](storyline-architecture-hardening.md). The user explicitly requires **no more than 200 effective code lines per authored source/test file (excluding comment-only and blank lines)**, plus limits on function length, cyclomatic complexity, nesting and statement/parameter counts, followed by deliberate decomposition with meaningful JSDoc.
+
+The initial ESLint rules are enabled, but the legacy backlog is not yet resolved, and the changed-line lint gate alone does not enforce whole-file structural budgets. **Step 6A** must finish architecture-debt measurement, CI regression enforcement and safe autofix behavior. **Step 6B** then refactors all affected modules in small verified waves, reducing remaining debt to zero. Keep Saved Views after those checkpoints, not immediately after changelog.
+
+#### Historical ESLint autofix defect
 
 The user explicitly requires `pnpm lint --fix` to be safe to run without breaking `pnpm run typecheck`. The current ESLint configuration has twice produced invalid `as any` → `as unknown` autofixes (commits `618021a` and `0926256`). This is **a tooling/configuration defect**, not expected author behavior.
 
@@ -151,6 +157,8 @@ Do not repeat blanket suppression as a permanent fix. Audit Obsidian ESLint pres
 4. Split stylesheet into SCSS modules and compile to `dist/styles.css`. Finish and verify it.
 5. Add a Cucumber acceptance pilot while retaining Vitest.
 6. Introduce Conventional Commits / generated changelog workflow without changing release publication.
-7. Only then start Saved Views, unless stages 5–6 are explicitly decoupled and their verification is preserved.
+7. **Step 6A:** establish hard structural budgets, accurate architecture-debt baseline, whole-file/function CI regression gate and safe autofix verification.
+8. **Step 6B:** progressively decompose the monoliths with meaningful JSDoc and no behavioral changes until architectural budgets are met.
+9. Resume Saved Views after the architecture checkpoints are complete.
 
 **Every stage:** run build, Vitest, the applicable BDD tests, lint, typecheck and a disposable-vault smoke test where behavior or packaging may change. Report failures honestly with new-vs-existing provenance. Verify the latest two commits and remote HEAD before and after work. Commit and push actual code, not only updates to a planning checkbox.
