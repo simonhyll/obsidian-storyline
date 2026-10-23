@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type SceneCardsPlugin from '../src/main';
 import type { SceneManager } from '../src/services/SceneManager';
@@ -25,8 +26,8 @@ describe('Event modal lifecycle', () => {
             // 3. this.close()
             // So onClose() sees resolved=true and does NOT resolve null
             // Verify by checking the source code structure
-            const fs = require('fs');
-            const source = fs.readFileSync('src/components/EventModal.ts', 'utf-8');
+
+            const source = readFileSync('src/components/EventModal.ts', 'utf-8');
             // The save handler must set resolved before calling close
             const saveHandlerMatch = source.match(/saveBtn\.onClickEvent\(async \(\) => \{[\s\S]*?this\.resolved = true;[\s\S]*?this\.resolve\?\.\(event\);[\s\S]*?this\.close\(\);/);
             expect(saveHandlerMatch).not.toBeNull();
@@ -37,8 +38,8 @@ describe('Event modal lifecycle', () => {
             // 1. this.resolved = true
             // 2. this.resolve?.(null)
             // 3. this.close()
-            const fs = require('fs');
-            const source = fs.readFileSync('src/components/EventModal.ts', 'utf-8');
+
+            const source = readFileSync('src/components/EventModal.ts', 'utf-8');
             // The cancel handler must set resolved=true and resolve null before close
             const cancelHandlerMatch = source.match(/cancelBtn\.onClickEvent\(\(\) => \{[\s\S]*?this\.resolved = true;[\s\S]*?this\.resolve\?\.\(null\);[\s\S]*?this\.close\(\);/);
             expect(cancelHandlerMatch).not.toBeNull();
@@ -48,8 +49,8 @@ describe('Event modal lifecycle', () => {
     describe('EventSelectorModal save resolves before close', () => {
         it('save button resolves selected IDs, not null', async () => {
             // Verify by checking the source code structure
-            const fs = require('fs');
-            const source = fs.readFileSync('src/components/EventModal.ts', 'utf-8');
+
+            const source = readFileSync('src/components/EventModal.ts', 'utf-8');
             // The EventSelectorModal save handler must set resolved before close
             const saveHandlerMatch = source.match(/saveBtn\.onClickEvent\(\(\) => \{[\s\S]*?this\.resolved = true;[\s\S]*?this\.resolve\?\.\(\[\.\.\.this\.selectedIds\]\);[\s\S]*?this\.close\(\);/);
             expect(saveHandlerMatch).not.toBeNull();
@@ -57,8 +58,8 @@ describe('Event modal lifecycle', () => {
 
         it('cancel resolves with null, not modified selections', async () => {
             // Verify by checking the source code structure
-            const fs = require('fs');
-            const source = fs.readFileSync('src/components/EventModal.ts', 'utf-8');
+
+            const source = readFileSync('src/components/EventModal.ts', 'utf-8');
             // The EventSelectorModal cancel handler must resolve null
             const cancelHandlerMatch = source.match(/cancelBtn\.onClickEvent\(\(\) => \{[\s\S]*?this\.resolved = true;[\s\S]*?this\.resolve\?\.\(null\);[\s\S]*?this\.close\(\);/);
             expect(cancelHandlerMatch).not.toBeNull();
@@ -134,8 +135,8 @@ describe('Events ribbon icon removed', () => {
         // The fix removes the addRibbonIcon('calendar', 'StoryLine Events', ...) call
         // from main.ts. Events are now accessible via Codex tab and BoardView button.
         // This is a negative test — we verify the code no longer contains the ribbon icon.
-        const fs = require('fs');
-        const mainTs = fs.readFileSync('src/main.ts', 'utf-8');
+
+        const mainTs = readFileSync('src/main.ts', 'utf-8');
         // The ribbon icon for Events should be removed
         expect(mainTs.includes("addRibbonIcon('calendar', 'StoryLine Events'")).toBe(false);
     });
@@ -155,8 +156,8 @@ describe('Cover editing on book cards', () => {
     it('cover edit button exists on book cards', () => {
         // The fix adds a pencil icon button on each book card's cover area
         // that opens ImagePicker and persists coverImage via saveProjectFrontmatter
-        const fs = require('fs');
-        const selectorTs = fs.readFileSync('src/components/UniverseSelector.ts', 'utf-8');
+
+        const selectorTs = readFileSync('src/components/UniverseSelector.ts', 'utf-8');
         expect(selectorTs.includes('universe-selector-cover-edit')).toBe(true);
         expect(selectorTs.includes('pickImage')).toBe(true);
         expect(selectorTs.includes('saveProjectFrontmatter')).toBe(true);
@@ -164,8 +165,8 @@ describe('Cover editing on book cards', () => {
 
     it('cover edit button stops propagation', () => {
         // The cover edit button must NOT trigger the card's "open book" click
-        const fs = require('fs');
-        const selectorTs = fs.readFileSync('src/components/UniverseSelector.ts', 'utf-8');
+
+        const selectorTs = readFileSync('src/components/UniverseSelector.ts', 'utf-8');
         expect(selectorTs.includes('e.stopPropagation()')).toBe(true);
     });
 });
