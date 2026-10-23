@@ -159,4 +159,16 @@ export interface TestWorld {
   bookInSeries?: StoryLineProject;
   /** Beta universe folder (for exclusive membership test) */
   universeBetaFolder?: string;
+  /** Legacy data.json content (for migration test) */
+  legacyData?: Record<string, unknown>;
+  /** Book being migrated (for migration test) */
+  legacyBook?: StoryLineProject;
+  /** Book A for restart test */
+  bookA?: StoryLineProject;
+  /** Book B for restart test */
+  bookB?: StoryLineProject;
+  /** Projects after restart */
+  restartedProjects?: StoryLineProject[];
+  /** SceneManager after restart */
+  restartedSceneManager?: import('../../../src/services/SceneManager').SceneManager;
 }

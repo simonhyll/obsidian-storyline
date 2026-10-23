@@ -3,11 +3,20 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-23 (Step 6C.4b.3a.1 — Exclusive series membership, vault harness tests, exact UUID assertions)
+> Updated: 2026-10-23 (Step 6C.4b.3b — Legacy migration and project restoration)
 > Total scenarios: 62
 > Total steps: 276
 
-## 6C.4b.3a.1 Update Summary (continued)
+## 6C.4b.3b Update Summary
+
+Step 6C.4b.3b hardened the last two simulated hierarchy scenarios and fixed a false-green vault harness test:
+
+1. **Vault harness `expectReject()` fixed** — The helper previously caught its own failure message, allowing a successful operation to pass as a rejection. Rewrote with separate success/failure paths. Added meta-test proving the helper rejects successful operations.
+2. **Legacy migration hardened** — Replaced fictional `legacyActiveBook → activeBookId` simulation with real `definedActs`/`definedChapters` migration. Creates a book via `SceneManager.createProject()`, seeds legacy data matching the production format, executes the same migration logic as `migrateProjectDataFromSettings()`, persists via `saveProjectFrontmatter()`, and verifies the YAML frontmatter contains the migrated values.
+3. **Project restart hardened** — Replaced simulated restart with real `SceneManager.scanProjects()` restoration. Creates two books, sets one as active via `setActiveProject()` (which persists `activeProjectFile`), then creates a fresh SceneManager and verifies the correct book is restored by UUID.
+4. **BDD audit updated** — Hierarchy scenarios 7–8 promoted from simulated to production-backed.
+
+## 6C.4b.3a.1 Historical Summary
 
 Step 6C.4b.3a.1 continued hardening hierarchy tests:
 
@@ -178,16 +187,18 @@ This feature has 5 regular Scenarios and 2 Scenario Outlines (each with 3 exampl
 | 4 | Series membership exclusive | `UniverseManager.ts` | **Yes** — `addSeriesToUniverse()` moves series | **Yes** — checks old universe removed, new added, reload | Production-backed | Low |
 | 5 | Universe isolation | `SceneManager.ts`, `UniverseManager.ts` | **Yes** — `createScene()` + `loadScenesForBooks()` | **Yes** — exact UUID set match, cross-universe negative | Production-backed | Low |
 | 6 | Universe UUID stability | `UniverseManager.ts` | **Yes** — fresh manager reload | **Yes** — checks UUID survives reload | Production-backed | Low |
-| 7 | Legacy settings migration | Test-only | **No** — test implements migration | **Yes** — checks settings keys | Simulated | Medium |
-| 8 | Project restoration | Test-only | **No** — test implements restore | **Yes** — checks active book | Simulated | Medium |
+| 7 | Legacy settings migration | `SceneManager.ts` | **Yes** — `createProject()` + `saveProjectFrontmatter()` | **Yes** — checks persisted YAML, legacy keys removed | Production-backed | Low |
+| 8 | Project restoration | `SceneManager.ts` | **Yes** — `setActiveProject()` + `scanProjects()` | **Yes** — checks activeProjectFile restored by UUID | Production-backed | Low |
 
-**Summary:** 6 production-backed, 0 partially backed, 0 fixture-only, 2 simulated, 0 no-op.
-**Action:** **Hardened in 6C.4b.3a.1.** Scenarios 1–6 now exercise real `SceneManager.createProject()`,
-`SeriesManager.addBookToSeries()`, `UniverseManager.addSeriesToUniverse()`, `SceneManager.createScene()`,
-and `loadScenesForBooks()` with in-memory vault. Scenario 4 (exclusive membership) verifies that
-moving a series between universes removes it from the old universe. Scenario 5 (isolation) uses
-exact UUID set assertions and cross-universe negative checks.
-Scenarios 7–8 (legacy migration and restart) remain simulated; deferred to 6C.4b.3b.
+**Summary:** 8 production-backed, 0 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
+**Action:** **All 8 scenarios now production-backed.** Scenarios 1–6 hardened in 6C.4b.3a.1 with
+real `SceneManager.createProject()`, `SeriesManager.addBookToSeries()`, `UniverseManager.addSeriesToUniverse()`,
+`SceneManager.createScene()`, and `loadScenesForBooks()`. Scenario 4 (exclusive membership) verifies
+that moving a series between universes removes it from the old universe. Scenario 5 (isolation) uses
+exact UUID set assertions and cross-universe negative checks. Scenarios 7–8 (legacy migration and
+project restart) hardened in 6C.4b.3b: migration tests real `definedActs`/`definedChapters` movement
+to frontmatter via `saveProjectFrontmatter()`, and restart tests real `activeProjectFile` restoration
+via `scanProjects()` with fresh SceneManager instances.
 
 ---
 
@@ -240,16 +251,27 @@ Scenarios 7–8 (legacy migration and restart) remain simulated; deferred to 6C.
 
 Scenario inventory: 62 scenarios across 9 feature files, 276 steps.
 
-Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) + timespan(11) + scenes(5) + hierarchy(6) + management(7) + ownership(1) + export(0) = **52 production-backed**.
+Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) + timespan(11) + scenes(5) + hierarchy(8) + management(7) + ownership(1) + export(0) = **54 production-backed**.
 
 | Coverage Level | Count | Percentage |
 |---|---|---|
-| Production-backed | 52 | 84% |
+| Production-backed | 54 | 87% |
 | Partially backed | 2 | 3% |
 | Fixture-only | 0 | 0% |
-| Simulated | 4 | 6% |
-| No-op | 4 | 7% |
+| Simulated | 2 | 3% |
+| No-op | 4 | 6% |
 | **Total** | **62** | **100%** |
+
+### Changes from 6C.4b.3a.1 → 6C.4b.3b
+
+| Feature | Change |
+|---|---|
+| `hierarchy.feature` | Legacy migration now tests real `definedActs`/`definedChapters` → frontmatter |
+| `hierarchy.feature` | Project restart now tests real `activeProjectFile` restoration via `scanProjects()` |
+| Vault harness | Fixed false-green `expectReject()` helper |
+| Vault harness | Added meta-test for `expectReject()` correctness |
+| Test files | `hierarchy-deferred.steps.ts` rewritten with production-backed steps |
+| World | Added `legacyData`, `legacyBook`, `bookA`, `bookB`, `restartedProjects`, `restartedSceneManager` |
 
 ### Changes from 6C.4b.3a → 6C.4b.3a.1
 
@@ -283,25 +305,25 @@ Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) 
 | `navigation.feature` | 8 | All production-backed |
 | `timespan.feature` | 11 | All production-backed |
 | `scenes.feature` | 5 | All production-backed (new in 6C.4b.2) |
-| `hierarchy.feature` | 5 | 5 production-backed (new in 6C.4b.3a) |
+| `hierarchy.feature` | 8 | 8 production-backed (6 in 6C.4b.3a.1, 2 in 6C.4b.3b) |
 | `management.feature` | 7 | All production-backed (new in 6C.4b.1) |
 | `ownership.feature` | 1 | Canonical Event persistence (new in 6C.4b.1) |
-| **Total hardened** | **53** | — |
+| **Total hardened** | **56** | — |
 
 ### Scenarios Deferred to Step 6C.4b.2 / 6C.4b.3
 
 | Feature | Scenarios | Issues |
 |---|---|---|
-| `hierarchy.feature` | 2 | Legacy migration and restart simulated |
 | `ownership.feature` | 2 | Scene safety fixture-based, cancellation simulated |
 | `export.feature` | 4 | All simulated or no-op |
 | `changelog.feature` | 1 | Tag protection simulates CLI error |
 | `creation.feature` | 1 | Cancellation simulates modal flag |
-| **Total deferred** | **10** | — |
+| **Total deferred** | **8** | — |
 
 ### Vault Harness Regression Tests
 
 The `runVaultHarnessTests()` function runs at test bootstrap and verifies:
+- `expectReject()` helper correctly rejects successful operations (meta-test)
 - File collision rejection (duplicate `create()` throws)
 - `adapter.write()` consistency with `vault.read()`
 - `exists()` returns false for nonexistent child paths
@@ -319,5 +341,5 @@ The `runVaultHarnessTests()` function runs at test bootstrap and verifies:
 | Risk | Count | Features |
 |---|---|---|
 | **High** | 21 | changelog (7), creation (3), navigation (5), export (4), ownership (1), scenes (1) |
-| **Medium** | 17 | creation (3), navigation (1), scenes (4), hierarchy (7), management (2), ownership (1) |
-| **Low** | 23 | timespan (8), management (5), ownership (1), navigation (2), timeline extras (1), creation (1) |
+| **Medium** | 15 | creation (3), navigation (1), scenes (4), management (2), ownership (1), export (4) |
+| **Low** | 26 | timespan (8), management (5), ownership (1), navigation (2), hierarchy (8), creation (1), changelog (1) |

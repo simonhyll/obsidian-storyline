@@ -8,13 +8,22 @@
 import { createInMemoryVault } from './in-memory-vault';
 
 async function expectReject(fn: () => Promise<unknown>, msg: string): Promise<void> {
+  let rejected = false;
   try {
     await fn();
-    throw new Error(`Vault harness test failed: expected rejection with "${msg}"`);
   } catch (err) {
-    if (err instanceof Error && !err.message.includes(msg)) {
-      throw new Error(`Vault harness test failed: expected "${msg}", got "${err.message}"`);
+    rejected = true;
+    if (!(err instanceof Error)) {
+      throw new Error(`Vault harness test failed: expected Error, got ${typeof err}`);
     }
+    if (!err.message.includes(msg)) {
+      throw new Error(
+        `Vault harness test failed: expected "${msg}", got "${err.message}"`,
+      );
+    }
+  }
+  if (!rejected) {
+    throw new Error(`Vault harness test failed: expected rejection with "${msg}", but operation succeeded`);
   }
 }
 
@@ -73,11 +82,41 @@ async function testListImmediateChildren(vault: ReturnType<typeof createInMemory
 }
 
 /**
+ * Verify expectReject helper correctly rejects a successful operation.
+ * This is a meta-test: the helper must fail when the operation succeeds.
+ */
+async function testExpectRejectMeta(vault: ReturnType<typeof createInMemoryVault>) {
+  // expectReject should fail when the operation succeeds
+  let caughtError = false;
+  try {
+    // This operation succeeds, so expectReject should throw
+    await expectReject(
+      () => vault.create('StoryLine/meta-test/success.md', 'content'),
+      'File already exists',
+    );
+  } catch (err) {
+    caughtError = true;
+    if (!(err instanceof Error)) {
+      throw new Error('expectReject meta-test: expected Error type');
+    }
+    if (!err.message.includes('but operation succeeded')) {
+      throw new Error(
+        `expectReject meta-test: expected "but operation succeeded", got "${err.message}"`,
+      );
+    }
+  }
+  if (!caughtError) {
+    throw new Error('expectReject meta-test: helper did not reject successful operation');
+  }
+}
+
+/**
  * Run focused regression tests on the in-memory vault harness.
  * Call this during test bootstrap to verify harness correctness.
  */
 export async function runVaultHarnessTests(): Promise<void> {
   const vault = createInMemoryVault();
+  await testExpectRejectMeta(vault);
   await testCollisionRejection(vault);
   await testAdapterConsistency(vault);
   await testExistsCorrectness(vault);
