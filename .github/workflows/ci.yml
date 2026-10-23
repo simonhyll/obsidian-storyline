@@ -15,6 +15,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Needed to compare lint diagnostics against the previous push/PR base.
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -36,6 +39,11 @@ jobs:
 
       - name: TypeScript compilation
         run: pnpm run typecheck
+
+      - name: Reject newly introduced ESLint errors
+        env:
+          LINT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: pnpm lint:changed
 
       - name: Validate vault sync script
         run: node --check scripts/sync-vault.mjs
