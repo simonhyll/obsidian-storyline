@@ -226,6 +226,21 @@ function showCodexDropdown(
     // Locations
     addDropdownItem(menu, 'map-pin', 'Locations', activeViewType === LOCATION_VIEW_TYPE, () => switchTo(LOCATION_VIEW_TYPE));
 
+    // Events — built-in, opens CodexView with 'events' category
+    addDropdownItem(menu, 'calendar', 'Events', false, async () => {
+        menu.remove();
+        removeClickOutside();
+        try {
+            await leaf.setViewState({ type: CODEX_VIEW_TYPE, active: true, state: {} });
+            plugin.app.workspace.revealLeaf(leaf);
+            // Find the CodexView instance and set its category to 'events'
+            const view = leaf.view as unknown as { setActiveCategory?: (id: string) => void };
+            if (view && typeof view.setActiveCategory === 'function') {
+                view.setActiveCategory('events');
+            }
+        } catch { plugin.activateView(CODEX_VIEW_TYPE); }
+    });
+
     // Enabled codex categories
     const enabledIds = plugin.settings.codexEnabledCategories || [];
     const customDefs = (plugin.settings.codexCustomCategories || []).map(

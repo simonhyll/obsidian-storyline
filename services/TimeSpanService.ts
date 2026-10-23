@@ -423,8 +423,9 @@ export class TimeSpanService {
 
     /**
      * Get the earliest comparable point from a TimeSpan.
+     * Public for use by EventManager and TimelineView.
      */
-    private getEarliestPoint(ts: TimeSpan): Timestamp | null {
+    getEarliestPoint(ts: TimeSpan): Timestamp | null {
         switch (ts.kind) {
             case 'instant':
                 return ts.instant;
@@ -444,8 +445,9 @@ export class TimeSpanService {
 
     /**
      * Compare two timestamps using their calendar adapter.
+     * Public for use by TimelineView.
      */
-    private compareTimestamps(a: Timestamp, b: Timestamp): number {
+    compareTimestamps(a: Timestamp, b: Timestamp): number {
         // If same calendar, use that adapter
         if (a.calendar === b.calendar) {
             const adapter = this.getAdapterForTimestamp(a);

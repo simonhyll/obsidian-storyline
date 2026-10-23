@@ -17,6 +17,8 @@ import * as obsidian from 'obsidian';
 import { BUILTIN_BEAT_SHEETS, Scene, SceneStatus, TIMELINE_MODES, TIMELINE_MODE_ICONS, TIMELINE_MODE_LABELS, TimelineMode, formatSceneLength, getStatusOrder, resolveStatusCfg } from '../models/Scene';
 import { getActDisplayLabel } from '../utils/actChapter';
 import { parseSceneLocations } from '../services/MetadataParser';
+import type { Event } from '../models/Event';
+import type { TimeSpan } from '../models/TimeSpan';
 
 /**
  * Timeline ordering mode
@@ -122,6 +124,26 @@ export class TimelineView extends ItemView {
             text: '+ new scene'
         });
         addBtn.addEventListener('click', () => this.openQuickAdd());
+
+        // Add Event button (next to New Scene)
+        const addEventBtn = controls.createEl('button', {
+            cls: 'story-line-add-btn',
+            text: '+ New Event'
+        });
+        addEventBtn.addEventListener('click', async () => {
+            const eventsFolder = this.sceneManager.getBookEventsFolder();
+            if (!eventsFolder) {
+                new Notice('No events folder found for the active project.');
+                return;
+            }
+            try {
+                await this.plugin.openCreateEventModal(eventsFolder);
+                // Refresh timeline after creating an event
+                this.refresh();
+            } catch {
+                // ignore
+            }
+        });
 
         // Add acts/chapters button
         const structBtn = controls.createEl('button', {
@@ -271,6 +293,9 @@ export class TimelineView extends ItemView {
             { field: sortField, direction: 'asc' }
         ).filter(scene => !this.isNoteScene(scene));
 
+        // Load Events from EventManager
+        const events = this.plugin.eventManager.getAllEvents();
+
         // Precompute date/time validation flags for each scene index so rendering is consistent
         // Scenes with non-linear timeline modes (flashback, dream, mythic, etc.) are exempt from
         // date-order warnings — but are still rendered with their mode badge.
@@ -324,10 +349,10 @@ export class TimelineView extends ItemView {
             if (s.act !== undefined) actsWithScenes.add(Number(s.act));
         }
 
-        if (scenes.length === 0 && definedActs.length === 0) {
+        if (scenes.length === 0 && definedActs.length === 0 && events.length === 0) {
             const empty = timelineEl.createDiv('story-line-empty');
-            empty.createEl('p', { text: 'No scenes found.' });
-            empty.createEl('p', { text: 'Click "+ new scene" to create your first scene, or use the structure button to set up acts and chapters.' });
+            empty.createEl('p', { text: 'No scenes or events found.' });
+            empty.createEl('p', { text: 'Click "+ new scene" to create your first scene, or "+ New Event" to add a canonical event.' });
             return;
         }
 
@@ -458,34 +483,50 @@ export class TimelineView extends ItemView {
         type TLItem =
             | { kind: 'divider'; actLabel: string; actNum: number | undefined }
             | { kind: 'scene'; scene: Scene; globalIdx: number; dateInvalid: boolean; timeInvalid: boolean }
+            | { kind: 'event'; event: Event }
             | { kind: 'empty-act'; actLabel: string; actNum: number };
 
         const tlItems: TLItem[] = [];
-        let lastRenderedAct: number | undefined = undefined;
-        for (let globalIdx = 0; globalIdx < scenes.length; globalIdx++) {
-            const scene = scenes[globalIdx];
-            const currentAct = scene.act !== undefined ? Number(scene.act) : undefined;
-            if (currentAct !== lastRenderedAct) {
-                const beatLabel = currentAct !== undefined ? this.sceneManager.getActLabel(currentAct) : undefined;
-                const cleanBeat = beatLabel?.replace(/^(Act|Prologue|Epilogue)\s*\d*\s*[—:]\s*/i, '');
-                const actDisplay = getActDisplayLabel(currentAct);
-                const actLabel = currentAct !== undefined
-                    ? (cleanBeat ? `${actDisplay} — ${cleanBeat}` : actDisplay)
-                    : 'No Act';
-                tlItems.push({ kind: 'divider', actLabel, actNum: currentAct });
-                lastRenderedAct = currentAct;
+        if (this.timelineOrder === 'chronological' && events.length > 0) {
+            // Chronological mode: interleave Scenes and Events by TimeSpan
+            this.buildChronologicalTimelineItems(tlItems, scenes, events, dateInvalidFlags, timeInvalidFlags, definedActs, actsWithScenes, sortedActs);
+        } else {
+            // Reading order mode: scenes first, then events at the end
+            let lastRenderedAct: number | undefined = undefined;
+            for (let globalIdx = 0; globalIdx < scenes.length; globalIdx++) {
+                const scene = scenes[globalIdx];
+                const currentAct = scene.act !== undefined ? Number(scene.act) : undefined;
+                if (currentAct !== lastRenderedAct) {
+                    const beatLabel = currentAct !== undefined ? this.sceneManager.getActLabel(currentAct) : undefined;
+                    const cleanBeat = beatLabel?.replace(/^(Act|Prologue|Epilogue)\s*\d*\s*[—:]\s*/i, '');
+                    const actDisplay = getActDisplayLabel(currentAct);
+                    const actLabel = currentAct !== undefined
+                        ? (cleanBeat ? `${actDisplay} — ${cleanBeat}` : actDisplay)
+                        : 'No Act';
+                    tlItems.push({ kind: 'divider', actLabel, actNum: currentAct });
+                    lastRenderedAct = currentAct;
+                }
+                tlItems.push({ kind: 'scene', scene, globalIdx, dateInvalid: dateInvalidFlags[globalIdx], timeInvalid: timeInvalidFlags[globalIdx] });
             }
-            tlItems.push({ kind: 'scene', scene, globalIdx, dateInvalid: dateInvalidFlags[globalIdx], timeInvalid: timeInvalidFlags[globalIdx] });
-        }
 
-        // Add empty-act placeholders for defined acts with no scenes
-        for (const actNum of sortedActs) {
-            if (!actsWithScenes.has(Number(actNum))) {
-                const beatLabel = this.sceneManager.getActLabel(actNum);
-                const cleanBeat = beatLabel?.replace(/^(Act|Prologue|Epilogue)\s*\d*\s*[—:]\s*/i, '');
-                const actDisplay = getActDisplayLabel(actNum);
-                const actLabel = cleanBeat ? `${actDisplay} — ${cleanBeat}` : actDisplay;
-                tlItems.push({ kind: 'empty-act', actLabel, actNum });
+            // Add empty-act placeholders for defined acts with no scenes
+            for (const actNum of sortedActs) {
+                if (!actsWithScenes.has(Number(actNum))) {
+                    const beatLabel = this.sceneManager.getActLabel(actNum);
+                    const cleanBeat = beatLabel?.replace(/^(Act|Prologue|Epilogue)\s*\d*\s*[—:]\s*/i, '');
+                    const actDisplay = getActDisplayLabel(actNum);
+                    const actLabel = cleanBeat ? `${actDisplay} — ${cleanBeat}` : actDisplay;
+                    tlItems.push({ kind: 'empty-act', actLabel, actNum });
+                }
+            }
+
+            // Append Events at the end in reading order (non-draggable)
+            if (events.length > 0) {
+                // Divider for events section
+                tlItems.push({ kind: 'divider', actLabel: 'Canonical Events', actNum: undefined });
+                for (const event of events) {
+                    tlItems.push({ kind: 'event', event });
+                }
             }
         }
 
@@ -505,6 +546,8 @@ export class TimelineView extends ItemView {
                         this.openQuickAdd(actForClosure);
                     });
                 }
+            } else if (item.kind === 'event') {
+                this.renderTimelineEvent(track, item.event);
             } else if (item.kind === 'scene') {
                 this.renderTimelineEntry(track, item.scene, item.globalIdx, scenes, dragIndex, dropIndex, refreshDropIndicators, handleDrop, (di) => { dragIndex = di; }, (di) => { dropIndex = di; (track as unknown as Record<string, unknown>)._slDropIndex = di; }, item.dateInvalid, item.timeInvalid);
             } else {
@@ -578,10 +621,13 @@ export class TimelineView extends ItemView {
             { field: sortField, direction: 'asc' }
         ).filter(scene => !this.isNoteScene(scene));
 
-        if (scenes.length === 0) {
+        // Load Events for swimlane mode
+        const events = this.plugin.eventManager.getAllEvents();
+
+        if (scenes.length === 0 && events.length === 0) {
             const empty = timelineEl.createDiv('story-line-empty');
-            empty.createEl('p', { text: 'No scenes found.' });
-            empty.createEl('p', { text: 'Click "+ new scene" to create your first scene.' });
+            empty.createEl('p', { text: 'No scenes or events found.' });
+            empty.createEl('p', { text: 'Click "+ new scene" to create your first scene, or "+ New Event" to add a canonical event.' });
             return;
         }
 
@@ -593,6 +639,10 @@ export class TimelineView extends ItemView {
         }
         const laneKeys = Array.from(laneKeysSet).sort();
         if (laneKeys.length === 0) laneKeys.push('(none)');
+
+        // Add "Canonical Events" lane if there are events
+        const hasEvents = events.length > 0;
+        const allLaneKeys = hasEvents ? [...laneKeys, '⚡ Canonical Events'] : laneKeys;
 
         // 2. Build row definitions — one row per scene in sequence order,
         //    with act dividers injected when the act changes.
@@ -624,7 +674,7 @@ export class TimelineView extends ItemView {
         // 3. Build the grid container
         const grid = timelineEl.createDiv('swimlane-grid');
         //    CSS grid: first column = sequence axis, then one column per lane
-        const colTemplate = `80px repeat(${laneKeys.length}, minmax(180px, 1fr))`;
+        const colTemplate = `80px repeat(${allLaneKeys.length}, minmax(180px, 1fr))`;
         grid.setCssStyles({ gridTemplateColumns: colTemplate });
 
         // 4. Sticky header row
@@ -633,7 +683,7 @@ export class TimelineView extends ItemView {
         corner.textContent = '#';
 
         // Lane headers
-        for (const lane of laneKeys) {
+        for (const lane of allLaneKeys) {
             const header = grid.createDiv('swimlane-lane-header');
             header.textContent = lane;
             header.setAttribute('title', lane);
@@ -691,15 +741,31 @@ export class TimelineView extends ItemView {
             const sceneKeySet = new Set(sceneKeys);
 
             // Render one cell per lane
-            for (let laneIdx = 0; laneIdx < laneKeys.length; laneIdx++) {
-                const lane = laneKeys[laneIdx];
+            for (let laneIdx = 0; laneIdx < allLaneKeys.length; laneIdx++) {
+                const lane = allLaneKeys[laneIdx];
                 const cell = grid.createDiv('swimlane-lane-cell');
 
+                if (lane === '⚡ Canonical Events') {
+                    // Events lane — empty for scene rows, events rendered separately
+                    continue;
+                }
                 if (sceneKeySet.has(lane)) {
                     // Multi-value groups (characters / plotlines) render the scene in every matching lane.
                     this.renderSwimlaneCard(cell, scene);
                 }
                 // else: empty cell — visual gap
+            }
+        }
+
+        // 6. Render Events in the Canonical Events lane (last column)
+        if (hasEvents) {
+            const eventsLaneIdx = allLaneKeys.length; // 1-based grid column index
+            // Sort events by TimeSpan for chronological placement
+            const sortedEvents = this.sortEventsByTime(events);
+            for (const event of sortedEvents) {
+                const eventCell = grid.createDiv('swimlane-lane-cell');
+                eventCell.setCssStyles({ gridColumn: `${eventsLaneIdx}`, gridRow: 'auto' });
+                this.renderSwimlaneEventCard(eventCell, event);
             }
         }
     }
@@ -734,6 +800,64 @@ export class TimelineView extends ItemView {
             if (trimmed) seen.add(trimmed);
         }
         return Array.from(seen);
+    }
+
+    /**
+     * Sort Events by TimeSpan for chronological display.
+     * Events without temporal info are placed at the end.
+     */
+    private sortEventsByTime(events: Event[]): Event[] {
+        const tsService = this.plugin.timeSpanService;
+        return [...events].sort((a, b) => {
+            const aPoint = a.timeSpan ? tsService.getEarliestPoint?.(a.timeSpan) : null;
+            const bPoint = b.timeSpan ? tsService.getEarliestPoint?.(b.timeSpan) : null;
+            if (!aPoint && !bPoint) return 0;
+            if (!aPoint) return 1;
+            if (!bPoint) return -1;
+            return tsService.compareTimestamps?.(aPoint, bPoint) ?? 0;
+        });
+    }
+
+    /**
+     * Render a compact Event card inside a swimlane cell.
+     */
+    private renderSwimlaneEventCard(cell: HTMLElement, event: Event): void {
+        const card = cell.createDiv('timeline-card swimlane-card swimlane-event-card');
+        card.dataset.eventId = event.id;
+
+        // Event icon
+        const iconSpan = card.createSpan({ cls: 'timeline-event-icon' });
+        obsidian.setIcon(iconSpan, 'calendar');
+
+        card.createDiv({ cls: 'timeline-card-title', text: event.name || 'Untitled Event' });
+
+        // TimeSpan
+        if (event.timeSpan) {
+            const timeBadge = card.createDiv({ cls: 'timeline-card-meta' });
+            const timeText = timeBadge.createSpan({ cls: 'timeline-date-badge' });
+            timeText.setText(this.plugin.timeSpanService.format(event.timeSpan));
+            if (event.timeSpan.kind === 'uncertain') {
+                timeText.addClass('timeline-date-uncertain');
+            } else if (event.timeSpan.kind === 'unknown') {
+                timeText.addClass('timeline-date-unknown');
+            }
+        }
+
+        // Scope badge
+        const footer = card.createDiv('timeline-card-footer');
+        const scopeBadge = footer.createSpan({ cls: 'timeline-card-status' });
+        if (event.ownerId) {
+            scopeBadge.setText(event.introducedIn ? 'Inherited' : 'Owned');
+        } else {
+            scopeBadge.setText('Book');
+        }
+        scopeBadge.setCssStyles({ color: 'var(--text-muted)' });
+
+        // Click to edit
+        card.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openEditEvent(event);
+        });
     }
 
     /**
@@ -1028,6 +1152,249 @@ export class TimelineView extends ItemView {
             transform: `scale(${this.zoomLevel})`,
             transformOrigin: 'left center',
         });
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Event rendering helpers
+    // ────────────────────────────────────────────────────────────
+
+    /**
+     * Render a single Event entry on the timeline track.
+     * Events are non-draggable and visually distinct from Scene cards.
+     */
+    private renderTimelineEvent(track: HTMLElement, event: Event): void {
+        const entry = track.createDiv('timeline-entry timeline-entry-event');
+        entry.dataset.path = event.filePath;
+        entry.dataset.eventId = event.id;
+
+        // Left column: date/time badge (read-only for events)
+        const seqCol = entry.createDiv('timeline-entry-seq');
+        if (event.timeSpan) {
+            const timeBadge = seqCol.createSpan({
+                cls: 'timeline-date-badge',
+                text: this.plugin.timeSpanService.format(event.timeSpan)
+            });
+            // Show TimeSpan kind indicator for uncertain/unknown
+            if (event.timeSpan.kind === 'uncertain') {
+                timeBadge.addClass('timeline-date-uncertain');
+                timeBadge.setAttr('title', 'Uncertain date');
+            } else if (event.timeSpan.kind === 'unknown') {
+                timeBadge.addClass('timeline-date-unknown');
+                timeBadge.setAttr('title', 'Unknown date');
+            }
+        } else {
+            const unknownBadge = seqCol.createSpan({
+                cls: 'timeline-date-badge timeline-date-unknown',
+                text: '?'
+            });
+            unknownBadge.setAttr('title', 'No date set');
+        }
+
+        // Center: dot (event indicator)
+        const dotCol = entry.createDiv('timeline-entry-dot-col');
+        const dot = dotCol.createDiv('timeline-dot timeline-dot-event');
+
+        // Right column: event card
+        const cardCol = entry.createDiv('timeline-entry-card');
+        const card = cardCol.createDiv('timeline-card timeline-card-event');
+
+        // Event icon
+        const iconSpan = card.createSpan({ cls: 'timeline-event-icon' });
+        obsidian.setIcon(iconSpan, 'calendar');
+
+        card.createDiv({ cls: 'timeline-card-title', text: event.name || 'Untitled Event' });
+
+        // Meta: location, participants, scope
+        const meta = card.createDiv('timeline-card-meta');
+        if (event.location) {
+            const locSpan = meta.createSpan({ cls: 'timeline-card-location' });
+            obsidian.setIcon(locSpan, 'map-pin');
+            locSpan.appendText(' ' + event.location);
+        }
+        if (event.participants?.length) {
+            const chars = card.createDiv('timeline-card-chars');
+            event.participants.forEach(c => {
+                chars.createSpan({ cls: 'timeline-char-tag', text: c });
+            });
+        }
+
+        // Scope badge
+        const footer = card.createDiv('timeline-card-footer');
+        const scopeBadge = footer.createSpan({ cls: 'timeline-card-status' });
+        if (event.ownerId) {
+            scopeBadge.setText(event.introducedIn ? 'Inherited' : 'Owned');
+        } else {
+            scopeBadge.setText('Book');
+        }
+        scopeBadge.setCssStyles({ color: 'var(--text-muted)' });
+
+        // Click to edit the event
+        card.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openEditEvent(event);
+        });
+
+        card.setCssStyles({
+            transform: `scale(${this.zoomLevel})`,
+            transformOrigin: 'left center',
+        });
+    }
+
+    /**
+     * Open the Event editor modal for an existing Event.
+     */
+    private async openEditEvent(event: Event): Promise<void> {
+        try {
+            await this.plugin.openEditEventModal(event);
+            // Refresh timeline after editing
+            this.refresh();
+        } catch {
+            // ignore
+        }
+    }
+
+    /**
+     * Build chronologically sorted timeline items, interleaving Scenes and Events.
+     * Uses TimeSpanService for safe temporal comparison.
+     */
+    private buildChronologicalTimelineItems(
+        tlItems: Array<
+            | { kind: 'divider'; actLabel: string; actNum: number | undefined }
+            | { kind: 'scene'; scene: Scene; globalIdx: number; dateInvalid: boolean; timeInvalid: boolean }
+            | { kind: 'event'; event: Event }
+            | { kind: 'empty-act'; actLabel: string; actNum: number }
+        >,
+        scenes: Scene[],
+        events: Event[],
+        dateInvalidFlags: boolean[],
+        timeInvalidFlags: boolean[],
+        definedActs: number[],
+        actsWithScenes: Set<number>,
+        sortedActs: number[]
+    ): void {
+        const tsService = this.plugin.timeSpanService;
+
+        // Build a combined list of sortable items
+        interface SortableItem {
+            sortKey: number; // epoch-like timestamp for sorting
+            hasTime: boolean;
+            scene?: Scene;
+            sceneIdx?: number;
+            event?: Event;
+        }
+        const sortable: SortableItem[] = [];
+
+        // Add scenes with temporal info
+        for (let i = 0; i < scenes.length; i++) {
+            const scene = scenes[i];
+            // Prefer TimeSpan if available, fall back to legacy storyDate
+            let sortKey: number | null = null;
+            if (scene.timeSpan) {
+                const earliest = tsService.getEarliestPoint?.(scene.timeSpan);
+                if (earliest) {
+                    sortKey = this.timestampToSortable(earliest);
+                }
+            }
+            if (sortKey === null) {
+                const legacy = this.parseSceneDateTimestamp(scene);
+                if (legacy !== null) {
+                    sortKey = legacy;
+                }
+            }
+            sortable.push({
+                sortKey: sortKey ?? Number.MAX_SAFE_INTEGER,
+                hasTime: sortKey !== null && sortKey !== Number.MAX_SAFE_INTEGER,
+                scene,
+                sceneIdx: i,
+            });
+        }
+
+        // Add events with temporal info
+        for (const event of events) {
+            let sortKey: number | null = null;
+            if (event.timeSpan) {
+                const earliest = tsService.getEarliestPoint?.(event.timeSpan);
+                if (earliest) {
+                    sortKey = this.timestampToSortable(earliest);
+                }
+            }
+            sortable.push({
+                sortKey: sortKey ?? Number.MAX_SAFE_INTEGER,
+                hasTime: sortKey !== null && sortKey !== Number.MAX_SAFE_INTEGER,
+                event,
+            });
+        }
+
+        // Sort: items with dates first (by date), then items without dates
+        sortable.sort((a, b) => {
+            if (a.hasTime && b.hasTime) return a.sortKey - b.sortKey;
+            if (a.hasTime) return -1;
+            if (b.hasTime) return 1;
+            // Both have no time — scenes before events
+            if (a.scene && b.event) return -1;
+            if (a.event && b.scene) return 1;
+            return 0;
+        });
+
+        // Render act dividers and items
+        let lastRenderedAct: number | undefined = undefined;
+        let eventsSectionStarted = false;
+
+        for (const item of sortable) {
+            if (item.scene) {
+                const scene = item.scene!;
+                const currentAct = scene.act !== undefined ? Number(scene.act) : undefined;
+                if (currentAct !== lastRenderedAct) {
+                    const beatLabel = currentAct !== undefined ? this.sceneManager.getActLabel(currentAct) : undefined;
+                    const cleanBeat = beatLabel?.replace(/^(Act|Prologue|Epilogue)\s*\d*\s*[—:]\s*/i, '');
+                    const actDisplay = getActDisplayLabel(currentAct);
+                    const actLabel = currentAct !== undefined
+                        ? (cleanBeat ? `${actDisplay} — ${cleanBeat}` : actDisplay)
+                        : 'No Act';
+                    tlItems.push({ kind: 'divider', actLabel, actNum: currentAct });
+                    lastRenderedAct = currentAct;
+                }
+                tlItems.push({
+                    kind: 'scene',
+                    scene,
+                    globalIdx: item.sceneIdx!,
+                    dateInvalid: dateInvalidFlags[item.sceneIdx!] ?? false,
+                    timeInvalid: timeInvalidFlags[item.sceneIdx!] ?? false,
+                });
+            }
+            if (item.event) {
+                if (!eventsSectionStarted) {
+                    tlItems.push({ kind: 'divider', actLabel: 'Canonical Events', actNum: undefined });
+                    eventsSectionStarted = true;
+                }
+                tlItems.push({ kind: 'event', event: item.event });
+            }
+        }
+
+        // Add empty-act placeholders
+        for (const actNum of sortedActs) {
+            if (!actsWithScenes.has(Number(actNum))) {
+                const beatLabel = this.sceneManager.getActLabel(actNum);
+                const cleanBeat = beatLabel?.replace(/^(Act|Prologue|Epilogue)\s*\d*\s*[—:]\s*/i, '');
+                const actDisplay = getActDisplayLabel(actNum);
+                const actLabel = cleanBeat ? `${actDisplay} — ${cleanBeat}` : actDisplay;
+                tlItems.push({ kind: 'empty-act', actLabel, actNum });
+            }
+        }
+    }
+
+    /**
+     * Convert a Timestamp to a sortable numeric value.
+     * Uses a simple year/month/day linearization for comparison.
+     */
+    private timestampToSortable(ts: { year: number; month?: number; day?: number; hour?: number; minute?: number }): number {
+        const y = ts.year;
+        const m = ts.month ?? 1;
+        const d = ts.day ?? 1;
+        const h = ts.hour ?? 0;
+        const min = ts.minute ?? 0;
+        // Linearize: year * 100000000 + month * 1000000 + day * 10000 + hour * 100 + minute
+        return y * 100000000 + m * 1000000 + d * 10000 + h * 100 + min;
     }
 
     /**

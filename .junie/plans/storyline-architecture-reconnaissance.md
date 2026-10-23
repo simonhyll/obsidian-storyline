@@ -1261,6 +1261,25 @@ Fix seven reported UI integration issues: duplicate modals, book card navigation
 - ✓ Test verification — 222/222 tests pass (209 existing + 13 new)
 - ✓ Typecheck verification — no new errors in changed files; pre-existing baseline errors unchanged
 - ✓ Committed to feat/rework branch
+
+### ✓ Step 10: Phase 3 Milestone 1 — Integrate Events into Existing Timeline
+Integrate canonical Events into the existing TimelineView, fix Codex dropdown, and add behavioral tests.
+
+- ✓ Add "+ New Event" button in TimelineView toolbar — opens EventModal, refreshes timeline after creation
+- ✓ Add Events to ViewSwitcher Codex dropdown — opens CodexView with 'events' category selected
+- ✓ Render Events alongside Scenes in TimelineView linear mode — distinct visual styling, non-draggable, click-to-edit
+- ✓ Render Events in swimlane mode — dedicated "Canonical Events" lane at the end
+- ✓ Fix EventManager.getEventsInRange — uses TimeSpanService.getEarliestPoint safely, no `as any` casts
+- ✓ Preserve Reading Order — Events appended after Scenes with "Canonical Events" divider
+- ✓ Preserve Chronological Order — Scenes and Events interleaved by TimeSpan, unknown dates sort last
+- ✓ TimeSpanService.getEarliestPoint and compareTimestamps made public for TimelineView/EventManager access
+- ✓ CSS styling — event cards with accent border, event dots, uncertain/unknown badges, swimlane event cards
+- ✓ Empty state updated — mentions both scenes and events
+- ✓ 23 integration tests: TimeSpan placement (6), chronological sorting (3), EventManager range queries (3), TimeSpan edge cases (5), swimlane mode (1), reading order (2), inherited events (1), ViewSwitcher (1), toolbar (1)
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 245/245 tests pass (222 existing + 23 new)
+- ✓ Typecheck verification — no new errors; pre-existing baseline errors unchanged
+- ✓ Committed to feat/rework branch
 Implement the shared TimeSpan model, Event entities, Scene-Event references, Event UI, and validation.
 
 - ✓ Create services/TimeSpanService.ts — Full implementation: Gregorian calendar adapter, parsing all 6 TimeSpan kinds, comparison, overlap detection, contains, relative date resolution with chain accumulation, legacy storyDate/storyTime migration, display formatting, validateTimestamp, validateTimeSpan

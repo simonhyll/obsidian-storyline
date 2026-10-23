@@ -11,7 +11,7 @@ import { TFile } from 'obsidian';
 import { parseYaml, stringifyYaml } from 'obsidian';
 import type { Event } from '../models/Event';
 import { createEvent, hasTemporalInfo } from '../models/Event';
-import type { TimeSpan } from '../models/TimeSpan';
+import type { TimeSpan, IntervalTimeSpan } from '../models/TimeSpan';
 import type { TimeSpanService } from './TimeSpanService';
 import type { StoryLineProject } from '../models/StoryLineProject';
 
@@ -82,17 +82,22 @@ export class EventManager {
     /**
      * Get events that overlap with the given time range.
      * An event overlaps if any part of its time span falls within the range.
+     * Uses TimeSpanService for safe temporal comparison.
      */
     getEventsInRange(rangeStart: TimeSpan, rangeEnd: TimeSpan): Event[] {
         if (!this.timeSpanService) return [];
+        // Build a proper interval TimeSpan from the range endpoints
+        const startTs = this.timeSpanService.getEarliestPoint(rangeStart);
+        const endTs = this.timeSpanService.getEarliestPoint(rangeEnd);
+        if (!startTs || !endTs) return [];
+        const rangeInterval: IntervalTimeSpan = {
+            kind: 'interval',
+            start: startTs,
+            end: endTs,
+        };
         return this.getAllEvents().filter(e => {
             if (!e.timeSpan) return false;
-            // Check if the event overlaps the range
-            return this.timeSpanService!.overlaps(e.timeSpan, {
-                kind: 'interval',
-                start: (rangeStart as any).instant || (rangeStart as any).start,
-                end: (rangeEnd as any).instant || (rangeEnd as any).start,
-            });
+            return this.timeSpanService!.overlaps(e.timeSpan, rangeInterval);
         });
     }
 

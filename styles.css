@@ -6990,6 +6990,68 @@ body.sl-auto-hide-tab-labels .story-line-view-switcher.sl-collapsed .story-line-
 }
 
 /* ============================================
+   Timeline Event entries
+   ============================================ */
+
+/* Event entry — non-draggable, visually distinct */
+.timeline-entry-event {
+    cursor: pointer;
+}
+
+.timeline-entry-event:hover {
+    background: transparent;
+}
+
+/* Event dot — different color from scene dots */
+.timeline-dot-event {
+    background: var(--text-accent);
+    border-radius: 50%;
+    width: 12px;
+    height: 12px;
+}
+
+/* Event card — subtle accent border */
+.timeline-card-event {
+    border-left: 3px solid var(--text-accent);
+    background: color-mix(in srgb, var(--text-accent) 5%, var(--sc-card-bg, var(--background-primary)));
+}
+
+.timeline-card-event:hover {
+    box-shadow: var(--sl-shadow-sm);
+    transform: translateX(2px);
+}
+
+/* Event icon */
+.timeline-event-icon {
+    margin-right: 4px;
+    color: var(--text-accent);
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+}
+
+/* Uncertain/unknown date badges */
+.timeline-date-uncertain {
+    opacity: 0.7;
+    font-style: italic;
+}
+
+.timeline-date-unknown {
+    opacity: 0.5;
+    color: var(--text-muted);
+}
+
+/* Swimlane event card */
+.swimlane-event-card {
+    border-left: 3px solid var(--text-accent);
+    background: color-mix(in srgb, var(--text-accent) 5%, var(--sc-card-bg, var(--background-primary)));
+}
+
+.swimlane-event-card:hover {
+    box-shadow: var(--sl-shadow-sm);
+}
+
+/* ============================================
    Issue #237 — Shift Dates modal
    ============================================ */
 
