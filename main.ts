@@ -408,10 +408,20 @@ export default class SceneCardsPlugin extends Plugin {
             <path d="M10.4 58.3h29.2a2.1 2.1 0 0 1 2.1 2.1v29.2a2.1 2.1 0 0 1-2.1 2.1H10.4a2.1 2.1 0 0 1-2.1-2.1V60.4a2.1 2.1 0 0 1 2.1-2.1Z" fill="currentColor" stroke="currentColor" stroke-width="7.5"/>
         `);
 
-        // Ribbon icon — open project chooser (load/create) so users can switch projects
-        this.addRibbonIcon('storyline-logo', 'StoryLine projects', () => {
-            const modal = new ProjectSelectModal(this.app, this);
-            modal.open();
+        // Ribbon icon — open Project Library (Universe → Series → Book hierarchy)
+        this.addRibbonIcon('book-open-text', 'StoryLine Project Library', async () => {
+            try {
+                await this.activateView(UNIVERSE_VIEW_TYPE);
+            } catch {
+                // Fallback: open the modal if the view can't be activated
+                const modal = new ProjectSelectModal(this.app, this);
+                modal.open();
+            }
+        });
+
+        // Ribbon icon — browse and manage Events
+        this.addRibbonIcon('calendar', 'StoryLine Events', () => {
+            this.openEventBrowser();
         });
 
         // Commands
@@ -3982,41 +3992,54 @@ export default class SceneCardsPlugin extends Plugin {
     }
 
     async openEventBrowser(): Promise<void> {
-        const events = this.eventManager.getAllEvents();
-        if (events.length === 0) {
-            new Notice('No events found. Create one first.');
-            return;
-        }
-
         const modal = new Modal(this.app);
         modal.titleEl.setText('Events');
 
-        const list = modal.contentEl.createDiv('event-browser-list');
+        const events = this.eventManager.getAllEvents();
 
-        for (const event of events) {
-            const row = list.createDiv('event-browser-row');
-            const nameEl = row.createEl('strong', { text: event.name });
-            if (event.timeSpan) {
-                nameEl.appendText(` — ${this.timeSpanService.format(event.timeSpan)}`);
-            }
-            if (event.description) {
-                const desc = row.createDiv('event-browser-desc');
-                const preview = event.description.length > 100
-                    ? event.description.substring(0, 100) + '...'
-                    : event.description;
-                desc.setText(preview);
-            }
+        // Create Event button
+        const actionsBar = modal.contentEl.createDiv('event-browser-actions');
+        const createBtn = actionsBar.createEl('button', { cls: 'mod-cta', text: '+ New Event' });
+        createBtn.addEventListener('click', async () => {
+            modal.close();
+            await this.openCreateEventModal();
+        });
 
-            // Determine ownership scope
-            const scope = this.getEventScope(event);
-            if (scope) {
-                const badge = row.createSpan('event-scope-badge');
-                badge.setText(scope);
-            }
+        if (events.length === 0) {
+            modal.contentEl.createEl('p', {
+                text: 'No events yet. Create your first event to track canonical occurrences in your universe.',
+                cls: 'event-browser-empty',
+            }).setCssStyles({ padding: '12px', opacity: '0.7' });
+        } else {
+            const list = modal.contentEl.createDiv('event-browser-list');
 
-            row.onClickEvent(async () => {
-                await this.openEditEventModal(event);
-            });
+            for (const event of events) {
+                const row = list.createDiv('event-browser-row');
+                const nameEl = row.createEl('strong', { text: event.name });
+                if (event.timeSpan) {
+                    nameEl.appendText(` — ${this.timeSpanService.format(event.timeSpan)}`);
+                }
+                if (event.description) {
+                    const desc = row.createDiv('event-browser-desc');
+                    const preview = event.description.length > 100
+                        ? event.description.substring(0, 100) + '...'
+                        : event.description;
+                    desc.setText(preview);
+                }
+
+                // Determine ownership scope
+                const scope = this.getEventScope(event);
+                if (scope) {
+                    const badge = row.createSpan('event-scope-badge');
+                    badge.setText(scope);
+                }
+
+                row.onClickEvent(async () => {
+                    modal.close();
+                    await this.openEditEventModal(event);
+                    // Refresh the browser if reopened
+                });
+            }
         }
 
         modal.open();

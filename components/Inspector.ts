@@ -524,6 +524,99 @@ export class InspectorComponent {
             scene.storyTime = val;
         });
 
+        // ── Linked Events ──
+        {
+            const eventSection = this.container.createDiv('inspector-section');
+            eventSection.createSpan({ cls: 'inspector-label', text: 'Linked Events:' });
+
+            const eventList = eventSection.createDiv('inspector-event-list');
+            eventList.setCssStyles({ marginTop: '4px' });
+
+            const eventManager = this.plugin.eventManager;
+            const timeSpanService = this.plugin.timeSpanService;
+
+            if (scene.eventRefs && scene.eventRefs.length > 0) {
+                for (const refId of scene.eventRefs) {
+                    const event = eventManager?.getEvent(refId);
+                    const row = eventList.createDiv('inspector-event-row');
+                    row.setCssStyles({
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '2px 4px',
+                        borderRadius: '4px',
+                    });
+
+                    const label = row.createSpan('inspector-event-label');
+                    label.setCssStyles({ fontSize: '12px' });
+                    if (event) {
+                        label.setText(event.name);
+                        if (event.timeSpan && timeSpanService) {
+                            label.appendText(` (${timeSpanService.format(event.timeSpan)})`);
+                        }
+                    } else {
+                        label.setText(`(Unknown: ${refId.substring(0, 8)}...)`);
+                        label.setCssStyles({ opacity: '0.5' });
+                    }
+
+                    const removeBtn = row.createEl('button', {
+                        cls: 'clickable-icon',
+                        attr: { 'aria-label': 'Remove event link' },
+                    });
+                    removeBtn.setText('×');
+                    removeBtn.setCssStyles({
+                        fontSize: '14px',
+                        padding: '0 4px',
+                        lineHeight: '1',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--text-muted)',
+                    });
+                    removeBtn.addEventListener('click', async () => {
+                        const newRefs = (scene.eventRefs || []).filter(id => id !== refId);
+                        await this.sceneManager.updateScene(scene.filePath, {
+                            eventRefs: newRefs.length > 0 ? newRefs : undefined,
+                        });
+                        scene.eventRefs = newRefs.length > 0 ? newRefs : undefined;
+                        this.show(scene);
+                    });
+                }
+            } else {
+                eventList.createSpan({
+                    text: 'No events linked',
+                    cls: 'inspector-event-empty',
+                }).setCssStyles({ fontSize: '12px', opacity: '0.5' });
+            }
+
+            const linkBtn = eventSection.createEl('button', {
+                text: 'Link Events…',
+                cls: 'inspector-link-events-btn',
+            });
+            linkBtn.setCssStyles({ marginTop: '4px', fontSize: '12px' });
+            linkBtn.addEventListener('click', async () => {
+                if (!eventManager || !timeSpanService) {
+                    new Notice('Event manager not available');
+                    return;
+                }
+                const { EventSelectorModal } = await import('./EventModal');
+                const modal = new EventSelectorModal(
+                    this.plugin.app,
+                    eventManager,
+                    timeSpanService,
+                    scene.eventRefs || []
+                );
+                const selectedIds = await modal.openAsync();
+                if (selectedIds !== undefined) {
+                    await this.sceneManager.updateScene(scene.filePath, {
+                        eventRefs: selectedIds.length > 0 ? selectedIds : undefined,
+                    });
+                    scene.eventRefs = selectedIds.length > 0 ? selectedIds : undefined;
+                    this.show(scene);
+                }
+            });
+        }
+
         // ── Word count + Target ──
         const wcRow = this.container.createDiv('inspector-section');
         wcRow.setCssStyles({

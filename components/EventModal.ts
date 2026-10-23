@@ -113,9 +113,7 @@ export class EventModal extends Modal {
         );
         picker.render();
         if (this.timeSpan) {
-            // Set initial value
-            (picker as any).kind = this.timeSpan.kind;
-            picker.render();
+            picker.setValue(this.timeSpan);
         }
 
         // Location
@@ -291,10 +289,13 @@ export class EventSelectorModal extends Modal {
         this.selectedIds = [...selectedIds];
     }
 
-    open(): Promise<string[]> {
+    /**
+     * Open the modal and return a promise that resolves with the selected Event IDs.
+     */
+    openAsync(): Promise<string[]> {
         return new Promise<string[]>((resolve) => {
             this.resolve = resolve;
-            this.open();
+            super.open();
         });
     }
 

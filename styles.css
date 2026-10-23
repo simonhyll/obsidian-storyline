@@ -14092,3 +14092,53 @@ body.sl-focus-active-global.sl-focus-dim-text .markdown-source-view.mod-cm6 .cm-
     background: var(--background-secondary);
 }
 
+/* ── Event Browser Actions ── */
+
+.event-browser-actions {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.event-browser-empty {
+    padding: 12px;
+    color: var(--text-muted);
+}
+
+/* ── Inspector Event Linking ── */
+
+.inspector-event-list {
+    margin-top: 4px;
+}
+
+.inspector-event-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.inspector-event-row:hover {
+    background: var(--background-modifier-hover);
+}
+
+.inspector-event-label {
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    margin-right: 8px;
+}
+
+.inspector-event-empty {
+    font-size: 12px;
+    opacity: 0.5;
+}
+
+.inspector-link-events-btn {
+    margin-top: 4px;
+    font-size: 12px;
+    padding: 2px 8px;
+}
+
