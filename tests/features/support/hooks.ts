@@ -13,6 +13,7 @@ Before(function (this: TestWorld) {
   this.activeBook = undefined;
   this.createdFiles = new Map();
   this.timelineItems = [];
+  this.selectableBooks = [];
   this.cancelled = false;
   this.filesBeforeCreation = new Map();
 });
