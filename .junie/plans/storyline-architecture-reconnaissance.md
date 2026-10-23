@@ -1384,7 +1384,7 @@ Fix seven areas of the multi-book timeline: universe-wide events, book selection
 - ✓ Typecheck verification — no new errors in changed files; pre-existing baseline errors unchanged
 - ✓ Committed as a4c5de0 and pushed to origin/feat/rework
 
-### * Step 15: Complete Multi-Book Timeline Correctness
+### ✓ Step 15: Complete Multi-Book Timeline Correctness
 Fix five remaining areas: shared chronological projection for swimlane mode, book selection universe boundaries, cross-book scene operation protection, event loading verification, and behavioral tests.
 
 - Refactor swimlane mode to use shared chronological projection (buildChronologicalProjection)

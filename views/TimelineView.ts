@@ -1353,10 +1353,10 @@ export class TimelineView extends ItemView {
     }
 
     /**
-     * Build chronologically sorted timeline items, interleaving Scenes and Events
-     * on a single shared chronological axis.
-     * Uses TimeSpanService for unified calendar-aware comparison.
-     * Items without temporal info are placed at the end in an "Undated" section.
+     * Build chronologically sorted timeline items for linear mode.
+     * Delegates temporal ordering to the shared buildChronologicalProjection()
+     * so linear and swimlane modes use identical sorting.
+     * Adds act dividers and empty-act placeholders on top of the projection.
      */
     private buildChronologicalTimelineItems(
         tlItems: Array<
@@ -1373,49 +1373,21 @@ export class TimelineView extends ItemView {
         actsWithScenes: Set<number>,
         sortedActs: number[]
     ): void {
-        // Build combined list with unified Timestamp-based sorting
-        interface SortableItem {
-            timestamp: Timestamp | null;
-            calendar: string | undefined;
-            scene?: Scene;
-            sceneIdx?: number;
-            event?: Event;
-        }
-        const sortable: SortableItem[] = [];
+        // Use the shared chronological projection for sorting
+        const projection = this.buildChronologicalProjection(scenes, events);
 
-        // Add scenes — normalize legacy dates via TimeSpanService
+        // Map scenes to their original indices for dateInvalid/timeInvalid flags
+        const sceneIdxMap = new Map<Scene, number>();
         for (let i = 0; i < scenes.length; i++) {
-            const scene = scenes[i];
-            const ts = this.getSceneSortTimestamp(scene);
-            const calendar = ts?.calendar;
-            sortable.push({ timestamp: ts, calendar, scene, sceneIdx: i });
+            sceneIdxMap.set(scenes[i], i);
         }
 
-        // Add events — use TimeSpan directly
-        for (const event of events) {
-            const ts = event.timeSpan
-                ? this.plugin.timeSpanService.getEarliestPoint(event.timeSpan)
-                : null;
-            const calendar = ts?.calendar;
-            sortable.push({ timestamp: ts, calendar, event });
-        }
-
-        // Sort using unified TimeSpan-based comparison
-        sortable.sort((a, b) => {
-            const cmp = this.compareTimelineItems(a.timestamp, a.calendar, b.timestamp, b.calendar);
-            if (cmp !== 0) return cmp;
-            // Same date — scenes before events for stability
-            if (a.scene && b.event) return -1;
-            if (a.event && b.scene) return 1;
-            return 0;
-        });
-
-        // Render items on the shared axis
+        // Render items on the shared axis with act dividers
         let lastRenderedAct: number | undefined = undefined;
 
-        for (const item of sortable) {
-            if (item.scene) {
-                const scene = item.scene!;
+        for (const item of projection) {
+            if (item.kind === 'scene') {
+                const scene = item.scene;
                 const currentAct = scene.act !== undefined ? Number(scene.act) : undefined;
                 if (currentAct !== lastRenderedAct) {
                     const beatLabel = currentAct !== undefined ? this.sceneManager.getActLabel(currentAct) : undefined;
@@ -1427,16 +1399,15 @@ export class TimelineView extends ItemView {
                     tlItems.push({ kind: 'divider', actLabel, actNum: currentAct });
                     lastRenderedAct = currentAct;
                 }
+                const globalIdx = sceneIdxMap.get(scene) ?? 0;
                 tlItems.push({
                     kind: 'scene',
                     scene,
-                    globalIdx: item.sceneIdx!,
-                    dateInvalid: dateInvalidFlags[item.sceneIdx!] ?? false,
-                    timeInvalid: timeInvalidFlags[item.sceneIdx!] ?? false,
+                    globalIdx,
+                    dateInvalid: dateInvalidFlags[globalIdx] ?? false,
+                    timeInvalid: timeInvalidFlags[globalIdx] ?? false,
                 });
-            }
-            if (item.event) {
-                // Events are interleaved on the same axis — no separate section
+            } else if (item.kind === 'event') {
                 tlItems.push({ kind: 'event', event: item.event });
             }
         }
@@ -1640,7 +1611,9 @@ export class TimelineView extends ItemView {
         // Only shown when more than one scene is selected (ctrl/cmd-click).
         // The right-clicked scene is implicitly included in the selection
         // if it isn't already, so the action always has a sensible anchor.
-        if (this.selectedScenes.size > 1) {
+        // In multi-book mode, shift dates is disabled: selected scenes may
+        // belong to different books with different act/chapter structures.
+        if (this.selectedScenes.size > 1 && !this.isMultiBookMode()) {
             menu.addItem(item => {
                 item.setTitle(`Shift dates (${this.selectedScenes.size} scenes)…`)
                     .setIcon('calendar-range')
@@ -1657,14 +1630,18 @@ export class TimelineView extends ItemView {
                 });
         });
 
-        menu.addItem(item => {
-            item.setTitle('Duplicate scene')
-                .setIcon('copy')
-                .onClick(async () => {
-                    await this.sceneManager.duplicateScene(scene.filePath);
-                    this.refresh();
-                });
-        });
+        // Duplicate is unsafe in multi-book mode: it uses the active book's
+        // scene folder, which may differ from the scene's owning book.
+        if (!this.isMultiBookMode()) {
+            menu.addItem(item => {
+                item.setTitle('Duplicate scene')
+                    .setIcon('copy')
+                    .onClick(async () => {
+                        await this.sceneManager.duplicateScene(scene.filePath);
+                        this.refresh();
+                    });
+            });
+        }
 
         menu.addSeparator();
 
