@@ -1366,3 +1366,28 @@ Fix four concrete UX issues: Timeline Event marker layout, workspace tab reuse, 
 - ✓ Build verification — pnpm run build passes
 - ✓ Test verification — 316/316 tests pass (279 existing + 37 new)
 - ✓ Typecheck verification — no new errors in changed files; pre-existing baseline errors unchanged
+
+### ✓ Step 14: Finish Phase 3 Milestone 2A: Multi-Book Timeline Integration
+Fix seven areas of the multi-book timeline: universe-wide events, book selection semantics, compact dropdown, swimlane support, cross-book editing protection, async rendering safety, and CSS.
+
+- ✓ Add getAllUniverseEventFolders() to UniverseManager — returns all Events/ folder paths in a universe (universe-level + all series + all books)
+- ✓ Add loadEventsFromFolders() to EventManager — read-only event loading from arbitrary folders, deduplicated by UUID, does not mutate working collection
+- ✓ Fix getTimelineEvents() — async method that loads ALL universe events via getAllUniverseEventFolders, not just active book's inherited events
+- ✓ Fix getTimelineScenes() — no longer force-includes active book; respects explicit user selection
+- ✓ Compact book picker dropdown — replaced inline toolbar checkboxes with popover button showing selection count, hierarchy-grouped books with resolved Universe/Series names
+- ✓ Swimlane multi-book support — renderSwimlaneTimeline() now async, uses same multi-book scene/event projection as linear mode
+- ✓ Cross-book editing protection — drag reordering disabled in multi-book mode via isMultiBookMode() check
+- ✓ Async rendering safety — renderGeneration counter cancels stale renders on rapid book selection changes
+- ✓ CSS — updated styles for compact dropdown button and popover
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 329/329 tests pass
+- ✓ Typecheck verification — no new errors in changed files; pre-existing baseline errors unchanged
+- ✓ Committed as a4c5de0 and pushed to origin/feat/rework
+
+### * Step 15: Complete Multi-Book Timeline Correctness
+Fix five remaining areas: shared chronological projection for swimlane mode, book selection universe boundaries, cross-book scene operation protection, event loading verification, and behavioral tests.
+
+- Refactor swimlane mode to use shared chronological projection (buildChronologicalProjection)
+- Add resolveProjectUniverseId/Async for universe-aware book filtering
+- Pre-select active book in book selector, prevent empty selection
+- Add 23 behavioral tests covering projection, universe boundaries, cross-book protection, event loading, swimlane alignment, stale async, and reading order

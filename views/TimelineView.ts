@@ -684,142 +684,186 @@ export class TimelineView extends ItemView {
             return;
         }
 
-        // 1. Determine lane keys based on groupBy
-        const laneKeysSet = new Set<string>();
-        for (const scene of scenes) {
-            const keys = this.getSceneLaneKeys(scene);
-            for (const k of keys) laneKeysSet.add(k);
-        }
-        const laneKeys = Array.from(laneKeysSet).sort();
-        if (laneKeys.length === 0) laneKeys.push('(none)');
+        // ── Build shared chronological projection ──
+        // Combine scenes and events into one timeline sorted by TimeSpan.
+        // This is the same projection used by the linear timeline mode.
+        const projection = this.buildChronologicalProjection(scenes, events);
 
-        // Events appear in their own lane in swimlane mode, but integrated
-        // with the chronological axis, not as a separate section
-        const hasEvents = events.length > 0;
-        const allLaneKeys = hasEvents ? [...laneKeys, 'Events'] : laneKeys;
+        // ── Determine lane keys ──
+        const isMultiBook = this.isMultiBookMode();
+        let laneKeys: string[];
 
-        // 2. Build row definitions — one row per scene in sequence order,
-        //    with act dividers injected when the act changes.
-        interface RowDef {
-            type: 'act-divider' | 'scene';
-            actLabel?: string;
-            actNum?: number;
-            scene?: Scene;
-            globalIdx?: number;
-        }
-        const rows: RowDef[] = [];
-        let lastAct: number | undefined = undefined;
-        for (let i = 0; i < scenes.length; i++) {
-            const scene = scenes[i];
-            const currentAct = scene.act !== undefined ? Number(scene.act) : undefined;
-            if (currentAct !== lastAct) {
-                const beatLabel = currentAct !== undefined ? this.sceneManager.getActLabel(currentAct) : undefined;
-                const cleanBeat = beatLabel?.replace(/^(Act|Prologue|Epilogue)\s*\d*\s*[—:]\s*/i, '');
-                const actDisplay = getActDisplayLabel(currentAct);
-                const label = currentAct !== undefined
-                    ? (cleanBeat ? `${actDisplay} — ${cleanBeat}` : actDisplay)
-                    : 'No Act';
-                rows.push({ type: 'act-divider', actLabel: label, actNum: currentAct });
-                lastAct = currentAct;
+        if (isMultiBook) {
+            // Multi-book mode: one lane per selected book
+            const bookTitles = new Map<string, string>();
+            for (const scene of scenes) {
+                const bookId = this.sceneManager.getProjectById(scene.filePath)?.bookId;
+                if (bookId && !bookTitles.has(bookId)) {
+                    const project = this.sceneManager.getProjectById(scene.filePath);
+                    bookTitles.set(bookId, project?.title || bookId);
+                }
             }
-            rows.push({ type: 'scene', scene, globalIdx: i });
+            laneKeys = Array.from(bookTitles.values()).sort();
+        } else {
+            // Single-book mode: use POV/Character/Location grouping
+            const laneKeysSet = new Set<string>();
+            for (const scene of scenes) {
+                const keys = this.getSceneLaneKeys(scene);
+                for (const k of keys) laneKeysSet.add(k);
+            }
+            laneKeys = Array.from(laneKeysSet).sort();
+            if (laneKeys.length === 0) laneKeys.push('(none)');
         }
 
-        // 3. Build the grid container
+        // ── Build the grid container ──
         const grid = timelineEl.createDiv('swimlane-grid');
-        //    CSS grid: first column = sequence axis, then one column per lane
-        const colTemplate = `80px repeat(${allLaneKeys.length}, minmax(180px, 1fr))`;
+        const colTemplate = `80px repeat(${laneKeys.length}, minmax(180px, 1fr))`;
         grid.setCssStyles({ gridTemplateColumns: colTemplate });
 
-        // 4. Sticky header row
-        // Corner cell (sequence axis header)
+        // ── Sticky header row ──
         const corner = grid.createDiv('swimlane-corner');
         corner.textContent = '#';
-
-        // Lane headers
-        for (const lane of allLaneKeys) {
+        for (const lane of laneKeys) {
             const header = grid.createDiv('swimlane-lane-header');
             header.textContent = lane;
             header.setAttribute('title', lane);
         }
 
-        // 5. Render each row
-        for (const row of rows) {
-            if (row.type === 'act-divider') {
-                // Act divider spans the full width
-                const divider = grid.createDiv('swimlane-act-divider');
-                divider.setCssStyles({ gridColumn: `1 / -1` });
-                if (row.actNum !== undefined) {
-                    const addBtn = divider.createEl('button', {
-                        cls: 'timeline-act-add-btn clickable-icon',
-                        attr: { 'aria-label': `Add scene to ${row.actLabel}` },
-                    });
-                    obsidian.setIcon(addBtn, 'plus');
-                    const actForClosure = row.actNum;
-                    addBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        this.openQuickAdd(actForClosure);
-                    });
-                }
-                continue;
+        // ── Render each item in chronological order ──
+        for (const item of projection) {
+            if (item.kind === 'scene') {
+                this.renderSwimlaneSceneRow(grid, item.scene, laneKeys, isMultiBook);
+            } else if (item.kind === 'event') {
+                this.renderSwimlaneEventRow(grid, item.event, laneKeys);
             }
+        }
+    }
 
-            const scene = row.scene!;
-            const act = scene.act !== undefined ? String(scene.act).padStart(2, '0') : '??';
-            const seq = scene.sequence !== undefined ? String(scene.sequence).padStart(2, '0') : '??';
-            const chronoSeq = scene.chronologicalOrder !== undefined ? String(scene.chronologicalOrder).padStart(2, '0') : null;
+    /**
+     * Build a shared chronological projection of scenes and events.
+     * Returns items sorted by TimeSpan, with unknown/undated items at the end.
+     * This is the canonical projection used by both linear and swimlane modes.
+     */
+    private buildChronologicalProjection(scenes: Scene[], events: Event[]): Array<
+        | { kind: 'scene'; scene: Scene }
+        | { kind: 'event'; event: Event }
+    > {
+        interface SortableItem {
+            timestamp: Timestamp | null;
+            calendar: string | undefined;
+            scene?: Scene;
+            event?: Event;
+        }
+        const sortable: SortableItem[] = [];
 
-            // Sequence axis cell
-            const seqCell = grid.createDiv('swimlane-seq-cell');
-            seqCell.classList.add('timeline-seq-clickable');
-            seqCell.createSpan({ cls: 'timeline-seq-badge', text: `${act}-${seq}` });
-            // Show chronological order badge when it differs from reading order
-            if (chronoSeq !== null && scene.chronologicalOrder !== scene.sequence) {
-                const chronoBadge = seqCell.createSpan({ cls: 'timeline-chrono-badge', text: `C${chronoSeq}` });
-                chronoBadge.setAttribute('title', `Chronological order: ${chronoSeq}`);
+        // Add scenes — normalize legacy dates via TimeSpanService
+        for (const scene of scenes) {
+            const ts = this.getSceneSortTimestamp(scene);
+            sortable.push({ timestamp: ts, calendar: ts?.calendar, scene });
+        }
+
+        // Add events — use TimeSpan directly
+        for (const event of events) {
+            const ts = event.timeSpan
+                ? this.plugin.timeSpanService.getEarliestPoint(event.timeSpan)
+                : null;
+            sortable.push({ timestamp: ts, calendar: ts?.calendar, event });
+        }
+
+        // Sort using unified TimeSpan-based comparison
+        sortable.sort((a, b) => {
+            const cmp = this.compareTimelineItems(a.timestamp, a.calendar, b.timestamp, b.calendar);
+            if (cmp !== 0) return cmp;
+            // Same date — scenes before events for stability
+            if (a.scene && b.event) return -1;
+            if (a.event && b.scene) return 1;
+            return 0;
+        });
+
+        // Convert to projection items
+        const projection: Array<{ kind: 'scene'; scene: Scene } | { kind: 'event'; event: Event }> = [];
+        for (const item of sortable) {
+            if (item.scene) {
+                projection.push({ kind: 'scene', scene: item.scene });
             }
-            if (scene.storyDate) {
-                seqCell.createSpan({ cls: 'timeline-date-badge', text: scene.storyDate });
-            }
-            if (scene.storyTime) {
-                seqCell.createSpan({ cls: 'timeline-time-badge', text: scene.storyTime });
-            }
-            seqCell.setAttribute('title', 'Click to edit date/time');
-            seqCell.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.openTimeEditModal(scene);
-            });
-
-            // Determine which lane(s) this scene belongs to
-            const sceneKeys = this.getSceneLaneKeys(scene);
-            const sceneKeySet = new Set(sceneKeys);
-
-            // Render one cell per lane
-            for (let laneIdx = 0; laneIdx < allLaneKeys.length; laneIdx++) {
-                const lane = allLaneKeys[laneIdx];
-                const cell = grid.createDiv('swimlane-lane-cell');
-
-                if (lane === 'Events') {
-                    // Events lane — empty for scene rows, events rendered separately
-                    continue;
-                }
-                if (sceneKeySet.has(lane)) {
-                    // Multi-value groups (characters / plotlines) render the scene in every matching lane.
-                    this.renderSwimlaneCard(cell, scene);
-                }
-                // else: empty cell — visual gap
+            if (item.event) {
+                projection.push({ kind: 'event', event: item.event });
             }
         }
 
-        // 6. Render Events in the Canonical Events lane (last column)
-        if (hasEvents) {
-            const eventsLaneIdx = allLaneKeys.length; // 1-based grid column index
-            // Sort events by TimeSpan for chronological placement
-            const sortedEvents = this.sortEventsByTime(events);
-            for (const event of sortedEvents) {
-                const eventCell = grid.createDiv('swimlane-lane-cell');
-                eventCell.setCssStyles({ gridColumn: `${eventsLaneIdx}`, gridRow: 'auto' });
-                this.renderSwimlaneEventCard(eventCell, event);
+        return projection;
+    }
+
+    /**
+     * Render a single scene row in the swimlane grid.
+     */
+    private renderSwimlaneSceneRow(grid: HTMLElement, scene: Scene, laneKeys: string[], isMultiBook: boolean): void {
+        const act = scene.act !== undefined ? String(scene.act).padStart(2, '0') : '??';
+        const seq = scene.sequence !== undefined ? String(scene.sequence).padStart(2, '0') : '??';
+        const chronoSeq = scene.chronologicalOrder !== undefined ? String(scene.chronologicalOrder).padStart(2, '0') : null;
+
+        // Sequence axis cell
+        const seqCell = grid.createDiv('swimlane-seq-cell');
+        seqCell.classList.add('timeline-seq-clickable');
+        seqCell.createSpan({ cls: 'timeline-seq-badge', text: `${act}-${seq}` });
+        if (chronoSeq !== null && scene.chronologicalOrder !== scene.sequence) {
+            const chronoBadge = seqCell.createSpan({ cls: 'timeline-chrono-badge', text: `C${chronoSeq}` });
+            chronoBadge.setAttribute('title', `Chronological order: ${chronoSeq}`);
+        }
+        const timeSpan = this.getSceneTimeSpan(scene);
+        if (timeSpan) {
+            seqCell.createSpan({ cls: 'timeline-date-badge', text: this.plugin.timeSpanService.format(timeSpan) });
+        } else if (scene.storyDate) {
+            seqCell.createSpan({ cls: 'timeline-date-badge', text: scene.storyDate });
+        }
+        if (scene.storyTime) {
+            seqCell.createSpan({ cls: 'timeline-time-badge', text: scene.storyTime });
+        }
+        seqCell.setAttribute('title', 'Click to edit date/time');
+        seqCell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openTimeEditModal(scene);
+        });
+
+        // Determine which lane(s) this scene belongs to
+        const sceneLaneKeys = isMultiBook
+            ? [this.getSceneBookTitle(scene) || '(unknown)']
+            : this.getSceneLaneKeys(scene);
+        const sceneKeySet = new Set(sceneLaneKeys);
+
+        // Render one cell per lane
+        for (const lane of laneKeys) {
+            const cell = grid.createDiv('swimlane-lane-cell');
+            if (sceneKeySet.has(lane)) {
+                this.renderSwimlaneCard(cell, scene);
+            }
+            // else: empty cell — visual gap
+        }
+    }
+
+    /**
+     * Render a single event row in the swimlane grid.
+     * Events appear as shared reference markers across all lanes.
+     */
+    private renderSwimlaneEventRow(grid: HTMLElement, event: Event, laneKeys: string[]): void {
+        // Sequence axis cell with event date
+        const seqCell = grid.createDiv('swimlane-seq-cell');
+        seqCell.classList.add('swimlane-event-seq');
+        if (event.timeSpan) {
+            const badge = seqCell.createSpan({ cls: 'timeline-date-badge' });
+            badge.setText(this.plugin.timeSpanService.format(event.timeSpan));
+            if (event.timeSpan.kind === 'uncertain') badge.addClass('timeline-date-uncertain');
+            else if (event.timeSpan.kind === 'unknown') badge.addClass('timeline-date-unknown');
+        } else {
+            seqCell.createSpan({ cls: 'timeline-date-badge timeline-date-unknown', text: 'Undated' });
+        }
+
+        // Render event card in the first lane as a shared reference marker
+        for (let i = 0; i < laneKeys.length; i++) {
+            const cell = grid.createDiv('swimlane-lane-cell');
+            if (i === 0) {
+                // Only render the event card in the first lane to avoid duplication
+                this.renderSwimlaneEventCard(cell, event);
             }
         }
     }
@@ -2313,19 +2357,82 @@ export class TimelineView extends ItemView {
 
     /**
      * Populate the popover with hierarchy-grouped book checkboxes.
+     * Filters to only show books in the active project's Universe.
+     * Pre-selects the active book by default.
      */
     private populateBookSelectorPopover(popover: HTMLElement): void {
-        const allProjects = this.sceneManager.getProjects();
-        const activeBookId = this.sceneManager.activeProject?.bookId;
+        const activeProject = this.sceneManager.activeProject;
+        const activeBookId = activeProject?.bookId;
+        if (!activeBookId) return;
 
-        // Get universe names from UniverseManager (async, but we cache results)
-        this.populateBookSelectorPopoverAsync(popover, allProjects, activeBookId);
+        // Pre-select active book if nothing is selected yet
+        if (this.selectedBookIds.size === 0) {
+            this.selectedBookIds.add(activeBookId);
+        }
+
+        // Filter and populate async (universe resolution is async)
+        this.populateBookSelectorPopoverAsync(popover, this.sceneManager.getProjects(), activeBookId);
     }
 
     /**
-     * Async version that resolves universe/series names.
+     * Resolve the universe ID for a project, checking both direct universeId
+     * and the series' universe membership.
+     */
+    private resolveProjectUniverseId(project: StoryLineProject): string | null {
+        if (project.universeId) return project.universeId;
+        // Check if the series belongs to a universe (sync fallback using cached series)
+        if (project.seriesUuid) {
+            // Use the series manager's cached series list if available
+            const allSeries = this.plugin.seriesManager.discoverSeries();
+            // Since discoverSeries is async, we can't await here in a sync context.
+            // Fall back to checking if the project has a direct universeId.
+            // The async version in populateBookSelectorPopoverAsync handles this properly.
+        }
+        return null;
+    }
+
+    /**
+     * Async version that also checks series membership for universe resolution.
+     */
+    private async resolveProjectUniverseIdAsync(project: StoryLineProject): Promise<string | null> {
+        if (project.universeId) return project.universeId;
+        if (project.seriesUuid) {
+            try {
+                const seriesMeta = await this.plugin.seriesManager.getSeriesByUuid(project.seriesUuid);
+                if (seriesMeta?.meta?.universeId) return seriesMeta.meta.universeId;
+            } catch { /* no universe */ }
+        }
+        return null;
+    }
+
+    /**
+     * Resolve the active project's universe ID.
+     */
+    private resolveActiveUniverseId(project: StoryLineProject): string | null {
+        return this.resolveProjectUniverseId(project);
+    }
+
+    /**
+     * Async version that resolves universe/series names and filters by active universe.
      */
     private async populateBookSelectorPopoverAsync(popover: HTMLElement, allProjects: StoryLineProject[], activeBookId: string | undefined): Promise<void> {
+        const activeProject = this.sceneManager.activeProject;
+        if (!activeProject) return;
+
+        // Resolve the active project's universe ID (async, checks series membership)
+        const activeUniverseId = await this.resolveProjectUniverseIdAsync(activeProject);
+
+        // Filter projects to only those in the same universe (or standalone if no universe)
+        const filteredProjects: StoryLineProject[] = [];
+        for (const project of allProjects) {
+            const projectUniverseId = await this.resolveProjectUniverseIdAsync(project);
+            if (activeUniverseId && projectUniverseId === activeUniverseId) {
+                filteredProjects.push(project);
+            } else if (!activeUniverseId && !projectUniverseId) {
+                filteredProjects.push(project);
+            }
+        }
+
         // Build hierarchy: Universe → Series → Books
         const universeMap = new Map<string, { name: string; series: Map<string, { name: string; books: StoryLineProject[] }> }>();
         const standaloneSeries = new Map<string, { name: string; books: StoryLineProject[] }>();
@@ -2349,7 +2456,7 @@ export class TimelineView extends ItemView {
             }
         } catch { /* fallback to UUID */ }
 
-        for (const project of allProjects) {
+        for (const project of filteredProjects) {
             const uniId = project.universeId;
             const serUuid = project.seriesUuid;
 
@@ -2403,6 +2510,7 @@ export class TimelineView extends ItemView {
         resetBtn.style.marginBottom = '8px';
         resetBtn.addEventListener('click', () => {
             this.selectedBookIds.clear();
+            this.selectedBookIds.add(this.sceneManager.activeProject?.bookId || '');
             this.updateBookSelectorButton(this.bookSelectorButton!);
             this.closeBookSelectorPopover();
             this.refresh();
@@ -2452,6 +2560,12 @@ export class TimelineView extends ItemView {
             if (checkbox.checked) {
                 this.selectedBookIds.add(project.bookId!);
             } else {
+                // Prevent deselecting the last book — require "Active Book only" instead
+                if (this.selectedBookIds.size === 0) {
+                    checkbox.checked = true;
+                    new Notice('At least one book must be selected. Use "Active Book only" to reset.');
+                    return;
+                }
                 this.selectedBookIds.delete(project.bookId!);
             }
             this.updateBookSelectorButton(this.bookSelectorButton!);
@@ -2472,12 +2586,14 @@ export class TimelineView extends ItemView {
      * If no books are selected, returns the active project's scenes.
      * 
      * Fix: Does NOT force-include active book — respects user selection.
+     * The active book is pre-selected in populateBookSelectorPopover, so
+     * selectedBookIds will contain at least the active book by default.
      */
     private async getTimelineScenes(): Promise<Scene[]> {
         const activeProject = this.sceneManager.activeProject;
         if (!activeProject) return [];
 
-        // Single-book mode: use cached scenes
+        // Single-book mode: no explicit selection, use cached scenes
         if (this.selectedBookIds.size === 0) {
             return this.sceneManager.queryService.getFilteredScenes(
                 undefined,
