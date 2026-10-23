@@ -26,6 +26,7 @@ export {
   mergePlotlineData,
   mergeCharacterData,
   mergeStatsData,
+  mergeCustomSectionsData,
   deriveSystemFolder,
   deriveSystemFolderFromProjectFile,
 } from './legacyMigration.helpers';
@@ -70,8 +71,18 @@ function migrateOne(
   projects: StoryLineProject[],
   field: 'definedActs' | 'definedChapters',
 ): MigrationEntryResult {
-  if (!Array.isArray(value) || value.length === 0) {
+  // Malformed nonempty values must be preserved, not treated as equivalent.
+  if (!Array.isArray(value)) {
+    return { path: projectPath, outcome: 'deferred' };
+  }
+  if (value.length === 0) {
     return { path: projectPath, outcome: 'equivalent' };
+  }
+  // Check for invalid entries — if any element can't be converted to a number,
+  // preserve the source for possible recovery.
+  const legacyNums = toNumbers(value, true);
+  if (legacyNums === null) {
+    return { path: projectPath, outcome: 'deferred' };
   }
   const project = projects.find(p => p.filePath === projectPath);
   if (!project) {
@@ -80,18 +91,30 @@ function migrateOne(
   const target = field === 'definedActs' ? 'definedActs' : 'definedChapters';
   const current = project[target];
   if (!Array.isArray(current) || current.length === 0) {
-    project[target] = toNumbers(value);
+    project[target] = legacyNums;
     return { path: projectPath, outcome: 'copied' };
   }
-  const legacyNums = toNumbers(value);
   if (arraysEqual(current, legacyNums)) {
     return { path: projectPath, outcome: 'equivalent' };
   }
   return { path: projectPath, outcome: 'conflicting' };
 }
 
-function toNumbers(value: unknown[]): number[] {
-  return value.map(Number).filter(n => !isNaN(n));
+/**
+ * Convert an array to numbers, returning null if any element is invalid.
+ * When strict is true, invalid entries cause the entire array to be rejected.
+ */
+function toNumbers(value: unknown[], strict: boolean): number[] | null {
+  const result: number[] = [];
+  for (const item of value) {
+    const n = Number(item);
+    if (isNaN(n)) {
+      if (strict) return null;
+      continue;
+    }
+    result.push(n);
+  }
+  return result;
 }
 
 function arraysEqual(a: number[], b: number[]): boolean {

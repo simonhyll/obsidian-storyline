@@ -3,24 +3,24 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-24 (Step 6C.4b.3b.2 — Lossless migration under failure and conflict)
+> Updated: 2026-10-24 (Step 6C.4b.3b.3 — Migration data-loss paths closed)
 > Total scenarios: 62
 > Total steps: 276
 
-## 6C.4b.3b.2 Update Summary
+## 6C.4b.3b.3 Update Summary
 
-Step 6C.4b.3b.2 made legacy migration truly lossless under failure and conflict:
+Step 6C.4b.3b.3 closed remaining migration data-loss paths and corrected KEY_TO_SYSTEM_FILE mappings:
 
-1. **Four migration outcomes** — `migrateProjectField()` now returns per-entry outcomes: `copied`, `equivalent`, `conflicting`, `deferred`. Only `copied` (after successful persistence) and `equivalent` entries are removed from legacy storage.
-2. **Conflicting data preserved** — When destination already has different non-empty values, the legacy entry is preserved for later resolution instead of being silently deleted.
-3. **Persistence failure protection** — `main.ts` Phase 1 now tracks which `saveProjectFrontmatter()` calls succeed and marks failed ones as `deferred`, preserving their legacy source data.
-4. **Per-destination System file tracking** — `main.ts` Phase 3 tracks which System file writes succeed and only strips the legacy keys mapping to those successfully written files.
-5. **Merge helpers preserve unrelated data** — `mergePlotlineData()`, `mergeCharacterData()`, `mergeStatsData()` now spread existing data first, preserving unrelated JSON properties.
-6. **Restart test uses real saveSettings()** — The restart test wires `plugin.saveSettings()` to the data store, so production `setActiveProject()` persists through the real callback.
-7. **File split** — Extracted merge helpers and key mappings to `legacyMigration.helpers.ts` to meet 200-line budget.
-8. **Architecture baseline** — Updated from 1,166 to 1,169 violations (+3 from main.ts migration coordinator changes).
+1. **KEY_TO_SYSTEM_FILE corrected** — `characterCustomSections`, `locationCustomSections`, `codexCategoryCustomSections`, `codexVisualGroups`, `customLocationTypes`, `codexCustomCategories`, `codexEnabledCategories` now correctly map to `custom-sections.json` (not `characters.json`, `locations.json`, `codex.json`).
+2. **mergePlotlineData() fixed** — Now includes `plotlineDescriptions` from legacy data (was missing).
+3. **saveSettings() data-loss fixed** — Added `_migratedKeys` Set tracking. Only keys that were actually migrated successfully are stripped from data.json. Unresolved legacy keys survive `saveSettings()` calls.
+4. **_migratedKeys restoration** — On plugin restart, `loadProjectSystemData()` populates `_migratedKeys` from keys NOT present in persisted data.json (meaning they were already migrated).
+5. **custom-sections.json migration** — Added Phase 3 migration for custom sections data to `System/custom-sections.json`.
+6. **Malformed value handling** — `migrateProjectField()` now treats non-array values and arrays with invalid entries as `deferred` instead of `equivalent`, preserving source for recovery.
+7. **Architecture extraction** — Extracted `migrateSystemFiles()` and `writeSystemFile()` methods to reduce nesting depth. Added `mergeCustomSectionsData()` helper with data-driven approach.
+8. **Architecture baseline** — Updated from 1,169 to 1,170 violations (+1 from `migrateSystemFiles` extraction).
 
-## 6C.4b.3b.1 Historical Summary
+## 6C.4b.3b.2 Historical Summary
 
 Step 6C.4b.3b.1 replaced the test-only migration implementation with real production code and fixed a production data-loss defect:
 

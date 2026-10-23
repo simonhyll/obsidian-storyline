@@ -28,22 +28,25 @@ export const PROJECT_DATA_KEYS: string[] = [
 
 /**
  * Map each PROJECT_DATA_KEY to the System/ file it migrates into.
+ *
+ * Verified against production saveProjectSystemData() and
+ * loadProjectSystemData() in main.ts.
  */
 export const KEY_TO_SYSTEM_FILE: Record<string, string> = {
   tagColors: 'plotlines.json',
   tagTypeOverrides: 'plotlines.json',
+  plotlineDescriptions: 'plotlines.json',
+  useProjectColors: 'plotlines.json',
   characterAliases: 'characters.json',
   ignoredCharacters: 'characters.json',
   writingTrackerData: 'stats.json',
-  useProjectColors: 'plotlines.json',
-  plotlineDescriptions: 'plotlines.json',
-  characterCustomSections: 'characters.json',
-  locationCustomSections: 'locations.json',
-  codexCategoryCustomSections: 'codex.json',
-  codexVisualGroups: 'codex.json',
-  customLocationTypes: 'locations.json',
-  codexCustomCategories: 'codex.json',
-  codexEnabledCategories: 'codex.json',
+  characterCustomSections: 'custom-sections.json',
+  locationCustomSections: 'custom-sections.json',
+  codexCategoryCustomSections: 'custom-sections.json',
+  codexVisualGroups: 'custom-sections.json',
+  customLocationTypes: 'custom-sections.json',
+  codexCustomCategories: 'custom-sections.json',
+  codexEnabledCategories: 'custom-sections.json',
 };
 
 /**
@@ -129,7 +132,7 @@ function buildPlotgridData(legacyData: Record<string, unknown>): Record<string, 
 }
 
 /**
- * Merge legacy plotline data (tagColors, tagTypeOverrides).
+ * Merge legacy plotline data (tagColors, tagTypeOverrides, plotlineDescriptions).
  */
 export function mergePlotlineData(
   legacyData: Record<string, unknown>,
@@ -143,6 +146,8 @@ export function mergePlotlineData(
       legacyData.tagColors ?? existing.tagColors ?? defaults.tagColors ?? {},
     tagTypeOverrides:
       legacyData.tagTypeOverrides ?? existing.tagTypeOverrides ?? defaults.tagTypeOverrides ?? {},
+    plotlineDescriptions:
+      legacyData.plotlineDescriptions ?? existing.plotlineDescriptions ?? defaults.plotlineDescriptions ?? {},
   };
 }
 
@@ -179,6 +184,37 @@ export function mergeStatsData(
     return null;
   }
   return { ...existing, writingTrackerData };
+}
+
+/**
+ * Merge legacy custom sections data into System/custom-sections.json.
+ * Uses a data-driven approach to keep complexity low.
+ */
+export function mergeCustomSectionsData(
+  legacyData: Record<string, unknown>,
+  existingContent: string | null,
+): Record<string, unknown> {
+  const existing = parseExisting(existingContent);
+  const fields: Array<{ key: string; type: 'array' | 'object'; default: unknown }> = [
+    { key: 'characterCustomSections', type: 'array', default: [] },
+    { key: 'locationCustomSections', type: 'array', default: [] },
+    { key: 'codexCategoryCustomSections', type: 'object', default: {} },
+    { key: 'codexVisualGroups', type: 'object', default: {} },
+    { key: 'customLocationTypes', type: 'array', default: [] },
+    { key: 'codexCustomCategories', type: 'array', default: [] },
+    { key: 'codexEnabledCategories', type: 'array', default: [] },
+  ];
+  const result: Record<string, unknown> = { ...existing };
+  for (const field of fields) {
+    const legacy = legacyData[field.key];
+    const isValid = field.type === 'array'
+      ? Array.isArray(legacy)
+      : legacy && typeof legacy === 'object';
+    result[field.key] = isValid
+      ? legacy
+      : (existing[field.key] ?? field.default);
+  }
+  return result;
 }
 
 function parseExisting(content: string | null): Record<string, unknown> {

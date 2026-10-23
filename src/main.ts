@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion, no-useless-escape -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { addIcon, App, ButtonComponent, DropdownComponent, ItemView, Modal, Notice, Platform, Plugin, Setting, TFile, TextComponent, ToggleComponent, WorkspaceLeaf, normalizePath, parseYaml, setIcon } from 'obsidian';
 import { SceneCardsSettings, SceneCardsSettingTab, DEFAULT_SETTINGS, migrateSectionStateKeys } from './settings';
 import { asRecord, isRecord } from './utils/narrow';
@@ -75,6 +75,7 @@ import {
 	mergePlotlineData,
 	mergeCharacterData,
 	mergeStatsData,
+	mergeCustomSectionsData,
 	deriveSystemFolder,
 	deriveSystemFolderFromProjectFile,
 } from './services/legacyMigration';
@@ -90,6 +91,8 @@ export default class SceneCardsPlugin extends Plugin {
     sceneManager!: SceneManager;
     /** Set to true once System/ migration is confirmed — guards saveSettings stripping */
     private _systemMigrationDone = false;
+    /** Keys that were successfully migrated to System/ files — only these are stripped */
+    private _migratedKeys = new Set<string>();
     /** Snapshot of colour settings from data.json (global defaults) */
     private _globalColorDefaults: Partial<SceneCardsSettings> = {};
     locationManager!: LocationManager;
@@ -685,8 +688,9 @@ export default class SceneCardsPlugin extends Plugin {
         setWordcountLocale(normalizeStoryLineLocale(this.sceneManager?.getEffectiveLocale() ?? this.settings.defaultProjectLanguage));
         const toSave: Record<string, unknown> = { ...this.settings };
         if (this._systemMigrationDone) {
-            // Strip per-project data from the global data.json payload
-            for (const key of SceneCardsPlugin.PROJECT_DATA_KEYS) {
+            // Only strip per-project data keys that were actually migrated.
+            // Keys that failed to migrate must remain in data.json for retry.
+            for (const key of this._migratedKeys) {
                 delete toSave[key];
             }
             // When using per-project colours, restore global defaults into
@@ -1214,8 +1218,20 @@ export default class SceneCardsPlugin extends Plugin {
         // They will be written to System/custom-sections.json on the next
         // saveSettings() call and stripped from data.json thereafter.
 
-        // System files are now the source of truth
+        // System files are now the source of truth.
+        // Populate _migratedKeys: any PROJECT_DATA_KEY that is NOT in
+        // the persisted data.json was already migrated, so it's safe to strip.
+        // Keys still present in data.json are unresolved — don't strip them.
         this._systemMigrationDone = true;
+        const persisted = await this.loadData();
+        if (persisted && typeof persisted === 'object') {
+            for (const key of PROJECT_DATA_KEYS) {
+                if (!(key in persisted)) {
+                    // Key not in data.json — it was already migrated.
+                    this._migratedKeys.add(key);
+                }
+            }
+        }
     }
 
     /**
@@ -2529,126 +2545,96 @@ export default class SceneCardsPlugin extends Plugin {
         }
 
         // ── Phase 3: migrate per-project data from data.json → System/ files ──
-        // Derive the System folder from the active project path.
-        // If no active project, try to derive from activeProjectFile setting.
-        let sysFolder: string | null = null;
-        const activeProject = this.sceneManager?.activeProject;
-        if (activeProject) {
-            sysFolder = deriveSystemFolder(activeProject.sceneFolder);
-        } else if (raw.activeProjectFile) {
-            sysFolder = deriveSystemFolderFromProjectFile(raw.activeProjectFile);
+        const phase3Result = await this.migrateSystemFiles(raw);
+        if (phase3Result.dirty) {
+            dirty = true;
         }
-
-        // Check if there's actually any per-project data to migrate
-        const hasLegacyData = hasProjectDataKeys(raw);
-
-        if (sysFolder && hasLegacyData) {
-            // Ensure System folder exists
-            try {
-                if (!await adapter.exists(sysFolder)) {
-                    await this.app.vault.createFolder(sysFolder);
-                }
-            } catch (e) {
-                void e;
-            }
-
-            // ── Strip only the keys whose System file writes succeeded ──
-            // Track which System file writes succeeded, then only remove
-            // the legacy keys that map to those successfully written files.
-            const successfulSystemFiles = new Set<string>();
-
-            // ── plotgrid.json (rows/columns/cells/zoom/stickyHeaders) ──
-            // Only write legacy plotgrid data if System/plotgrid.json is empty.
-            // If it already has data (e.g. from gen_plotgrid.ps1), keep it.
-            {
-                try {
-                    const pgPath = `${sysFolder}/plotgrid.json`;
-                    const existingContent = await adapter.exists(pgPath)
-                        ? await adapter.read(pgPath)
-                        : null;
-                    const pgData = mergePlotgridData(raw, existingContent);
-                    if (pgData) {
-                        await adapter.write(pgPath, JSON.stringify(pgData, null, 2));
-                        successfulSystemFiles.add('plotgrid.json');
-                    }
-                } catch (e) {
-                    void e;
-                }
-            }
-
-            // ── plotlines.json (tagColors, tagTypeOverrides, etc.) ──
-            {
-                try {
-                    const path = `${sysFolder}/plotlines.json`;
-                    const existingContent = await adapter.exists(path)
-                        ? await adapter.read(path)
-                        : null;
-                    const merged = mergePlotlineData(raw, existingContent, this.settings as unknown as Record<string, unknown>);
-                    await adapter.write(path, JSON.stringify(merged, null, 2));
-                    successfulSystemFiles.add('plotlines.json');
-                } catch (e) {
-                    void e;
-                }
-            }
-
-            // ── characters.json (characterAliases, ignoredCharacters) ──
-            {
-                try {
-                    const path = `${sysFolder}/characters.json`;
-                    const existingContent = await adapter.exists(path)
-                        ? await adapter.read(path)
-                        : null;
-                    const merged = mergeCharacterData(raw, existingContent, this.settings as unknown as Record<string, unknown>);
-                    await adapter.write(path, JSON.stringify(merged, null, 2));
-                    successfulSystemFiles.add('characters.json');
-                } catch (e) {
-                    void e;
-                }
-            }
-
-            // ── stats.json (writingTrackerData) ──
-            {
-                try {
-                    const path = `${sysFolder}/stats.json`;
-                    const existingContent = await adapter.exists(path)
-                        ? await adapter.read(path)
-                        : null;
-                    const merged = mergeStatsData(raw, existingContent);
-                    if (merged) {
-                        await adapter.write(path, JSON.stringify(merged, null, 2));
-                        successfulSystemFiles.add('stats.json');
-                    }
-                } catch (e) {
-                    void e;
-                }
-            }
-
-            // Only strip legacy keys whose destination System file was written successfully.
-            const keysToStrip: string[] = [];
-            for (const key of PROJECT_DATA_KEYS) {
-                if (key in raw) {
-                    const targetFile = KEY_TO_SYSTEM_FILE[key];
-                    if (targetFile && successfulSystemFiles.has(targetFile)) {
-                        keysToStrip.push(key);
-                    }
-                }
-            }
-            if (keysToStrip.length > 0 && stripSpecificProjectDataKeys(raw, keysToStrip)) {
-                dirty = true;
-            }
-            // Do NOT set _systemMigrationDone here — that happens in
-            // loadProjectSystemData() which runs next and loads the System
-            // file contents into this.settings. Setting the flag here would
-            // allow an intervening saveSettings() call to overwrite System
-            // files with empty defaults before they're loaded into memory.
-        } else if (!sysFolder) {
-            // No active project — nothing to migrate.
-        } else {
-            // No legacy data to migrate — flag set by loadProjectSystemData()
+        for (const key of phase3Result.migratedKeys) {
+            this._migratedKeys.add(key);
         }
 
         if (dirty) {
             await this.saveData(raw);
+        }
+    }
+
+    /**
+     * Migrate per-project data from data.json to System/ files.
+     * Extracted to reduce nesting depth in migrateProjectDataFromSettings().
+     */
+    async migrateSystemFiles(raw: Record<string, unknown>): Promise<{
+        dirty: boolean;
+        migratedKeys: string[];
+    }> {
+        const migratedKeys: string[] = [];
+        const adapter = this.app.vault.adapter;
+
+        let sysFolder: string | null = null;
+        const activeProject = this.sceneManager?.activeProject;
+        if (activeProject) {
+            sysFolder = deriveSystemFolder(activeProject.sceneFolder);
+        } else if (typeof raw.activeProjectFile === 'string' && raw.activeProjectFile) {
+            sysFolder = deriveSystemFolderFromProjectFile(raw.activeProjectFile);
+        }
+        if (!sysFolder || !hasProjectDataKeys(raw)) {
+            return { dirty: false, migratedKeys };
+        }
+
+        try {
+            if (!await adapter.exists(sysFolder)) {
+                await this.app.vault.createFolder(sysFolder);
+            }
+        } catch { /* non-critical */ }
+
+        const successful = new Set<string>();
+        const files: Array<[string, (e: string | null) => Record<string, unknown> | null]> = [
+            ['plotgrid.json', (e) => mergePlotgridData(raw, e)],
+            ['plotlines.json', (e) => mergePlotlineData(raw, e, this.settings as unknown as Record<string, unknown>)],
+            ['characters.json', (e) => mergeCharacterData(raw, e, this.settings as unknown as Record<string, unknown>)],
+            ['stats.json', (e) => mergeStatsData(raw, e)],
+            ['custom-sections.json', (e) => mergeCustomSectionsData(raw, e)],
+        ];
+        for (const [name, mergeFn] of files) {
+            if (await this.writeSystemFile(sysFolder, adapter, name, mergeFn)) {
+                successful.add(name);
+            }
+        }
+
+        for (const key of PROJECT_DATA_KEYS) {
+            if (key in raw) {
+                const target = KEY_TO_SYSTEM_FILE[key];
+                if (target && successful.has(target)) {
+                    migratedKeys.push(key);
+                }
+            }
+        }
+        if (migratedKeys.length > 0) {
+            stripSpecificProjectDataKeys(raw, migratedKeys);
+        }
+        return { dirty: migratedKeys.length > 0, migratedKeys };
+    }
+
+    /**
+     * Helper: read existing content, merge, and write a System/ JSON file.
+     * Returns true if the file was written successfully.
+     */
+    async writeSystemFile(
+        sysFolder: string,
+        adapter: typeof this.app.vault.adapter,
+        filename: string,
+        mergeFn: (existing: string | null) => Record<string, unknown> | null | Promise<Record<string, unknown> | null>,
+    ): Promise<boolean> {
+        try {
+            const path = `${sysFolder}/${filename}`;
+            const existing = await adapter.exists(path)
+                ? await adapter.read(path)
+                : null;
+            const merged = await mergeFn(existing);
+            if (!merged) return false;
+            await adapter.write(path, JSON.stringify(merged, null, 2));
+            return true;
+        } catch {
+            return false;
         }
     }
 
