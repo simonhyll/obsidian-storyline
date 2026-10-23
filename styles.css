@@ -14444,3 +14444,106 @@ body.sl-focus-active-global.sl-focus-dim-text .markdown-source-view.mod-cm6 .cm-
     background: color-mix(in srgb, var(--text-accent) 4%, var(--background-secondary));
 }
 
+
+/* ── Multi-book Timeline ───────────────────────────────────── */
+
+/* Book selector dropdown */
+.story-line-book-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.story-line-book-dropdown {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    font-size: 12px;
+    max-width: 400px;
+}
+
+.story-line-book-active-only {
+    font-size: 11px;
+    padding: 2px 6px;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.story-line-book-universe {
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    padding: 2px 0;
+    width: 100%;
+}
+
+.story-line-book-series {
+    font-weight: 500;
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 2px 0;
+    width: 100%;
+}
+
+.story-line-book-group {
+    font-weight: 500;
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 2px 0;
+    width: 100%;
+}
+
+.story-line-book-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.story-line-book-row:hover {
+    background: var(--background-modifier-hover);
+}
+
+.story-line-book-label {
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.story-line-book-label.is-active {
+    color: var(--text-accent);
+    font-weight: 500;
+}
+
+/* Book title badge on scene cards */
+.timeline-card-book-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    background: var(--text-accent);
+    color: var(--text-on-accent);
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+/* Multi-book warning */
+.timeline-multi-book-warning {
+    padding: 8px 12px;
+    margin: 8px 0;
+    background: color-mix(in srgb, var(--text-accent) 6%, var(--background-secondary));
+    border-left: 3px solid var(--text-accent);
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+}

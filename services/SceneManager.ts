@@ -967,6 +967,84 @@ export class SceneManager implements ISceneStore {
         return Array.from(this.scenes.values());
     }
 
+    // ────────────────────────────────────
+    //  Multi-book scene loading
+    // ────────────────────────────────────
+
+    /**
+     * Load scenes for a specific project without changing the active project.
+     * This is safe to call for any project in the registry, even if another
+     * project is currently active.
+     *
+     * @param project - The project whose scenes to load
+     * @returns Array of scenes for that project
+     */
+    async loadScenesForProject(project: StoryLineProject): Promise<Scene[]> {
+        const folders = deriveProjectFoldersFromFilePath(project.filePath);
+        const sceneFolder = folders.sceneFolder;
+        const adapter = this.app.vault.adapter;
+        if (!await adapter.exists(sceneFolder)) return [];
+
+        const scenes: Scene[] = [];
+        await this._scanFolderForScenes(sceneFolder, scenes);
+        return scenes;
+    }
+
+    /**
+     * Load scenes for multiple projects by their book IDs.
+     * Returns a map of bookId → scenes array.
+     *
+     * @param bookIds - Array of book UUIDs to load scenes for
+     * @returns Map of bookId to scene array
+     */
+    async loadScenesForBooks(bookIds: string[]): Promise<Map<string, Scene[]>> {
+        const result = new Map<string, Scene[]>();
+        for (const bookId of bookIds) {
+            const project = this.getProjectById(bookId);
+            if (!project) continue;
+            const scenes = await this.loadScenesForProject(project);
+            result.set(bookId, scenes);
+        }
+        return result;
+    }
+
+    /**
+     * Find a project by its bookId (UUID).
+     */
+    getProjectById(bookId: string): StoryLineProject | null {
+        for (const project of this.projects.values()) {
+            if (project.bookId === bookId) return project;
+        }
+        return null;
+    }
+
+    /**
+     * Recursively scan a folder for scene files, collecting results into an array.
+     * Does NOT modify the internal scene cache.
+     */
+    private async _scanFolderForScenes(folderPath: string, scenes: Scene[]): Promise<void> {
+        const adapter = this.app.vault.adapter;
+        if (!await adapter.exists(folderPath)) return;
+
+        const listing = await adapter.list(folderPath);
+        for (const f of listing.files) {
+            if (!f.endsWith('.md')) continue;
+            if (f.split('/').some(segment => segment === '_snapshots' || segment === '.snapshots')) continue;
+            try {
+                const content = await adapter.read(f);
+                const scene = MetadataParser.parseContent(content, f);
+                if (scene && !scene.corkboardNote) {
+                    scenes.push(scene);
+                }
+            } catch { /* file unreadable — skip */ }
+        }
+        for (const sub of listing.folders) {
+            const segment = sub.split('/').pop() ?? '';
+            if (segment === '_snapshots' || segment === '.snapshots') continue;
+            await this._scanFolderForScenes(sub, scenes);
+        }
+    }
+
     /**
      * Infer the act for a chapter when that chapter is used as a Board column.
      * A chapter can theoretically occur in more than one act, so only return
