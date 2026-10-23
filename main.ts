@@ -3492,6 +3492,14 @@ export default class SceneCardsPlugin extends Plugin {
         try {
             return await new Promise<StoryLineProject | null>((resolve) => {
                 const modal = new Modal(this.app);
+                // Resolve exactly once, including when Escape closes the modal.
+                // Creation failures leave the modal open so users can correct and retry.
+                let settled = false;
+                const settle = (result: StoryLineProject | null): void => {
+                    if (settled) return;
+                    settled = true;
+                    resolve(result);
+                };
                 modal.titleEl.setText('New StoryLine project');
 
                 // ── Type selector: Book / Series / Universe ──
@@ -3761,18 +3769,18 @@ export default class SceneCardsPlugin extends Plugin {
                                     try { await this.activateView(BOARD_VIEW_TYPE); } catch { /* non-critical */ }
                                 }
 
+                                settle(result);
                                 modal.close();
-                                resolve(result);
                             } catch (err: unknown) {
                                 new Notice((err instanceof Error ? err.message : String(err)), 10000);
-                                resolve(null);
+                                createBtn?.setDisabled(false);
                             }
                         });
                     })
                     .addButton((btn: ButtonComponent) => {
                         btn.setButtonText('Cancel').onClick(() => {
+                            settle(null);
                             modal.close();
-                            resolve(null);
                         });
                     });
 
@@ -3782,9 +3790,10 @@ export default class SceneCardsPlugin extends Plugin {
                 modal.open();
 
                 // Clean up guard on close
-                modal.onClose = (() => {
+                modal.onClose = () => {
                     this._newProjectModalOpen = false;
-                }).bind(modal);
+                    settle(null);
+                };
             });
         } finally {
             // Always clear the guard, even if something went wrong
