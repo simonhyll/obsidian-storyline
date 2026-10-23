@@ -387,6 +387,7 @@ export class TimelineNavigationService {
      */
     getTimestampAtPosition(fraction: number): Timestamp | null {
         if (!this.state.visibleRange) return null;
+        if (fraction < 0 || fraction > 1) return null;
 
         const { start, end } = this.state.visibleRange;
 

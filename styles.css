@@ -9121,6 +9121,39 @@ body /* Clamp title on mobile too, in case it's very long */
     text-align: center;
 }
 
+/* Temporal axis ruler */
+.story-line-temporal-ruler {
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+    padding: 4px 0;
+    overflow-x: auto;
+    border-top: 1px solid var(--background-modifier-border);
+    min-height: 28px;
+}
+
+.story-line-time-marker {
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 2px 6px;
+    cursor: pointer;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.story-line-time-marker:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.story-line-time-marker-major {
+    font-weight: 600;
+    color: var(--text-normal);
+    font-size: 11px;
+}
+
 /*
  * Codex / Character / Location detail forms: on phones the side
  * panel stacks below the form. Make sure the form area scrolls

@@ -701,7 +701,7 @@ export class TimeSpanService {
     /**
      * Get the number of days in a month, accounting for leap years.
      */
-    private getDaysInMonth(year: number, month: number): number {
+    getDaysInMonth(year: number, month: number): number {
         if (month === 2) {
             return this.isLeapYear(year) ? 29 : 28;
         }
@@ -712,7 +712,7 @@ export class TimeSpanService {
     /**
      * Check if a year is a leap year in the Gregorian calendar.
      */
-    private isLeapYear(year: number): boolean {
+    isLeapYear(year: number): boolean {
         return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
     }
 

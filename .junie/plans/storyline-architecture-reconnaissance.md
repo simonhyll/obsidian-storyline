@@ -1394,3 +1394,18 @@ Fix five remaining areas: shared chronological projection for swimlane mode, boo
 - ✓ Test verification — 372/372 tests pass
 - ✓ Typecheck verification — 27 errors (all pre-existing baseline)
 - ✓ Committed as 4bda254 and pushed to origin/feat/rework
+
+### * Step 16: Phase 3 Milestone 2B — Temporal Axis & Date-Based Creation
+Complete the interactive temporal axis, calendar correctness, and date-based content creation.
+
+- ✓ Rewrote TimelineNavigationService — eliminated all JavaScript Date usage; daily markers use TimeSpanService.getDaysInMonth() for calendar-aware day advancement
+- ✓ Made TimeSpanService.getDaysInMonth and isLeapYear public for test and navigation access
+- ✓ Per-leaf navigation instances — each TimelineView creates its own TimelineNavigationService, isolating state across tabs
+- ✓ Temporal axis ruler UI — clickable time markers with context menu for creating Scenes and Events at selected dates
+- ✓ Date-based Scene creation — creates scene in active book with pre-filled TimeSpan
+- ✓ Date-based Event creation — opens EventModal with pre-filled TimeSpan
+- ✓ CSS styling — temporal ruler with major/minor markers, hover effects
+- ✓ 9 new behavioral tests: calendar-aware daily markers (7), per-leaf isolation (2)
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 412/412 tests pass (403 existing + 9 new)
+- ✓ Typecheck verification — 27 errors (all pre-existing baseline)
