@@ -57,22 +57,22 @@ const tokens = execFileSync('git', [
     'diff', '--name-status', '-z', '-M', '--diff-filter=ACMR',
     base, 'HEAD', '--', '*.ts',
 ], { encoding: 'buffer' }).toString('utf8').split('\0').filter(Boolean);
-const paths = [];
+const changes = [];
 for (let i = 0; i < tokens.length;) {
     const status = tokens[i++];
-    if (status.startsWith('R') || status.startsWith('C')) i++;
+    const oldPath = status.startsWith('R') || status.startsWith('C') ? tokens[i++] : null;
     const filename = tokens[i++];
     if (!filename) throw new Error('Invalid git diff --name-status output');
-    paths.push(filename);
+    changes.push({ filename, oldPath: oldPath ?? filename });
 }
-if (paths.length === 0) {
+if (changes.length === 0) {
     console.log('[lint:changed] No changed TypeScript files.');
     process.exit(0);
 }
 
-function changedLineNumbers(filename) {
+function changedLineNumbers(filename, oldPath) {
     const diff = git('diff', '--no-ext-diff', '--no-color', '--unified=0',
-        base, 'HEAD', '--', filename);
+        '-M', base, 'HEAD', '--', oldPath, filename);
     const lines = new Set();
     const re = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm;
     for (const m of diff.matchAll(re)) {
@@ -83,11 +83,12 @@ function changedLineNumbers(filename) {
     return lines;
 }
 
-const changedLines = new Map(paths.map(path => [resolve(path), changedLineNumbers(path)]));
+const changedLines = new Map(changes.map(({ filename, oldPath }) =>
+    [resolve(filename), changedLineNumbers(filename, oldPath)]));
 const eslint = new ESLint();
 // lintFiles(), unlike lintText() on old revisions, retains valid TS project
 // context and matches diagnostics from `pnpm lint`.
-const results = await eslint.lintFiles(paths);
+const results = await eslint.lintFiles(changes.map(({ filename }) => filename));
 let totalCurrent = 0;
 let newErrors = 0;
 for (const result of results) {
@@ -100,5 +101,5 @@ for (const result of results) {
         console.error(`${result.filePath}:${finding.line}:${finding.column}: ${finding.ruleId ?? 'ESLint'}: ${finding.message}`);
     }
 }
-console.log(`[lint:changed] ${paths.length} changed TS files; ${totalCurrent} existing/current errors in affected files; ${newErrors} errors on changed lines.`);
+console.log(`[lint:changed] ${changes.length} changed TS files; ${totalCurrent} existing/current errors in affected files; ${newErrors} errors on changed lines.`);
 if (newErrors > 0) process.exitCode = 1;
