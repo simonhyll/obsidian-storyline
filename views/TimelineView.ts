@@ -419,6 +419,9 @@ export class TimelineView extends ItemView {
         // Multi-book mode indicator
         const isMultiBook = this.isMultiBookMode();
 
+        // ── Temporal ruler (horizontal time axis) ──
+        this.renderTemporalRuler(timelineEl, scenes, events);
+
         // ── Vertical timeline with scene cards ──
         const track = timelineEl.createDiv('timeline-track');
 
@@ -861,6 +864,123 @@ export class TimelineView extends ItemView {
         if (target instanceof HTMLElement) {
             target.scrollIntoView({ block: 'center', behavior: 'smooth' });
         }
+    }
+
+    /**
+     * Render the horizontal temporal ruler above the timeline track.
+     * Clicking a marker jumps to that year; clicking between markers opens
+     * the creation menu with the date prefilled.
+     */
+    private renderTemporalRuler(timelineEl: HTMLElement, scenes: Scene[], events: Event[]): void {
+        const markers = this.plugin.timelineNavigationService.getTimeMarkers();
+        if (markers.length === 0) return;
+
+        const visibleRange = this.plugin.timelineNavigationService.getState().visibleRange;
+        if (!visibleRange) return;
+
+        const ruler = timelineEl.createDiv('timeline-temporal-ruler');
+
+        const rangeStart = visibleRange.start.year;
+        const rangeEnd = visibleRange.end.year;
+        const rangeSpan = rangeEnd - rangeStart;
+
+        for (const marker of markers) {
+            // Calculate position as fraction of the visible range
+            const fraction = rangeSpan > 0 ? (marker.timestamp.year - rangeStart) / rangeSpan : 0.5;
+            const percent = Math.max(0, Math.min(100, fraction * 100));
+
+            const markerEl = ruler.createDiv('timeline-ruler-marker');
+            markerEl.setCssStyles({ left: `${percent}%` });
+            if (marker.isMajor) markerEl.addClass('is-major');
+
+            const label = markerEl.createSpan('timeline-ruler-label');
+            label.setText(marker.label);
+
+            // Click handler: jump to the marker's date
+            markerEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.plugin.timelineNavigationService.jumpToDate(
+                    marker.timestamp.year,
+                    marker.timestamp.month,
+                    marker.timestamp.day
+                );
+                this.updateTimeNavigationDisplay();
+            });
+        }
+
+        // Click on empty space in the ruler to create Scene/Event at that date
+        ruler.addEventListener('click', (e: MouseEvent) => {
+            const rulerRect = ruler.getBoundingClientRect();
+            const fraction = (e.clientX - rulerRect.left) / rulerRect.width;
+            const timestamp = this.plugin.timelineNavigationService.getTimestampAtPosition(fraction);
+            if (timestamp) {
+                this.showTemporalCreationMenu(e, timestamp);
+            }
+        });
+    }
+
+    /**
+     * Show a context menu for creating a Scene or Event at the clicked date.
+     */
+    private showTemporalCreationMenu(e: MouseEvent, timestamp: Timestamp): void {
+        const menu = new Menu();
+        const state = this.plugin.timelineNavigationService.getState();
+        const selectedDate = state.selectedDate ?? timestamp;
+
+        menu.addItem(item => {
+            item.setTitle(`Create scene on ${selectedDate.year}`)
+                .setIcon('file')
+                .onClick(() => {
+                    this.openQuickAddWithDate(selectedDate);
+                });
+        });
+
+        menu.addItem(item => {
+            item.setTitle(`Create event on ${selectedDate.year}`)
+                .setIcon('calendar')
+                .onClick(async () => {
+                    const eventsFolder = this.sceneManager.getBookEventsFolder();
+                    if (eventsFolder) {
+                        await this.plugin.openCreateEventModal(eventsFolder, selectedDate);
+                        this.refresh();
+                    }
+                });
+        });
+
+        menu.showAtMouseEvent(e);
+    }
+
+    /**
+     * Open the Quick Add modal with the date prefilled from the temporal ruler.
+     */
+    private openQuickAddWithDate(timestamp: Timestamp): void {
+        const storyDate = `${timestamp.year}-${String(timestamp.month ?? 1).padStart(2, '0')}-${String(timestamp.day ?? 1).padStart(2, '0')}`;
+        const modal = new QuickAddModal(
+            this.app,
+            this.plugin,
+            this.sceneManager,
+            async (sceneData, openAfter) => {
+                // Prefill the date from the temporal ruler
+                sceneData.storyDate = storyDate;
+                const file = await this.sceneManager.createScene(sceneData);
+                this.refresh();
+                const scrollToNew = () => {
+                    const newEntry = this.rootContainer?.querySelector(
+                        `[data-path="${CSS.escape(file.path)}"]`
+                    );
+                    if (newEntry) {
+                        newEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                };
+                window.requestAnimationFrame(scrollToNew);
+                window.setTimeout(scrollToNew, 50);
+                if (openAfter) {
+                    void this.app.workspace.getLeaf('tab').openFile(file, { state: { mode: 'source', source: false } });
+                }
+            },
+            { storyDate }
+        );
+        modal.open();
     }
 
     /**

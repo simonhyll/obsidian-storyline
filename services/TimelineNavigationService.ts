@@ -353,27 +353,40 @@ export class TimelineNavigationService {
                 }
             }
         } else if (granularity === 'day' && yearSpan <= 1) {
-            // Show daily markers (only for short ranges)
-            const startDate = new Date(start.year, (start.month ?? 1) - 1, start.day ?? 1);
-            const endDate = new Date(end.year, (end.month ?? 1) - 1, end.day ?? 1);
+            // Show daily markers (only for short ranges) — calendar-safe, no JavaScript Date
+            let curYear = start.year;
+            let curMonth = start.month ?? 1;
+            let curDay = start.day ?? 1;
+            const endYear = end.year;
+            const endMonth = end.month ?? 12;
+            const endDay = end.day ?? 28;
 
-            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-                const year = d.getFullYear();
-                const month = d.getMonth() + 1;
-                const day = d.getDate();
-
+            while (curYear < endYear || (curYear === endYear && curMonth < endMonth) ||
+                (curYear === endYear && curMonth === endMonth && curDay <= endDay)) {
                 markers.push({
                     timestamp: {
                         calendar: 'gregorian',
-                        year,
-                        month,
-                        day,
+                        year: curYear,
+                        month: curMonth,
+                        day: curDay,
                         precision: 'day',
                     },
-                    label: String(day),
+                    label: String(curDay),
                     granularity: 'day',
-                    isMajor: day === 1, // First of month is major
+                    isMajor: curDay === 1, // First of month is major
                 });
+
+                // Advance one day using pure integer arithmetic
+                const daysInMonth = this.daysInMonth(curYear, curMonth);
+                curDay++;
+                if (curDay > daysInMonth) {
+                    curDay = 1;
+                    curMonth++;
+                    if (curMonth > 12) {
+                        curMonth = 1;
+                        curYear++;
+                    }
+                }
             }
         }
 
@@ -520,24 +533,47 @@ export class TimelineNavigationService {
     }
 
     /**
-     * Get the day of year for a date.
+     * Days in a month (calendar-safe, handles leap years).
      */
-    private getDayOfYear(year: number, month: number | undefined, day: number | undefined): number {
-        if (!month || !day) return 1;
-        const date = new Date(year, month - 1, day);
-        const startOfYear = new Date(year, 0, 1);
-        const diff = date.getTime() - startOfYear.getTime();
-        return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+    private daysInMonth(year: number, month: number): number {
+        const daysInMonthArray = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        if (month === 2 && this.isLeapYear(year)) return 29;
+        return daysInMonthArray[month - 1] ?? 30;
     }
 
     /**
-     * Get month and day from day of year.
+     * Check if a year is a leap year (Gregorian calendar).
+     */
+    private isLeapYear(year: number): boolean {
+        // Handle year 0 and negative years correctly
+        const y = year <= 0 ? year - 1 : year;
+        return (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+    }
+
+    /**
+     * Get the day of year for a date (calendar-safe).
+     */
+    private getDayOfYear(year: number, month: number | undefined, day: number | undefined): number {
+        if (!month || !day) return 1;
+        let dayOfYear = 0;
+        for (let m = 1; m < month; m++) {
+            dayOfYear += this.daysInMonth(year, m);
+        }
+        return dayOfYear + day;
+    }
+
+    /**
+     * Get month and day from day of year (calendar-safe).
      */
     private getDateFromDayOfYear(year: number, dayOfYear: number): { month: number; day: number } {
-        const date = new Date(year, 0, dayOfYear);
-        return {
-            month: date.getMonth() + 1,
-            day: date.getDate(),
-        };
+        let remaining = Math.max(1, dayOfYear);
+        for (let m = 1; m <= 12; m++) {
+            const dim = this.daysInMonth(year, m);
+            if (remaining <= dim) {
+                return { month: m, day: remaining };
+            }
+            remaining -= dim;
+        }
+        return { month: 12, day: 31 };
     }
 }

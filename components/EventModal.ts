@@ -8,7 +8,7 @@
 
 import { App, Modal, Notice, Setting } from 'obsidian';
 import type { Event } from '../models/Event';
-import type { TimeSpan } from '../models/TimeSpan';
+import type { TimeSpan, Timestamp } from '../models/TimeSpan';
 import type { TimeSpanService } from '../services/TimeSpanService';
 import type { EventManager } from '../services/EventManager';
 import type SceneCardsPlugin from '../main';
@@ -41,7 +41,8 @@ export class EventModal extends Modal {
         eventManager: EventManager,
         timeSpanService: TimeSpanService,
         eventsFolder: string,
-        existingEvent?: Event
+        existingEvent?: Event,
+        prefillTimestamp?: Timestamp
     ) {
         super(app);
         this.plugin = plugin;
@@ -57,6 +58,12 @@ export class EventModal extends Modal {
             this.participants = existingEvent.participants?.join(', ') || '';
             this.tags = existingEvent.tags?.join(', ') || '';
             this.timeSpan = existingEvent.timeSpan;
+        } else if (prefillTimestamp) {
+            // Prefill TimeSpan from the temporal ruler click
+            this.timeSpan = {
+                kind: 'instant',
+                instant: prefillTimestamp,
+            };
         }
     }
 

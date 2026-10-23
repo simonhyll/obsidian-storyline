@@ -4274,7 +4274,7 @@ export default class SceneCardsPlugin extends Plugin {
 
     // ── Event modals ──────────────────────────────────
 
-    async openCreateEventModal(eventsFolder?: string): Promise<void> {
+    async openCreateEventModal(eventsFolder?: string, prefillTimestamp?: import('./models/TimeSpan').Timestamp): Promise<void> {
         const { EventModal } = await import('./components/EventModal');
         const project = this.sceneManager.activeProject;
         if (!project) return;
@@ -4295,7 +4295,9 @@ export default class SceneCardsPlugin extends Plugin {
             this,
             this.eventManager,
             this.timeSpanService,
-            folder
+            folder,
+            undefined, // no existing event
+            prefillTimestamp
         );
         const result = await modal.openAsync();
         if (result) {
