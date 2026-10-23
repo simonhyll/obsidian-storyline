@@ -58,6 +58,8 @@ export class TimelineView extends ItemView {
     private timelineOrder: TimelineOrder = 'reading';
     /** Book IDs selected for multi-book timeline. Empty means "active book only". */
     private selectedBookIds: Set<string> = new Set();
+    /** Selected book IDs belong to this active project's context. */
+    private selectionOwnerBookId: string | null = null;
     /** Render generation counter for async cancellation */
     private renderGeneration = 0;
     /** Popover element for the book selector dropdown */
@@ -129,6 +131,19 @@ export class TimelineView extends ItemView {
     }
 
     private renderView(container: HTMLElement): void {
+        // A new active Book starts a new Universe selection context. Never
+        // retain old selected Book IDs across project switches.
+        const activeBookId = this.sceneManager.activeProject?.bookId ?? null;
+        if (this.selectionOwnerBookId !== activeBookId) {
+            this.selectedBookIds.clear();
+            this.selectionOwnerBookId = activeBookId;
+        }
+        // Drop deleted/moved-away Book IDs from the selection on refresh.
+        const validBookIds = new Set(this.sceneManager.getProjects().map(p => p.bookId).filter((id): id is string => !!id));
+        for (const bookId of this.selectedBookIds) {
+            if (!validBookIds.has(bookId)) this.selectedBookIds.delete(bookId);
+        }
+
         // Refresh destroys the old toolbar but not its document.body popover.
         this.closeBookSelectorPopover();
         this.bookSelectorButton = null;
