@@ -457,10 +457,25 @@ export class SeriesManager {
         const bookFolders = deriveProjectFoldersFromFilePath(project.filePath);
         const bookBaseName = bookFolders.baseFolder.split('/').pop() ?? '';
         const targetBookFolder = normalizePath(`${seriesFolder}/${bookBaseName}`);
+
+        // Preflight: check for destination collision
+        if (await adapter.exists(targetBookFolder)) {
+            if (normalizePath(bookFolders.baseFolder) === targetBookFolder) {
+                // Already in this series folder, just update metadata
+            } else {
+                throw new Error(`A folder named "${bookBaseName}" already exists in series "${meta.name}".`);
+            }
+        }
+
+        const oldFilePath = project.filePath;
         if (normalizePath(bookFolders.baseFolder) !== targetBookFolder) {
             await this.moveFolderRecursive(bookFolders.baseFolder, targetBookFolder);
             await this.removeDuplicateLegacyFolder(bookFolders.baseFolder, targetBookFolder);
+            // CRITICAL: Update project.filePath to reflect the new location
+            const bookFileName = project.filePath.split('/').pop() ?? `${bookBaseName}.md`;
+            project.filePath = normalizePath(`${targetBookFolder}/${bookFileName}`);
         }
+
         const seriesCodexFolder = normalizePath(`${seriesFolder}/Codex`);
         await this.ensureFolder(seriesCodexFolder);
         await this.ensureFolder(normalizePath(`${seriesCodexFolder}/Characters`));
@@ -478,11 +493,27 @@ export class SeriesManager {
         project.seriesId = meta.name;
         project.seriesUuid = meta.seriesUuid;
         project.bookId = bookId;
+
+        // Save frontmatter using the UPDATED project.filePath
         await this.plugin.sceneManager.saveProjectFrontmatter(project);
+
+        // If the active project file changed, update the plugin's reference
+        if (this.plugin.sceneManager.activeProject?.filePath === oldFilePath) {
+            this.plugin.sceneManager.activeProject.filePath = project.filePath;
+        }
+
         new Notice(`Book "${project.title}" added to series "${meta.name}"`);
     }
 
-    /** Remove a book from its series by series UUID. */
+    /**
+     * Remove a book from its series by series UUID.
+     *
+     * IMPORTANT: This method does NOT copy the shared Series Codex to the
+     * detached book. Doing so would duplicate canonical entities with
+     * persisted UUIDs, creating identity conflicts. Instead, the detached
+     * book simply loses the series membership and can still access inherited
+     * Codex through Universe-level inheritance if applicable.
+     */
     async removeBookFromSeries(seriesUuid: string, project: import('../models/StoryLineProject').StoryLineProject): Promise<void> {
         const found = await this.getSeriesByUuid(seriesUuid);
         if (!found) throw new Error(`Series with UUID "${seriesUuid}" not found.`);
@@ -491,13 +522,20 @@ export class SeriesManager {
         const bookBaseName = bookFolders.baseFolder.split('/').pop() ?? '';
         const root = this.plugin.settings.storyLineRoot;
         const targetBookFolder = normalizePath(`${root}/${bookBaseName}`);
-        const seriesCodexFolder = normalizePath(`${seriesFolder}/Codex`);
-        const localCodexFolder = normalizePath(`${bookFolders.baseFolder}/Codex`);
-        await this.ensureFolder(localCodexFolder);
-        await this.copyFolderRecursive(seriesCodexFolder, localCodexFolder);
+
+        const oldFilePath = project.filePath;
         if (normalizePath(bookFolders.baseFolder) !== targetBookFolder) {
             await this.moveFolderRecursive(bookFolders.baseFolder, targetBookFolder);
+            // CRITICAL: Update project.filePath to reflect the new location
+            const bookFileName = project.filePath.split('/').pop() ?? `${bookBaseName}.md`;
+            project.filePath = normalizePath(`${targetBookFolder}/${bookFileName}`);
         }
+
+        // DO NOT copy the shared Series Codex to the detached book.
+        // This would duplicate canonical entities and create UUID conflicts.
+        // The detached book remains standalone; if it belongs to a Universe,
+        // it can still access Universe-level Codex through inheritance.
+
         meta.bookOrder = meta.bookOrder.filter(b => b !== bookBaseName);
         if (project.bookId && meta.bookIds) {
             meta.bookIds = meta.bookIds.filter(id => id !== project.bookId);
@@ -505,7 +543,15 @@ export class SeriesManager {
         await this.saveSeriesMetadata(seriesFolder, meta);
         delete project.seriesId;
         delete project.seriesUuid;
+
+        // Save frontmatter using the UPDATED project.filePath
         await this.plugin.sceneManager.saveProjectFrontmatter(project);
+
+        // If the active project file changed, update the plugin's reference
+        if (this.plugin.sceneManager.activeProject?.filePath === oldFilePath) {
+            this.plugin.sceneManager.activeProject.filePath = project.filePath;
+        }
+
         new Notice(`Book "${project.title}" removed from series "${meta.name}"`);
     }
 

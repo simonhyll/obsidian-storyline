@@ -2170,7 +2170,23 @@ export default class SceneCardsPlugin extends Plugin {
         if (viewType === UNIVERSE_VIEW_TYPE) {
             const leaves = workspace.getLeavesOfType(UNIVERSE_VIEW_TYPE);
             if (leaves.length > 0) {
-                workspace.revealLeaf(leaves[0]);
+                // Check if the existing leaf is in the right sidebar — if so,
+                // relocate it to the main editor area instead of reusing it there.
+                const existingLeaf = leaves[0];
+                const isRightSidebar = existingLeaf.getRoot() === workspace.rightSplit;
+                if (isRightSidebar) {
+                    // Create a new leaf in the main area and close the sidebar one
+                    const newLeaf = workspace.getLeaf(false);
+                    if (newLeaf) {
+                        await newLeaf.setViewState({ type: UNIVERSE_VIEW_TYPE, active: true });
+                        workspace.revealLeaf(newLeaf);
+                        // Close the old sidebar instance
+                        existingLeaf.detach();
+                    }
+                    return;
+                }
+                // Already in the main area, just focus it
+                workspace.revealLeaf(existingLeaf);
                 return;
             }
             const leaf = workspace.getLeaf(false);
@@ -3503,6 +3519,9 @@ export default class SceneCardsPlugin extends Plugin {
                 let selectedUniverseId = defaultUniverseId || '';
                 let selectedSeriesUuid = defaultSeriesUuid || '';
 
+                // Monotonically increasing request ID to discard stale async responses
+                let seriesDropdownRequestId = 0;
+
                 // Universe dropdown (for Books and Series) — populated async after open
                 const universeSetting = new Setting(modal.contentEl)
                     .setName('Universe')
@@ -3511,25 +3530,18 @@ export default class SceneCardsPlugin extends Plugin {
                         dropdown.addOption('', '— None —');
                         dropdown.onChange((v: string) => {
                             selectedUniverseId = v;
-                            updateSeriesDropdown();
+                            // Increment request ID so stale async responses are discarded
+                            const myRequestId = ++seriesDropdownRequestId;
+                            (async () => {
+                                try {
+                                    await updateSeriesDropdown(myRequestId);
+                                } catch { /* ignore */ }
+                            })();
                         });
                     });
 
-                // Populate universe dropdown asynchronously
-                (async () => {
-                    try {
-                        const universes = await this.universeManager.getAllUniverses();
-                        const dropdownEl = universeSetting.controlEl.querySelector('select') as HTMLSelectElement;
-                        if (!dropdownEl) return;
-                        for (const u of universes) {
-                            const opt = document.createElement('option');
-                            opt.value = u.id;
-                            opt.text = u.name;
-                            dropdownEl.add(opt);
-                        }
-                        if (defaultUniverseId) dropdownEl.value = defaultUniverseId;
-                    } catch { /* no universes yet */ }
-                })();
+                // Track async initialization to avoid stale responses overwriting later selections
+                let universeDropdownInitialized = false;
 
                 // Series dropdown (for Books only)
                 const seriesSetting = new Setting(modal.contentEl)
@@ -3587,7 +3599,27 @@ export default class SceneCardsPlugin extends Plugin {
                     });
 
                 // ── Render logic ──
-                const updateSeriesDropdown = async () => {
+                let updateSeriesDropdown: (requestId?: number) => Promise<void>;
+                updateSeriesDropdown = async (requestId?: number) => {
+
+                // Populate universe dropdown asynchronously after updateSeriesDropdown is defined
+                (async () => {
+                    try {
+                        const universes = await this.universeManager.getAllUniverses();
+                        const dropdownEl = universeSetting.controlEl.querySelector('select') as HTMLSelectElement;
+                        if (!dropdownEl) return;
+                        for (const u of universes) {
+                            const opt = document.createElement('option');
+                            opt.value = u.id;
+                            opt.text = u.name;
+                            dropdownEl.add(opt);
+                        }
+                        if (defaultUniverseId) dropdownEl.value = defaultUniverseId;
+                        universeDropdownInitialized = true;
+                        // After universe dropdown is ready, populate series dropdown
+                        await updateSeriesDropdown(++seriesDropdownRequestId);
+                    } catch { /* no universes yet */ }
+                })();
                     const dropdownEl = seriesSetting.controlEl.querySelector('select') as HTMLSelectElement;
                     if (!dropdownEl) return;
                     const currentVal = dropdownEl.value;
@@ -3623,7 +3655,11 @@ export default class SceneCardsPlugin extends Plugin {
                             dropdownEl.add(opt);
                         }
                     } catch { /* no series yet */ }
-                    dropdownEl.value = currentVal;
+
+                    // Discard stale async response: only restore selection if this is the latest request
+                    if (requestId === undefined || requestId === seriesDropdownRequestId) {
+                        dropdownEl.value = currentVal;
+                    }
                 };
 
                 const renderFields = () => {

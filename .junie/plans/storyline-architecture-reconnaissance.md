@@ -1324,7 +1324,24 @@ Implement the shared TimeSpan model, Event entities, Scene-Event references, Eve
 - ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
 - ✓ Committed to feat/rework branch
 
-### ✓ Step 12: Phase 3 UX Corrections — Timeline, Workspace Tabs, Project Hierarchy, Drag-and-Drop
+### ✓ Step 12: Phase 3 UX Corrections — Timeline, Workspace Tabs, Project Hierarchy, Drag-and-Drop (Superseded)
+
+### ✓ Step 13: Fix Hierarchy Data Integrity Bugs
+Fix five data-integrity bugs in book moves, Codex handling, Project Library placement, and dropdown initialization.
+
+- ✓ Fix SeriesManager.addBookToSeries — updates project.filePath after moving folder, so saveProjectFrontmatter writes to the correct location
+- ✓ Fix SeriesManager.removeBookFromSeries — updates project.filePath after moving folder, removes series metadata from project
+- ✓ Remove Codex copy on detach — removeBookFromSeries no longer copies shared Series Codex to detached book (avoids canonical entity duplication)
+- ✓ Add preflight collision check — addBookToSeries rejects if destination folder already exists
+- ✓ Update activeProject.filePath — both methods update the plugin's active project reference when moving the active book
+- ✓ Fix Project Library sidebar relocation — activateView detects rightSplit and relocates to main editor area
+- ✓ Fix project creation dropdown initialization — Series dropdown populates after async universe load, with stale response protection via request IDs
+- ✓ Fix updateSeriesDropdown TS error — moved declaration before async IIFE using let/assignment pattern
+- ✓ 11 integration tests: addBookToSeries (3), removeBookFromSeries (3), active project ref (1), universeId persistence (3), Codex safety (1)
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 327/327 tests pass
+- ✓ Typecheck verification — 51 errors (down from 52); all remaining are pre-existing
+- ✓ Committed and pushed to origin/feat/rework
 Fix four concrete UX issues: Timeline Event marker layout, workspace tab reuse, project creation redesign, and drag-and-drop hierarchy management.
 
 - ✓ Fix Event marker CSS layout — replaced flat children with proper .timeline-entry flex columns (seq, dot, card), vertical .timeline-event-content column, thin 1px marker line, and mobile-responsive max-width
