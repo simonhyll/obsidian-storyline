@@ -945,7 +945,7 @@ export class TimelineView extends ItemView {
         });
 
         menu.addItem(item => {
-            item.setTitle(`Create event on ${selectedDate.year}`)
+            item.setTitle(`Create Book-level Event on ${selectedDate.year}`)
                 .setIcon('calendar')
                 .onClick(async () => {
                     const eventsFolder = this.sceneManager.getBookEventsFolder();
