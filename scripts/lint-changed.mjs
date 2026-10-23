@@ -1,119 +1,104 @@
 #!/usr/bin/env node
 /**
- * Incremental ESLint gate.
+ * Incremental ESLint gate (no new errors on changed TypeScript lines).
  *
- * Compare diagnostics from HEAD with the same file at the Git base commit,
- * using the CURRENT lint configuration for both revisions.
- * Existing historical lint findings do not make every touched file fail.
+ * ESLint's type-aware rules need the real TypeScript project to resolve types.
+ * Do NOT lint historical file contents via ESLint.lintText(): an old source
+ * revision combined with the current TS project produces false diagnostics.
+ * Instead lint current files normally and intersect errors with Git diff hunks.
  *
- * Usage:
- *   pnpm lint:changed                    # HEAD~1 fallback
- *   pnpm lint:changed --base <sha-or-ref>
+ * Full historical lint cleanup is tracked separately in modernization Step 1B.
  *
- * For CI: set LINT_BASE to the PR base SHA or push's event.before.
- * This checks commits, not uncommitted working tree changes.
+ * Usage: pnpm lint:changed [--base <git-ref>]
+ * CI: LINT_BASE is the push's before SHA or PR base SHA.
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
 import { ESLint } from 'eslint';
+import { resolve } from 'node:path';
 
+const QUALITY_BASELINE = 'd42b83c4d6952f9150fbbd1b81fde87a243a5ac7';
 const args = process.argv.slice(2);
-const baseArg = args.indexOf('--base');
-if (baseArg !== -1 && !args[baseArg + 1]) {
-    throw new Error('Expected a Git revision after --base');
+const baseIndex = args.indexOf('--base');
+if (baseIndex >= 0 && !args[baseIndex + 1]) {
+    throw new Error('Missing Git revision after --base');
 }
-const requested = baseArg === -1 ? process.env.LINT_BASE || 'HEAD~1' : args[baseArg + 1];
+const requestedBase = baseIndex >= 0 ? args[baseIndex + 1] : process.env.LINT_BASE || 'HEAD~1';
 
-function git(...cmd) {
-    return execFileSync('git', cmd, { encoding: 'utf8' }).trim();
+function git(...args) {
+    return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
+}
+function validCommit(ref) {
+    try { git('rev-parse', '--verify', `${ref}^{commit}`); return true; }
+    catch { return false; }
+}
+function isAncestor(a, b) {
+    try { git('merge-base', '--is-ancestor', a, b); return true; }
+    catch { return false; }
 }
 
-function isCommit(ref) {
-    try {
-        git('rev-parse', '--verify', `${ref}^{commit}`);
-        return true;
-    } catch {
-        return false;
-    }
-}
-
-let base = requested;
-if (!isCommit(base) || /^0+$/.test(base)) {
-    console.warn(`[lint:changed] Cannot find base "${base}"; falling back to HEAD~1.`);
+let base = requestedBase;
+if (!validCommit(base) || /^0+$/.test(base)) {
+    console.warn(`[lint:changed] Unknown base "${base}"; falling back to HEAD~1.`);
     base = 'HEAD~1';
 }
-if (!isCommit(base)) {
-    throw new Error('No valid base commit for incremental ESLint comparison.');
-}
-const commonAncestor = git('merge-base', base, 'HEAD');
-const records = execFileSync(
-    'git', ['diff', '--name-status', '-z', '-M', '--diff-filter=ACMR', commonAncestor, 'HEAD', '--', '*.ts'],
-    { encoding: 'buffer' },
-).toString('utf8').split('\0').filter(Boolean);
-const changes = [];
-for (let i = 0; i < records.length;) {
-    const status = records[i++];
-    const previousPath = status.startsWith('R') || status.startsWith('C') ? records[i++] : null;
-    const filename = records[i++];
-    if (!filename) throw new Error(`Malformed git diff name-status output: ${status}`);
-    changes.push({ filename, previousPath: previousPath ?? filename });
+if (!validCommit(base)) throw new Error('No valid Git baseline for lint comparison.');
+
+base = git('merge-base', base, 'HEAD');
+// Enabling the gate must not reclassify older errors as newly introduced if
+// GitHub batches multiple feature-branch pushes into one comparison.
+if (validCommit(QUALITY_BASELINE) &&
+    isAncestor(base, QUALITY_BASELINE) && isAncestor(QUALITY_BASELINE, 'HEAD')) {
+    base = QUALITY_BASELINE;
 }
 
-if (changes.length === 0) {
+// Use -z so path names with spaces and renames work; Git also reports old/new
+// paths for R/C entries, but lint only uses the CURRENT filename.
+const tokens = execFileSync('git', [
+    'diff', '--name-status', '-z', '-M', '--diff-filter=ACMR',
+    base, 'HEAD', '--', '*.ts',
+], { encoding: 'buffer' }).toString('utf8').split('\0').filter(Boolean);
+const paths = [];
+for (let i = 0; i < tokens.length;) {
+    const status = tokens[i++];
+    if (status.startsWith('R') || status.startsWith('C')) i++;
+    const filename = tokens[i++];
+    if (!filename) throw new Error('Invalid git diff --name-status output');
+    paths.push(filename);
+}
+if (paths.length === 0) {
     console.log('[lint:changed] No changed TypeScript files.');
     process.exit(0);
 }
 
+function changedLineNumbers(filename) {
+    const diff = git('diff', '--no-ext-diff', '--no-color', '--unified=0',
+        base, 'HEAD', '--', filename);
+    const lines = new Set();
+    const re = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm;
+    for (const m of diff.matchAll(re)) {
+        const first = Number(m[1]);
+        const count = m[2] === undefined ? 1 : Number(m[2]);
+        for (let n = first; n < first + count; n++) lines.add(n);
+    }
+    return lines;
+}
+
+const changedLines = new Map(paths.map(path => [resolve(path), changedLineNumbers(path)]));
 const eslint = new ESLint();
-let oldErrors = 0;
-let currentErrors = 0;
+// lintFiles(), unlike lintText() on old revisions, retains valid TS project
+// context and matches diagnostics from `pnpm lint`.
+const results = await eslint.lintFiles(paths);
+let totalCurrent = 0;
 let newErrors = 0;
-
-function fingerprint(message, lines) {
-    const sourceLine = lines[message.line - 1]?.trim() ?? '';
-    return JSON.stringify([message.ruleId, message.severity, message.message, sourceLine]);
-}
-
-async function diagnostics(content, filename) {
-    const result = await eslint.lintText(content, { filePath: filename });
-    return result[0]?.messages.filter(m => m.severity === 2) ?? [];
-}
-
-for (const { filename, previousPath } of changes) {
-    const currentContent = readFileSync(filename, 'utf8');
-    let previousContent = '';
-    try {
-        previousContent = execFileSync('git', ['show', `${commonAncestor}:${previousPath}`], {
-            encoding: 'utf8',
-            stdio: ['ignore', 'pipe', 'ignore'],
-        });
-    } catch {
-        // New file (or rename): all lint issues count as new.
-    }
-    const previous = previousContent ? await diagnostics(previousContent, filename) : [];
-    const current = await diagnostics(currentContent, filename);
-
-    oldErrors += previous.length;
-    currentErrors += current.length;
-
-    const previousCounts = new Map();
-    for (const msg of previous) {
-        const key = fingerprint(msg, previousContent.split(/\r?\n/));
-        previousCounts.set(key, (previousCounts.get(key) ?? 0) + 1);
-    }
-
-    const currentLines = currentContent.split(/\r?\n/);
-    for (const msg of current) {
-        const key = fingerprint(msg, currentLines);
-        const remaining = previousCounts.get(key) ?? 0;
-        if (remaining > 0) {
-            previousCounts.set(key, remaining - 1);
-        } else {
-            newErrors++;
-            console.error(`${filename}:${msg.line}:${msg.column}: ${msg.ruleId ?? 'ESLint'}: ${msg.message}`);
-        }
+for (const result of results) {
+    const modified = changedLines.get(resolve(result.filePath));
+    totalCurrent += result.errorCount;
+    if (!modified) continue;
+    for (const finding of result.messages) {
+        if (finding.severity !== 2 || !modified.has(finding.line)) continue;
+        newErrors++;
+        console.error(`${result.filePath}:${finding.line}:${finding.column}: ${finding.ruleId ?? 'ESLint'}: ${finding.message}`);
     }
 }
-
-console.log(`[lint:changed] ${changes.length} changed TS files; ${oldErrors} historical errors, ${currentErrors} current errors, ${newErrors} new errors.`);
+console.log(`[lint:changed] ${paths.length} changed TS files; ${totalCurrent} existing/current errors in affected files; ${newErrors} errors on changed lines.`);
 if (newErrors > 0) process.exitCode = 1;
