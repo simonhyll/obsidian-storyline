@@ -1,5 +1,4 @@
 // @ts-nocheck — integration tests use mocked Obsidian API with intentional type casting
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return -- Test mocks inherently use dynamic typing for Obsidian API simulation */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type SceneCardsPlugin from '../src/main';
 import type { SceneManager } from '../src/services/SceneManager';

@@ -22,4 +22,13 @@ export default defineConfig([
       }],
     },
   },
+  {
+    // Test files use file-level eslint-disable for unsafe rules;
+    // some disables may be unused depending on which files are changed.
+    files: ["tests/**/*.ts"],
+    rules: {
+      "eslint-comments/disable-enable-pair": "off",
+      "eslint-comments/no-unused-disable": "off",
+    },
+  },
 ]);

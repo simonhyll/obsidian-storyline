@@ -34,8 +34,11 @@ jobs:
       - name: Build plugin
         run: pnpm build
 
-      - name: Run tests
+      - name: Run Vitest unit tests
         run: pnpm test
+
+      - name: Run Cucumber BDD tests
+        run: pnpm test:bdd
 
       - name: TypeScript compilation
         run: pnpm run typecheck
