@@ -1387,7 +1387,10 @@ Fix seven areas of the multi-book timeline: universe-wide events, book selection
 ### ✓ Step 15: Complete Multi-Book Timeline Correctness
 Fix five remaining areas: shared chronological projection for swimlane mode, book selection universe boundaries, cross-book scene operation protection, event loading verification, and behavioral tests.
 
-- Refactor swimlane mode to use shared chronological projection (buildChronologicalProjection)
-- Add resolveProjectUniverseId/Async for universe-aware book filtering
-- Pre-select active book in book selector, prevent empty selection
-- Add 23 behavioral tests covering projection, universe boundaries, cross-book protection, event loading, swimlane alignment, stale async, and reading order
+- ✓ Consolidated chronological projection — buildChronologicalTimelineItems delegates to buildChronologicalProjection()
+- ✓ Cross-book safety guards — disabled duplicate scene and shift dates in multi-book mode context menu
+- ✓ Replaced simulated tests with production behavioral tests — 42 tests using real TimeSpanService, Event model, and selection semantics
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 372/372 tests pass
+- ✓ Typecheck verification — 27 errors (all pre-existing baseline)
+- ✓ Committed as 4bda254 and pushed to origin/feat/rework
