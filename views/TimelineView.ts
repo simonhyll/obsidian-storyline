@@ -20,7 +20,7 @@ import { parseSceneLocations } from '../services/MetadataParser';
 import { deriveProjectFoldersFromFilePath, type StoryLineProject } from '../models/StoryLineProject';
 import type { Event } from '../models/Event';
 import type { TimeSpan, Timestamp } from '../models/TimeSpan';
-import type { TimelineNavigationService } from '../services/TimelineNavigationService';
+import { TimelineNavigationService } from '../services/TimelineNavigationService';
 
 /**
  * Timeline ordering mode
@@ -59,6 +59,8 @@ export class TimelineView extends ItemView {
     private timelineOrder: TimelineOrder = 'reading';
     /** Book IDs selected for multi-book timeline. Empty means "active book only". */
     private selectedBookIds: Set<string> = new Set();
+    /** Timeline navigation state is owned by this leaf, never shared across tabs. */
+    private readonly timelineNavigationService: TimelineNavigationService;
     /** Selected book IDs belong to this active project's context. */
     private selectionOwnerBookId: string | null = null;
     /** Render generation counter for async cancellation */
@@ -79,6 +81,7 @@ export class TimelineView extends ItemView {
         super(leaf);
         this.plugin = plugin;
         this.sceneManager = sceneManager;
+        this.timelineNavigationService = new TimelineNavigationService(plugin.timeSpanService);
         this.cardComponent = new SceneCardComponent(plugin);
         // Restore persisted filter states from settings
         this.timelineOrder = plugin.settings.timelineOrder === 'chronological' ? 'chronological' : 'reading';
@@ -350,7 +353,7 @@ export class TimelineView extends ItemView {
         if (this.renderGeneration !== generation) return;
 
         // Update navigation service with current items
-        this.plugin.timelineNavigationService.updateItems(scenes, events);
+        this.timelineNavigationService.updateItems(scenes, events);
         this.updateTimeNavigationDisplay();
 
         // In multi-book reading order, force chronological
@@ -704,7 +707,7 @@ export class TimelineView extends ItemView {
         if (this.renderGeneration !== generation) return;
 
         // Navigation must work in swimlane mode as well as linear mode.
-        this.plugin.timelineNavigationService.updateItems(scenes, events);
+        this.timelineNavigationService.updateItems(scenes, events);
         this.updateTimeNavigationDisplay();
 
         if (scenes.length === 0 && events.length === 0) {
@@ -781,7 +784,7 @@ export class TimelineView extends ItemView {
         obsidian.setIcon(prevBtn, 'chevron-left');
         attachTooltip(prevBtn, 'Previous item');
         prevBtn.addEventListener('click', () => {
-            const item = this.plugin.timelineNavigationService.navigatePrevious();
+            const item = this.timelineNavigationService.navigatePrevious();
             if (item) {
                 this.scrollToNavigationItem(item);
                 this.updateTimeNavigationDisplay();
@@ -800,7 +803,7 @@ export class TimelineView extends ItemView {
                 e.preventDefault();
                 const year = parseInt(yearInput.value, 10);
                 if (Number.isSafeInteger(year)) {
-                    this.plugin.timelineNavigationService.jumpToDate(year);
+                    this.timelineNavigationService.jumpToDate(year);
                     this.updateTimeNavigationDisplay();
                     // An empty year has no precise DOM position until the
                     // temporal ruler exists. Do not fake an exact jump.
@@ -815,7 +818,7 @@ export class TimelineView extends ItemView {
         obsidian.setIcon(nextBtn, 'chevron-right');
         attachTooltip(nextBtn, 'Next item');
         nextBtn.addEventListener('click', () => {
-            const item = this.plugin.timelineNavigationService.navigateNext();
+            const item = this.timelineNavigationService.navigateNext();
             if (item) {
                 this.scrollToNavigationItem(item);
                 this.updateTimeNavigationDisplay();
@@ -837,7 +840,7 @@ export class TimelineView extends ItemView {
         if (!root) return;
         const period = root.querySelector('.story-line-time-period') as HTMLElement | null;
         const yearInput = root.querySelector('.story-line-year-input') as HTMLInputElement | null;
-        const state = this.plugin.timelineNavigationService.getState();
+        const state = this.timelineNavigationService.getState();
         if (period) {
             const range = state.visibleRange;
             const rangeText = range ? `Items: ${range.start.year}–${range.end.year}` : 'No dated items';
@@ -872,10 +875,10 @@ export class TimelineView extends ItemView {
      * the creation menu with the date prefilled.
      */
     private renderTemporalRuler(timelineEl: HTMLElement, scenes: Scene[], events: Event[]): void {
-        const markers = this.plugin.timelineNavigationService.getTimeMarkers();
+        const markers = this.timelineNavigationService.getTimeMarkers();
         if (markers.length === 0) return;
 
-        const visibleRange = this.plugin.timelineNavigationService.getState().visibleRange;
+        const visibleRange = this.timelineNavigationService.getState().visibleRange;
         if (!visibleRange) return;
 
         const ruler = timelineEl.createDiv('timeline-temporal-ruler');
@@ -899,7 +902,7 @@ export class TimelineView extends ItemView {
             // Click handler: jump to the marker's date
             markerEl.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.plugin.timelineNavigationService.jumpToDate(
+                this.timelineNavigationService.jumpToDate(
                     marker.timestamp.year,
                     marker.timestamp.month,
                     marker.timestamp.day
@@ -912,7 +915,7 @@ export class TimelineView extends ItemView {
         ruler.addEventListener('click', (e: MouseEvent) => {
             const rulerRect = ruler.getBoundingClientRect();
             const fraction = (e.clientX - rulerRect.left) / rulerRect.width;
-            const timestamp = this.plugin.timelineNavigationService.getTimestampAtPosition(fraction);
+            const timestamp = this.timelineNavigationService.getTimestampAtPosition(fraction);
             if (timestamp) {
                 this.showTemporalCreationMenu(e, timestamp);
             }
@@ -924,13 +927,19 @@ export class TimelineView extends ItemView {
      */
     private showTemporalCreationMenu(e: MouseEvent, timestamp: Timestamp): void {
         const menu = new Menu();
-        const state = this.plugin.timelineNavigationService.getState();
-        const selectedDate = state.selectedDate ?? timestamp;
+        // Creation must use THIS click's timestamp, not a previously selected year.
+        const selectedDate = timestamp;
+        this.timelineNavigationService.setSelectedDate(selectedDate);
 
         menu.addItem(item => {
-            item.setTitle(`Create scene on ${selectedDate.year}`)
+            item.setTitle(`Create scene in active Book on ${selectedDate.year}`)
                 .setIcon('file')
                 .onClick(() => {
+                    // Cross-book creation needs explicit ownership selection.
+                    if (this.isMultiBookMode()) {
+                        new Notice('To create a Scene, switch to Active Book only first.');
+                        return;
+                    }
                     this.openQuickAddWithDate(selectedDate);
                 });
         });
@@ -954,14 +963,21 @@ export class TimelineView extends ItemView {
      * Open the Quick Add modal with the date prefilled from the temporal ruler.
      */
     private openQuickAddWithDate(timestamp: Timestamp): void {
-        const storyDate = `${timestamp.year}-${String(timestamp.month ?? 1).padStart(2, '0')}-${String(timestamp.day ?? 1).padStart(2, '0')}`;
+        // Preserve year/month precision and the original calendar. Never
+        // invent January 1 for a year-only timestamp.
+        const timeSpan: TimeSpan = { kind: 'instant', instant: { ...timestamp } };
+        const storyDate = timestamp.calendar === 'gregorian' && timestamp.month !== undefined && timestamp.day !== undefined
+            ? `${timestamp.year}-${String(timestamp.month).padStart(2, '0')}-${String(timestamp.day).padStart(2, '0')}`
+            : undefined;
         const modal = new QuickAddModal(
             this.app,
             this.plugin,
             this.sceneManager,
             async (sceneData, openAfter) => {
                 // Prefill the date from the temporal ruler
-                sceneData.storyDate = storyDate;
+                sceneData.timeSpan = timeSpan;
+                if (storyDate) sceneData.storyDate = storyDate;
+                else delete sceneData.storyDate;
                 const file = await this.sceneManager.createScene(sceneData);
                 this.refresh();
                 const scrollToNew = () => {
@@ -978,7 +994,7 @@ export class TimelineView extends ItemView {
                     void this.app.workspace.getLeaf('tab').openFile(file, { state: { mode: 'source', source: false } });
                 }
             },
-            { storyDate }
+            { storyDate, timeSpan }
         );
         modal.open();
     }
