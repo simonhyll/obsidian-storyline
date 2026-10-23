@@ -205,7 +205,7 @@ export class TimeSpanService {
         switch (timeSpan.kind) {
             case 'instant':
                 return this.validateTimestamp(timeSpan.instant!);
-            case 'interval':
+            case 'interval': {
                 const startErr = this.validateTimestamp(timeSpan.start!);
                 if (startErr) return `Start: ${startErr}`;
                 const endErr = this.validateTimestamp(timeSpan.end!);
@@ -219,9 +219,10 @@ export class TimeSpanService {
                     }
                 }
                 return null;
+            }
             case 'open-ended':
                 return this.validateTimestamp(timeSpan.start!);
-            case 'uncertain':
+            case 'uncertain': {
                 const rangeStartErr = this.validateTimestamp(timeSpan.range!.start);
                 if (rangeStartErr) return `Range start: ${rangeStartErr}`;
                 const rangeEndErr = this.validateTimestamp(timeSpan.range!.end);
@@ -230,13 +231,12 @@ export class TimeSpanService {
                     return `Confidence must be 0-1, got ${timeSpan.confidence}`;
                 }
                 return null;
+            }
             case 'unknown':
                 return null;
             case 'relative':
                 if (!timeSpan.relativeTo) return 'Relative TimeSpan requires a reference ID';
                 return null;
-            default:
-                return `Unknown TimeSpan kind: ${(timeSpan as any).kind}`;
         }
     }
 

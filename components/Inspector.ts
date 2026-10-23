@@ -26,6 +26,7 @@ export class InspectorComponent {
     private onDelete: (scene: Scene) => void;
     private onRefresh: () => void;
     private onStatusChange: (scene: Scene, newStatus: SceneStatus) => void;
+    private notesRenderComponent: obsidian.Component | null = null;
 
     /**
      * Format intensity value for display (-10 to +10)
@@ -1373,13 +1374,14 @@ export class InspectorComponent {
 
         // Rendered markdown preview
         const previewEl = container.createDiv('inspector-notes-live is-preview');
-        const renderComponent = new obsidian.Component();
+        this.notesRenderComponent?.unload();
+        this.notesRenderComponent = new obsidian.Component();
         obsidian.MarkdownRenderer.render(
             this.plugin.app,
             notesText,
             previewEl,
             scene.filePath,
-            renderComponent,
+            this.notesRenderComponent,
         );
 
         // Click on preview → switch to editor (but not on links/checkboxes)

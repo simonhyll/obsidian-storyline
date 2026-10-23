@@ -24,6 +24,7 @@ export class InfoPanelComponent {
     private notesLeaf: obsidian.WorkspaceLeaf | null = null;
     private notesPath: string | null = null;
     private notesSaveTimer: number | null = null;
+    private notesRenderComponent: obsidian.Component | null = null;
 
     constructor(container: HTMLElement, plugin: SceneCardsPlugin, sceneManager: SceneManager, mode: InfoPanelMode = 'full') {
         this.container = container;
@@ -370,6 +371,8 @@ export class InfoPanelComponent {
      */
     private renderNotesLive(container: HTMLElement, scene: Scene): void {
         container.empty();
+        // Clean up previous markdown render component to avoid leaks
+        this.notesRenderComponent?.unload();
 
         if (!scene.notes) {
             // Empty state — show a clickable placeholder that opens the editor
@@ -383,13 +386,13 @@ export class InfoPanelComponent {
 
         // Rendered markdown preview
         const previewEl = container.createDiv('sl-info-notes-live is-preview');
-        const renderComponent = new obsidian.Component();
+        this.notesRenderComponent = new obsidian.Component();
         obsidian.MarkdownRenderer.render(
             this.plugin.app,
             scene.notes,
             previewEl,
             scene.filePath,
-            renderComponent,
+            this.notesRenderComponent,
         );
 
         // Click on preview → switch to editor (but not on links/checkboxes)
