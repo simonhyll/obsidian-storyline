@@ -2360,11 +2360,9 @@ export class TimelineView extends ItemView {
         const activeBookId = activeProject?.bookId;
         if (!activeBookId) return;
 
-        // Pre-select active book if nothing is selected yet
-        if (this.selectedBookIds.size === 0) {
-            this.selectedBookIds.add(activeBookId);
-        }
-
+        // An empty selection means "active Book only"; the checkbox is
+        // visually selected without changing the saved Timeline mode.
+        // Materialize the active ID only when the user adds another Book.
         // Filter and populate async (universe resolution is async)
         this.populateBookSelectorPopoverAsync(popover, this.sceneManager.getProjects(), activeBookId);
     }
@@ -2419,8 +2417,10 @@ export class TimelineView extends ItemView {
 
         // Filter projects to only those in the same universe (or standalone if no universe)
         const filteredProjects: StoryLineProject[] = [];
+        const resolvedUniverseIds = new Map<string, string | null>();
         for (const project of allProjects) {
             const projectUniverseId = await this.resolveProjectUniverseIdAsync(project);
+            resolvedUniverseIds.set(project.filePath, projectUniverseId);
             if (activeUniverseId && projectUniverseId === activeUniverseId) {
                 filteredProjects.push(project);
             } else if (!activeUniverseId && !projectUniverseId) {
@@ -2452,7 +2452,9 @@ export class TimelineView extends ItemView {
         } catch { /* fallback to UUID */ }
 
         for (const project of filteredProjects) {
-            const uniId = project.universeId;
+            // Series membership can supply the Universe even when a Book's
+            // own frontmatter has no direct universeId.
+            const uniId = resolvedUniverseIds.get(project.filePath) ?? null;
             const serUuid = project.seriesUuid;
 
             if (uniId) {
@@ -2505,7 +2507,6 @@ export class TimelineView extends ItemView {
         resetBtn.style.marginBottom = '8px';
         resetBtn.addEventListener('click', () => {
             this.selectedBookIds.clear();
-            this.selectedBookIds.add(this.sceneManager.activeProject?.bookId || '');
             this.updateBookSelectorButton(this.bookSelectorButton!);
             this.closeBookSelectorPopover();
             this.refresh();
@@ -2547,15 +2548,22 @@ export class TimelineView extends ItemView {
     private renderBookCheckboxInPopover(container: HTMLElement, project: StoryLineProject, activeBookId?: string | null): void {
         const row = container.createDiv('story-line-book-row');
         const isActive = project.bookId === activeBookId;
-        const isSelected = this.selectedBookIds.has(project.bookId!);
+        const isSelected = this.selectedBookIds.size === 0
+            ? isActive
+            : this.selectedBookIds.has(project.bookId!);
 
         const checkbox = row.createEl('input', { type: 'checkbox' });
         checkbox.checked = isSelected;
         checkbox.addEventListener('change', () => {
+            // The implicit active-only selection is initially represented by
+            // an empty Set. Materialize it before modifying the selection.
+            if (this.selectedBookIds.size === 0 && activeBookId) {
+                this.selectedBookIds.add(activeBookId);
+            }
             if (checkbox.checked) {
                 this.selectedBookIds.add(project.bookId!);
             } else {
-                // Prevent deselecting the last book — require "Active Book only" instead
+                // Prevent deselecting the last selected Book.
                 if (this.selectedBookIds.size <= 1 && this.selectedBookIds.has(project.bookId!)) {
                     checkbox.checked = true;
                     new Notice('At least one book must be selected. Use "Active Book only" to reset.');
