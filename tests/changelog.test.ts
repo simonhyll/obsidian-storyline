@@ -51,7 +51,7 @@ describe("changelog script", () => {
       // Use a known feat commit from the repo
       const result = runScript("parse", "2cf1fd2");
       expect(result.status).toBe(0);
-      const parsed = JSON.parse(result.stdout);
+      const parsed: unknown = JSON.parse(result.stdout);
       expect(parsed).toMatchObject({
         type: "feat",
         section: "features",
@@ -61,7 +61,7 @@ describe("changelog script", () => {
     it("classifies a fix commit", () => {
       const result = runScript("parse", "d232c40");
       expect(result.status).toBe(0);
-      const parsed = JSON.parse(result.stdout);
+      const parsed: unknown = JSON.parse(result.stdout);
       expect(parsed).toMatchObject({
         type: "fix",
         section: "bugFixes",
@@ -71,7 +71,7 @@ describe("changelog script", () => {
     it("classifies a refactor commit", () => {
       const result = runScript("parse", "ea66591");
       expect(result.status).toBe(0);
-      const parsed = JSON.parse(result.stdout);
+      const parsed: unknown = JSON.parse(result.stdout);
       expect(parsed).toMatchObject({
         type: "refactor",
         section: "refactor",
@@ -81,7 +81,7 @@ describe("changelog script", () => {
     it("classifies a docs commit", () => {
       const result = runScript("parse", "5af469e");
       expect(result.status).toBe(0);
-      const parsed = JSON.parse(result.stdout);
+      const parsed: unknown = JSON.parse(result.stdout);
       expect(parsed).toMatchObject({
         type: "docs",
         section: "docs",
@@ -92,15 +92,15 @@ describe("changelog script", () => {
       // Commit 0926256 has message "fix" with no colon — non-conforming
       const result = runScript("parse", "0926256");
       expect(result.status).toBe(0);
-      const parsed = JSON.parse(result.stdout);
+      const parsed: unknown = JSON.parse(result.stdout);
       expect(parsed).toBeNull();
     });
 
     it("detects scope in commit message", () => {
       const result = runScript("parse", "5af469e");
       expect(result.status).toBe(0);
-      const parsed = JSON.parse(result.stdout);
-      expect(parsed.scope).toBe("plan");
+      const parsed: unknown = JSON.parse(result.stdout);
+      expect(parsed).toMatchObject({ scope: "plan" });
     });
   });
 
