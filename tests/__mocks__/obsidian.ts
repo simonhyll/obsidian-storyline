@@ -123,7 +123,7 @@ export class Menu {
  */
 export function parseYaml(text: string): Record<string, unknown> {
     const lines = text.split('\n');
-    return parseYamlBlock(lines, 0, 0)[0] as Record<string, unknown>;
+    return parseYamlBlock(lines, 0, 0)[0];
 }
 
 /**

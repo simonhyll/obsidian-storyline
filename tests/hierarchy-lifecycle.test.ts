@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return -- Test mocks inherently use dynamic typing for Obsidian API simulation */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SeriesManager } from '../src/services/SeriesManager';
 import { SceneManager } from '../src/services/SceneManager';
@@ -196,13 +197,13 @@ describe('Hierarchy lifecycle', () => {
             saveData: vi.fn(),
         };
 
-        sceneManager = new SceneManager(mockApp, plugin as any);
+        sceneManager = new SceneManager(mockApp, plugin);
         plugin.sceneManager = sceneManager;
 
-        seriesManager = new SeriesManager(mockApp, plugin as any);
+        seriesManager = new SeriesManager(mockApp, plugin);
         plugin.seriesManager = seriesManager;
 
-        plugin.universeManager = new UniverseManager(mockApp, plugin as any);
+        plugin.universeManager = new UniverseManager(mockApp, plugin);
     }
 
     beforeEach(() => {

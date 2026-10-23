@@ -247,7 +247,7 @@ export class EventManager {
         // Body is everything after frontmatter
         const body = content.slice(frontmatterMatch[0].length).trim();
 
-        const safeFm = frontmatter as Record<string, unknown>;
+        const safeFm = frontmatter;
 
         // Parse TimeSpan from YAML
         let timeSpan: TimeSpan | undefined;

@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { App } from 'obsidian';
 import { EventManager } from '../src/services/EventManager';
 import { TimeSpanService } from '../src/services/TimeSpanService';
 import {
@@ -27,8 +28,8 @@ describe('EventManager Integration', () => {
 
     beforeEach(() => {
         timeSpanService = new TimeSpanService();
-        const mockApp = { vault: { adapter: {}, getMarkdownFiles: () => [], read: async () => '', create: async () => {}, modify: async () => {}, getAbstractFileByPath: () => null } };
-        eventManager = new EventManager(mockApp as any);
+        const mockApp = { vault: { adapter: {}, getMarkdownFiles: () => [], read: async () => '', create: async () => {}, modify: async () => {}, getAbstractFileByPath: () => null } } as unknown as App;
+        eventManager = new EventManager(mockApp);
         eventManager.setTimeSpanService(timeSpanService);
         mockVault = mockApp.vault;
     });

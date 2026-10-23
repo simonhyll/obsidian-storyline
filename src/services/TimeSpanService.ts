@@ -168,7 +168,7 @@ export class TimeSpanService {
             if (!adapter) return `Unknown calendar: ${ts.calendar}`;
             // Delegate to calendar adapter if it supports validation
             if ('validate' in adapter && typeof adapter.validate === 'function') {
-                return (adapter as any).validate(ts);
+                return (adapter as { validate: (ts: Timestamp) => string | null }).validate(ts);
             }
             return null;
         }
@@ -204,28 +204,28 @@ export class TimeSpanService {
     validateTimeSpan(timeSpan: TimeSpan): string | null {
         switch (timeSpan.kind) {
             case 'instant':
-                return this.validateTimestamp(timeSpan.instant!);
+                return this.validateTimestamp(timeSpan.instant);
             case 'interval': {
-                const startErr = this.validateTimestamp(timeSpan.start!);
+                const startErr = this.validateTimestamp(timeSpan.start);
                 if (startErr) return `Start: ${startErr}`;
-                const endErr = this.validateTimestamp(timeSpan.end!);
+                const endErr = this.validateTimestamp(timeSpan.end);
                 if (endErr) return `End: ${endErr}`;
                 // Check that start <= end (same calendar only)
-                if (timeSpan.start!.calendar === timeSpan.end!.calendar) {
-                    const adapter = this.getAdapterForTimestamp(timeSpan.start!);
+                if (timeSpan.start.calendar === timeSpan.end.calendar) {
+                    const adapter = this.getAdapterForTimestamp(timeSpan.start);
                     if (adapter) {
-                        const cmp = adapter.compare(timeSpan.start!, timeSpan.end!);
+                        const cmp = adapter.compare(timeSpan.start, timeSpan.end);
                         if (cmp > 0) return 'Start date is after end date';
                     }
                 }
                 return null;
             }
             case 'open-ended':
-                return this.validateTimestamp(timeSpan.start!);
+                return this.validateTimestamp(timeSpan.start);
             case 'uncertain': {
-                const rangeStartErr = this.validateTimestamp(timeSpan.range!.start);
+                const rangeStartErr = this.validateTimestamp(timeSpan.range.start);
                 if (rangeStartErr) return `Range start: ${rangeStartErr}`;
-                const rangeEndErr = this.validateTimestamp(timeSpan.range!.end);
+                const rangeEndErr = this.validateTimestamp(timeSpan.range.end);
                 if (rangeEndErr) return `Range end: ${rangeEndErr}`;
                 if (timeSpan.confidence !== undefined && (timeSpan.confidence < 0 || timeSpan.confidence > 1)) {
                     return `Confidence must be 0-1, got ${timeSpan.confidence}`;
@@ -832,8 +832,8 @@ export class TimeSpanService {
             case 'uncertain': {
                 const rangeData = data.range;
                 if (!rangeData || typeof rangeData !== 'object') return null;
-                const rangeStart = this.deserializeTimestamp((rangeData as any).start);
-                const rangeEnd = this.deserializeTimestamp((rangeData as any).end);
+                const rangeStart = this.deserializeTimestamp((rangeData as Record<string, unknown>).start);
+                const rangeEnd = this.deserializeTimestamp((rangeData as Record<string, unknown>).end);
                 if (!rangeStart || !rangeEnd) return null;
                 return {
                     kind: 'uncertain',

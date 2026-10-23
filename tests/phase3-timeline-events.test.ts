@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { App } from 'obsidian';
 import type { Event } from '../src/models/Event';
 import type { TimeSpan, Timestamp } from '../src/models/TimeSpan';
 import { TimeSpanService } from '../src/services/TimeSpanService';
@@ -22,7 +23,7 @@ describe('Phase 3: Events in Timeline', () => {
 
     beforeEach(() => {
         tsService = new TimeSpanService();
-        eventManager = new EventManager({} as any);
+        eventManager = new EventManager({} as unknown as App);
         eventManager.setTimeSpanService(tsService);
     });
 

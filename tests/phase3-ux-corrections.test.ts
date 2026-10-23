@@ -11,7 +11,7 @@ describe('Timeline Event marker layout', () => {
             // This test verifies the TimeSpan data used for the date badge
             const ts: TimeSpan = { kind: 'instant', instant: { calendar: 'gregorian', year: 2000, month: 1, day: 1 } };
             expect(ts.kind).toBe('instant');
-            expect((ts as any).instant?.year).toBe(2000);
+            expect(ts.instant.year).toBe(2000);
         });
 
         it('chronological order sorts Scene 1993 < Event 2000 < Scene 2001', () => {
