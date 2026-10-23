@@ -1243,6 +1243,24 @@ Complete the Project Library redesign, Event UX improvements, and navigation fix
 - ✓ Test verification — 209/209 tests pass
 - ✓ Typecheck verification — no new errors; 18 pre-existing baseline errors unchanged
 - ✓ Committed to feat/rework branch
+
+### ✓ Step 9: Fix Project Library Navigation and Integrate Events
+Fix seven reported UI integration issues: duplicate modals, book card navigation, live-refresh, cover editing, Events in Codex/BoardView, Event modal save regression, and integration tests.
+
+- ✓ Fix duplicate project creation modals — added `_newProjectModalOpen` guard with try/finally cleanup and button disable during creation
+- ✓ Book card opens BoardView — click handler now calls `setActiveProject`, `refreshOpenViews(true)`, then `activateView(BOARD_VIEW_TYPE)`
+- ✓ Live-refresh Project Library — added `UNIVERSE_VIEW_TYPE` to `performRefreshOpenViews` viewTypes array
+- ✓ Restore book cover editing — pencil icon on each book card's cover opens ImagePicker, persists via `saveProjectFrontmatter`, with `stopPropagation` to avoid triggering card click
+- ✓ Events in Codex — added "Events" pseudo-tab in CodexView with `renderEventsList` showing all events with TimeSpan and scope badges, click-to-edit via `openEditEventModal`
+- ✓ Events in BoardView — added "+ New Event" button next to "+ New Scene" in Kanban mode
+- ✓ Removed Events ribbon icon — no longer the primary Events entry point
+- ✓ Fix EventModal save regression — all button handlers (save/cancel/delete) now set `resolved=true` and call `resolve()` BEFORE `this.close()`, so `onClose()` never preempts the result
+- ✓ Fix EventSelectorModal save regression — same fix: resolved before close for both save and cancel
+- ✓ 13 integration tests — Event modal lifecycle (4), project creation guard (1), BoardView navigation (1), Events in Codex (2), ribbon icon removal (1), live refresh (1), cover editing (2), BoardView New Event (1)
+- ✓ Build verification — pnpm run build passes
+- ✓ Test verification — 222/222 tests pass (209 existing + 13 new)
+- ✓ Typecheck verification — no new errors in changed files; pre-existing baseline errors unchanged
+- ✓ Committed to feat/rework branch
 Implement the shared TimeSpan model, Event entities, Scene-Event references, Event UI, and validation.
 
 - ✓ Create services/TimeSpanService.ts — Full implementation: Gregorian calendar adapter, parsing all 6 TimeSpan kinds, comparison, overlap detection, contains, relative date resolution with chain accumulation, legacy storyDate/storyTime migration, display formatting, validateTimestamp, validateTimeSpan

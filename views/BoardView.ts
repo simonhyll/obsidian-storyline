@@ -316,6 +316,26 @@ export class BoardView extends ItemView {
             }
         });
 
+        // Add Event button (next to New Scene in Kanban mode)
+        if (!isCorkboardMode) {
+            const addEventBtn = controls.createEl('button', {
+                cls: 'story-line-add-btn',
+                text: '+ New Event'
+            });
+            addEventBtn.addEventListener('click', async () => {
+                const eventsFolder = this.sceneManager.getBookEventsFolder();
+                if (!eventsFolder) {
+                    new Notice('No events folder found for the active project.');
+                    return;
+                }
+                try {
+                    await this.plugin.openCreateEventModal(eventsFolder);
+                } catch {
+                    // ignore
+                }
+            });
+        }
+
         // Issue #220 — "New Chapter" button, shown in Kanban mode when
         // grouping by chapter, so inserting a chapter is one click away.
         if (!isCorkboardMode && this.groupBy === 'chapter') {

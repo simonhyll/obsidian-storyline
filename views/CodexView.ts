@@ -271,6 +271,13 @@ export class CodexView extends ItemView {
             this.switchToView(LOCATION_VIEW_TYPE);
         });
 
+        // Built-in "Events" tab → shows Events in Codex
+        this.renderPseudoTab(tabs, 'Events', 'calendar', () => {
+            this.activeCategory = 'events';
+            this.selectedEntry = null;
+            if (this.rootContainer) this.renderView(this.rootContainer);
+        });
+
         // Codex category tabs
         const cats = this.codexManager.getCategories();
         for (const cat of cats) {
@@ -365,11 +372,18 @@ export class CodexView extends ItemView {
     private renderList(container: HTMLElement): void {
         container.empty();
         const isHub = !this.activeCategory;
+        const isEvents = this.activeCategory === 'events';
         const catDef = isHub ? undefined : this.codexManager.getCategoryDef(this.activeCategory);
 
         // Hub mode: only show results when the user is actively searching
         if (isHub && !this.searchText) {
             container.createEl('p', { cls: 'codex-empty-state', text: 'Select a category or search for entries.' });
+            return;
+        }
+
+        // Events category: render Events from EventManager
+        if (isEvents) {
+            this.renderEventsList(container);
             return;
         }
 
@@ -1881,6 +1895,11 @@ export class CodexView extends ItemView {
     // ══════════════════════════════════════════════════
 
     private promptNewEntry(): void {
+        // Events category: use EventModal instead of generic codex entry
+        if (this.activeCategory === 'events') {
+            this.promptNewEvent();
+            return;
+        }
         const catDef = this.codexManager.getCategoryDef(this.activeCategory);
         if (!catDef) {
             new Notice('Select a category first');
@@ -1930,6 +1949,79 @@ export class CodexView extends ItemView {
             if (this.rootContainer) this.renderView(this.rootContainer);
         } catch (err) {
             new Notice(`Failed to create entry: ${err instanceof Error ? err.message : String(err)}`);
+        }
+    }
+
+    /** Prompt for a new Event in the Events category */
+    private async promptNewEvent(): Promise<void> {
+        const eventsFolder = this.sceneManager.getBookEventsFolder();
+        if (!eventsFolder) {
+            new Notice('No events folder found for the active project.');
+            return;
+        }
+        try {
+            await this.plugin.openCreateEventModal(eventsFolder);
+            // Refresh the Events list after creating
+            if (this.rootContainer) this.renderView(this.rootContainer);
+        } catch (err) {
+            new Notice(`Failed to create event: ${err instanceof Error ? err.message : String(err)}`);
+        }
+    }
+
+    /** Render the Events list in the Codex Events tab */
+    private renderEventsList(container: HTMLElement): void {
+        const events = this.plugin.eventManager.getAllEvents();
+
+        // Search filter
+        let filtered = events;
+        if (this.searchText) {
+            const q = this.searchText.toLowerCase();
+            filtered = events.filter(e => e.name.toLowerCase().includes(q));
+        }
+
+        // Sort
+        filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+
+        if (filtered.length === 0) {
+            const empty = container.createDiv('codex-empty-state');
+            empty.createEl('p', { text: 'No events yet.' });
+            const createBtn = empty.createEl('button', { cls: 'mod-cta' });
+            createBtn.setText('Create first event');
+            createBtn.addEventListener('click', () => this.promptNewEvent());
+            return;
+        }
+
+        for (const event of filtered) {
+            const row = container.createDiv('codex-entry-row');
+            row.createEl('span', { cls: 'codex-entry-icon', text: '📅' });
+            const nameEl = row.createEl('span', { cls: 'codex-entry-name', text: event.name });
+            const meta = row.createDiv('codex-entry-meta');
+
+            // TimeSpan badge
+            if (event.timeSpan) {
+                const timeBadge = meta.createEl('span', { cls: 'codex-entry-badge' });
+                timeBadge.setText(this.plugin.timeSpanService.format(event.timeSpan));
+            }
+
+            // Ownership scope badge
+            const scopeBadge = meta.createEl('span', { cls: 'codex-entry-badge' });
+            if (event.ownerId) {
+                scopeBadge.setText(event.introducedIn ? 'Inherited' : 'Owned');
+            } else {
+                scopeBadge.setText('Book');
+            }
+
+            // Click to edit
+            row.addEventListener('click', async () => {
+                try {
+                    await this.plugin.openEditEventModal(event);
+                    if (this.rootContainer) {
+                        this.renderView(this.rootContainer);
+                    }
+                } catch {
+                    // ignore
+                }
+            });
         }
     }
 

@@ -419,10 +419,6 @@ export default class SceneCardsPlugin extends Plugin {
             }
         });
 
-        // Ribbon icon — browse and manage Events
-        this.addRibbonIcon('calendar', 'StoryLine Events', () => {
-            this.openEventBrowser();
-        });
 
         // Commands
         this.addCommand({
@@ -2842,6 +2838,7 @@ export default class SceneCardsPlugin extends Plugin {
             NAVIGATOR_VIEW_TYPE,
             MANUSCRIPT_VIEW_TYPE,
             RESEARCH_VIEW_TYPE,
+            UNIVERSE_VIEW_TYPE,
         ];
 
         for (const viewType of viewTypes) {
@@ -3390,17 +3387,27 @@ export default class SceneCardsPlugin extends Plugin {
         }
     }
 
+    /** Guard against concurrent New Project modals */
+    private _newProjectModalOpen = false;
+
     /**
-     * Open a modal to create a new StoryLine project
+     * Open a modal to create a new StoryLine project.
+     * Safe against concurrent invocations — returns null if a modal is already open.
      */
     async openNewProjectModal(): Promise<StoryLineProject | null> {
-        return new Promise<StoryLineProject | null>((resolve) => {
-            const modal = new Modal(this.app);
-            modal.titleEl.setText('New StoryLine project');
-            let title = '';
-            let customFolder = '';
-            let createAsSeries = false;
-            let seriesName = '';
+        if (this._newProjectModalOpen) {
+            // Modal already open — ignore concurrent call
+            return null;
+        }
+        this._newProjectModalOpen = true;
+        try {
+            return await new Promise<StoryLineProject | null>((resolve) => {
+                const modal = new Modal(this.app);
+                modal.titleEl.setText('New StoryLine project');
+                let title = '';
+                let customFolder = '';
+                let createAsSeries = false;
+                let seriesName = '';
 
             // Series toggle at the top
             const seriesNameSetting = new Setting(modal.contentEl)
@@ -3440,14 +3447,20 @@ export default class SceneCardsPlugin extends Plugin {
                     text.onChange((v: string) => (customFolder = v.trim()));
                 });
 
+            // Disable button while creating to prevent double submission
+            let createBtn: ButtonComponent | null = null;
+
             new Setting(modal.contentEl)
                 .addButton((btn: ButtonComponent) => {
+                    createBtn = btn;
                     btn.setButtonText('Create').setCta().onClick(async () => {
                         if (!title.trim()) return;
                         if (createAsSeries && !seriesName.trim()) {
                             new Notice('Please enter a series name.');
                             return;
                         }
+                        // Disable button to prevent double submission
+                        createBtn?.setDisabled(true);
                         try {
                             const basePath = customFolder || undefined;
                             const project = await this.sceneManager.createProject(title.trim(), '', basePath);
@@ -3476,7 +3489,16 @@ export default class SceneCardsPlugin extends Plugin {
                 });
 
             modal.open();
+
+            // Clean up guard on close
+            modal.onClose = (() => {
+                this._newProjectModalOpen = false;
+            }).bind(modal);
         });
+        } finally {
+            // Always clear the guard, even if something went wrong
+            this._newProjectModalOpen = false;
+        }
     }
 
     /**

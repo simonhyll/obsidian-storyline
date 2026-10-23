@@ -158,9 +158,9 @@ export class EventModal extends Modal {
             }
             try {
                 const event = await this.saveEvent();
-                this.close();
                 this.resolved = true;
                 this.resolve?.(event);
+                this.close();
             } catch (e) {
                 console.error('[StoryLine] Failed to save event:', e);
                 new Notice('Failed to save event');
@@ -170,10 +170,9 @@ export class EventModal extends Modal {
         const cancelBtn = actions.createEl('button');
         cancelBtn.setText('Cancel');
         cancelBtn.onClickEvent(() => {
+            this.resolved = true;
+            this.resolve?.(null);
             this.close();
-            if (!this.resolved) {
-                this.resolve?.(null);
-            }
         });
 
         // Delete button (edit mode only)
@@ -186,9 +185,9 @@ export class EventModal extends Modal {
                     try {
                         await this.eventManager.deleteEvent(this.existingEvent!);
                         new Notice(`Event "${this.existingEvent!.name}" deleted`);
-                        this.close();
                         this.resolved = true;
                         this.resolve?.(null);
+                        this.close();
                     } catch (e) {
                         console.error('[StoryLine] Failed to delete event:', e);
                         new Notice('Failed to delete event');
@@ -355,19 +354,17 @@ export class EventSelectorModal extends Modal {
         const saveBtn = actions.createEl('button', { cls: 'mod-cta' });
         saveBtn.setText('Save');
         saveBtn.onClickEvent(() => {
-            this.close();
             this.resolved = true;
             this.resolve?.([...this.selectedIds]);
+            this.close();
         });
 
         const cancelBtn = actions.createEl('button');
         cancelBtn.setText('Cancel');
         cancelBtn.onClickEvent(() => {
+            this.resolved = true;
+            this.resolve?.(null);
             this.close();
-            // Cancel resolves with null — caller ignores the result
-            if (!this.resolved) {
-                this.resolve?.(null);
-            }
         });
     }
 

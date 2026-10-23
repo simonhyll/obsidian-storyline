@@ -264,6 +264,24 @@ function renderBookCard(
         renderFallbackCover(cover, book.title);
     }
 
+    // Cover edit button (small pencil icon, top-right corner)
+    const coverEditBtn = cover.createEl('button', {
+        cls: 'universe-selector-cover-edit',
+    });
+    obsidian.setIcon(coverEditBtn, 'pencil');
+    coverEditBtn.addEventListener('click', async (e) => {
+        e.stopPropagation(); // Don't trigger card click (open book)
+        const { pickImage } = await import('./ImagePicker');
+        const sceneFolder = plugin.sceneManager.getSceneFolder() || '';
+        const result = await pickImage(plugin.app, sceneFolder, book.coverImage);
+        if (result === undefined) return; // cancelled
+        // Update the project's coverImage and persist
+        book.coverImage = result || undefined;
+        await plugin.sceneManager.saveProjectFrontmatter(book);
+        // Refresh the library to show the new cover
+        onSwitch();
+    });
+
     // Title and series info
     const info = card.createDiv({ cls: 'universe-selector-card-info' });
     info.createEl('div', {
@@ -282,7 +300,16 @@ function renderBookCard(
 
     card.addEventListener('click', async () => {
         await plugin.sceneManager.setActiveProject(book);
-        onSwitch();
+        // Refresh scenes and inherited entities for the selected project
+        await plugin.refreshOpenViews(true);
+        // Open StoryLine Board view, reusing existing leaf if available
+        try {
+            const { BOARD_VIEW_TYPE } = await import('../constants');
+            await plugin.activateView(BOARD_VIEW_TYPE);
+        } catch {
+            // Fallback: just refresh the library
+            onSwitch();
+        }
     });
 }
 

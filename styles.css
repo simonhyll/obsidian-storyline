@@ -13951,6 +13951,35 @@ body.sl-focus-active-global.sl-focus-dim-text .markdown-source-view.mod-cm6 .cm-
     letter-spacing: 1px;
 }
 
+/* Cover edit button (pencil icon) */
+.universe-selector-cover-edit {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    color: var(--text-muted);
+}
+
+.universe-selector-cover:hover .universe-selector-cover-edit {
+    opacity: 1;
+}
+
+.universe-selector-cover-edit:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
 /* Card info */
 .universe-selector-card-info {
     padding: 6px 2px 0;
