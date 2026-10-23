@@ -99,6 +99,8 @@ export default class SceneCardsPlugin extends Plugin {
     private writingStatsSaveTimer: number | null = null;
     /** Issue #238 — periodic autosave interval id (5 min) */
     private writingStatsIntervalId: number | null = null;
+    /** Prevent asynchronous startup from scheduling timers after plugin unload. */
+    private pluginUnloading = false;
     private pendingWritingChanges = new Map<string, { before: string; after: string; timer: number }>();
     /** Invalidates overlapping view refresh pipelines during project switches. */
     private openViewsRefreshGeneration = 0;
@@ -234,15 +236,15 @@ export default class SceneCardsPlugin extends Plugin {
 
         // Wait for the workspace layout to be ready, then bootstrap projects
         this.app.workspace.onLayoutReady(async () => {
-            // Issue #238 — periodic autosave of writing stats so a crash or
-            // force-quit no longer loses the whole session. The safety-net
-            // interval flushes+persists every 5 minutes regardless of activity.
+            const initialized = await runStartupSequence(this);
+            // Startup can finish after the plugin is unloaded. Only schedule
+            // periodic persistence for a fully initialized, still-live plugin.
+            if (!initialized || this.pluginUnloading) return;
+            // Issue #238 — safety-net flush+persist every five minutes.
             this.writingStatsIntervalId = window.setInterval(
                 () => this.scheduleWritingStatsSave(true),
                 5 * 60_000,
             );
-
-            await runStartupSequence(this);
         });
 
         // Register the supplied StoryLine mark in Obsidian's icon registry.
@@ -441,6 +443,7 @@ export default class SceneCardsPlugin extends Plugin {
     }
 
     onunload(): void {
+        this.pluginUnloading = true;
         // Issue #238 — clear the periodic autosave interval and any pending
         // debounced save, then do a final immediate flush+persist.
         if (this.writingStatsIntervalId) {
