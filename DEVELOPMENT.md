@@ -64,6 +64,86 @@ The full ESLint backlog has historical findings; `pnpm lint` may return nonzero.
 
 CI produces and checks `dist/`, validates the source manifest version against `package.json` and `versions.json`, and uploads the three distributable files as an artifact. Builds do not auto-release.
 
+## Conventional Commits
+
+All new commits **must** follow the [Conventional Commits](https://www.conventionalcommits.org/) specification. This enables automated changelog generation and clear release notes.
+
+### Commit message format
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Types
+
+| Type       | Section in changelog     | Description                                    |
+|------------|--------------------------|------------------------------------------------|
+| `feat`     | Features                 | A new user-visible feature                     |
+| `fix`      | Bug Fixes                | A bug fix                                      |
+| `perf`     | Performance              | A performance improvement                      |
+| `refactor` | Refactoring              | Code change that neither fixes nor adds a feat |
+| `docs`     | Documentation            | Documentation only changes                     |
+
+Other types (`test`, `build`, `ci`, `chore`, `style`) are valid but are **omitted** from the generated changelog to avoid internal maintenance noise.
+
+### Scopes
+
+Use a short scope that identifies the component or area changed, for example:
+
+- `feat(timeline): add date navigation`
+- `fix(events): preserve canonical ownership`
+- `refactor(styles): split Sass modules`
+- `test(bdd): cover multi-book chronology`
+- `docs: update developer documentation`
+
+The scope is optional. Omit it for cross-cutting changes.
+
+### Breaking changes
+
+Signal a breaking change by appending `!` before the colon or by adding a `BREAKING CHANGE:` note in the commit body:
+
+```
+feat(timeline)!: remove incompatible legacy behavior
+```
+
+or
+
+```
+fix(events): simplify ownership model
+
+BREAKING CHANGE: Event files no longer support the old owner field.
+```
+
+### Changelog commands
+
+```bash
+# Preview what the next release notes will look like (does not modify files)
+pnpm changelog:preview
+
+# Preview commits since a specific tag
+pnpm changelog:preview -- --from 1.11.0
+
+# Generate and insert a changelog section for a version
+pnpm changelog:prepare 1.11.1
+
+# Generate from a specific baseline tag
+pnpm changelog:prepare 1.11.1 -- --from 1.11.0
+```
+
+The `prepare` command:
+- Refuses to proceed if a Git tag for the version already exists.
+- Refuses to duplicate an existing version section in CHANGELOG.md.
+- Inserts the new section after the Support StoryLine section.
+- Does **not** create Git tags, bump versions, or publish releases.
+
+### Historical commits
+
+Older commits that do not follow Conventional Commits are listed under a **Non-conforming Commits** section. The script does not fabricate features from ambiguous messages.
+
 ## Install a tested build in the real Starforge vault
 
 Only after testing in the disposable vault, explicitly build and install:
@@ -78,4 +158,4 @@ This updates the installed plugin's three files; it is not a general migration o
 
 `.github/workflows/release.yml` is manually dispatched with an existing intended version. It verifies `assets/manifest.json`, `package.json` and `versions.json`, builds on GitHub Actions, and uploads `dist/main.js`, `dist/styles.css` and `dist/manifest.json` as **flat** release assets. It does not commit generated `dist/` files. Inspect release/version metadata and tag behavior before running this workflow, especially for versions already published.
 
-SCSS migration is implemented. See `.junie/plans/storyline-maintainability-roadmap.md` for the remaining Cucumber and changelog work.
+SCSS migration, Cucumber BDD, and changelog automation are implemented. See `.junie/plans/storyline-maintainability-roadmap.md` for the remaining work (Saved Views, ESLint cleanup).

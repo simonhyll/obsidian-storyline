@@ -110,8 +110,13 @@ jobs:
         env:
           RELEASE_VERSION: ${{ steps.rel.outputs.version }}
         run: |
-          git tag -f "$RELEASE_VERSION"
-          git push --force origin "refs/tags/$RELEASE_VERSION"
+          # Refuse to overwrite an existing tag — this is a safety gate.
+          if git tag -l "$RELEASE_VERSION" | grep -q .; then
+            echo "Error: tag $RELEASE_VERSION already exists. Will not overwrite."
+            exit 1
+          fi
+          git tag "$RELEASE_VERSION"
+          git push origin "refs/tags/$RELEASE_VERSION"
 
       - name: Create / update GitHub Release with build assets
         uses: softprops/action-gh-release@v2

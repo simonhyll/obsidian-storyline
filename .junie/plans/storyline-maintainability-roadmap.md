@@ -1,6 +1,6 @@
 # StoryLine — Maintainability & Tooling Roadmap
 
-Status: **in progress**. Steps 1A/1B (focused quality cleanup) and Step 2 (source/distribution layout) implemented; Steps 3–5 pending. Owner: development team / Junie. Target branch: `feat/rework`.
+Status: **in progress**. Steps 1A/1B (quality cleanup), 2 (source/distribution), 3 (SCSS), 4 (Cucumber BDD), and 5 (changelog automation) implemented. Saved Views and ESLint cleanup remain. Owner: development team / Junie. Target branch: `feat/rework`.
 
 Created after Phase 3 Milestone 2B, commit `516bc72`. This roadmap addresses technical debt before Saved Views expands view-state, persistence and UI complexity.
 
@@ -134,6 +134,8 @@ versions.json
 - Keep the existing **manual release workflow** unless separately approved to change publishing semantics. Ensure release notes in `CHANGELOG.md` and release artefacts match the released version.
 - Add optional commit-message validation (commitlint or similar), with a migration policy that does not retroactively invalidate existing history.
 - Acceptance: new conventional commits produce reproducible release notes, manual release packaging still works, no automatically created release or moved tag, and published changelog accurately reflects user-facing changes.
+
+**Step 5 implementation report (2026-10-23):** Custom changelog script (`scripts/changelog.cjs`) implemented with pure-regex Conventional Commits parsing (no external parser dependency). Commands: `pnpm changelog:preview` (read-only) and `pnpm changelog:prepare <version>` (inserts into CHANGELOG.md). Duplicate 1.11.0 sections in CHANGELOG.md consolidated. Release workflow (`release.yml`) now **refuses to overwrite existing tags** instead of force-tagging. Conventional Commits guidelines documented in `DEVELOPMENT.md`. 25 automated tests cover parsing, preview, prepare, tag protection, duplicate prevention, and historical commit handling. CI validates changelog script syntax and preview. **Total tests: 455** (430 Vitest + 25 changelog).
 
 ### Deferred lint autofix configuration repair (after Step 5, before or alongside additional refactoring)
 

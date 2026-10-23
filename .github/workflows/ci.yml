@@ -46,6 +46,12 @@ jobs:
       - name: CSS regression check
         run: node scripts/css-regression-check.mjs
 
+      - name: Validate changelog script
+        run: node --check scripts/changelog.cjs
+
+      - name: Changelog preview (dry-run)
+        run: node scripts/changelog.cjs preview
+
       - name: Reject newly introduced ESLint errors
         env:
           LINT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
