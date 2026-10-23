@@ -98,7 +98,7 @@ function createMockAdapter(): Adapter {
         getResourcePath(_path: string): string | undefined { return undefined; },
         async chmod(_path: string, _mode: number): Promise<void> {},
         async stat(_path: string) { return null; },
-    } as unknown as Adapter;
+    };
 }
 
 function createMockVault(adapter: Adapter): Vault {
@@ -112,7 +112,7 @@ function createMockVault(adapter: Adapter): Vault {
         on: vi.fn(),
         off: vi.fn(),
         offref: vi.fn(),
-    } as unknown as Vault;
+    };
 }
 
 function createMockApp(vault: Vault): App {
@@ -148,7 +148,7 @@ function createMockApp(vault: Vault): App {
             getFileCache: () => null,
         },
         resourceManager: null,
-    } as unknown as App;
+    };
 }
 
 function createMockSceneManager(projects: StoryLineProject[], activeProject: StoryLineProject | null): SceneManager {
@@ -219,7 +219,7 @@ describe('UniverseManager Integration', () => {
     ) {
         adapter = createMockAdapter();
         app = createMockVault(adapter);
-        app = createMockApp(app as unknown as Vault);
+        app = createMockApp(app);
         sceneManager = createMockSceneManager(projects, activeProject);
         seriesManager = createMockSeriesManager(seriesList);
         plugin = createMockPlugin(app, sceneManager, seriesManager, ROOT);

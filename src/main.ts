@@ -3616,11 +3616,11 @@ export default class SceneCardsPlugin extends Plugin {
                     if (!dropdownEl) return;
                     const currentVal = dropdownEl.value;
                     dropdownEl.innerHTML = '';
-                    const optNone = document.createElement('option');
+                    const optNone = createEl('option');
                     optNone.value = '';
                     optNone.text = '— None —';
                     dropdownEl.add(optNone);
-                    const optNew = document.createElement('option');
+                    const optNew = createEl('option');
                     optNew.value = '__new__';
                     optNew.text = '+ Create new series…';
                     dropdownEl.add(optNew);
@@ -3641,7 +3641,7 @@ export default class SceneCardsPlugin extends Plugin {
                         for (const { meta } of allSeriesList) {
                             if (selectedUniverseId && !universeSeriesUuids.has(meta.seriesUuid || '')) continue;
                             if (!meta.seriesUuid) continue;
-                            const opt = document.createElement('option');
+                            const opt = createEl('option');
                             opt.value = meta.seriesUuid;
                             opt.text = meta.name;
                             dropdownEl.add(opt);
@@ -3661,7 +3661,7 @@ export default class SceneCardsPlugin extends Plugin {
                         const dropdownEl = universeSetting.controlEl.querySelector('select') as HTMLSelectElement;
                         if (!dropdownEl) return;
                         for (const u of universes) {
-                            const opt = document.createElement('option');
+                            const opt = createEl('option');
                             opt.value = u.id;
                             opt.text = u.name;
                             dropdownEl.add(opt);

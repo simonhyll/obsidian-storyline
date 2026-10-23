@@ -267,7 +267,7 @@ export class TimeSpanPicker {
                 dd.onChange(async (value: string) => {
                     const current = this.getCurrentTimeSpan();
                     if (current && current.kind === 'relative') {
-                        current.offset.unit = value as any;
+                        current.offset.unit = value as unknown;
                         this.onChange(current);
                     }
                 });
@@ -411,7 +411,7 @@ export class TimeSpanPicker {
             case 'relative': {
                 const relativeTo = this.relativeToInput?.value || '';
                 const amount = parseInt(this.offsetAmountInput?.value || '0', 10);
-                const unit = (this.offsetUnitSelect?.value || 'day') as any;
+                const unit = (this.offsetUnitSelect?.value || 'day') as unknown;
                 const direction = (this.offsetDirectionSelect?.value || 'before') as 'before' | 'after';
                 if (relativeTo) {
                     return {

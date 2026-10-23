@@ -145,7 +145,7 @@ describe('event deduplication', () => {
         // Same UUID (spread copy)
         const event1Copy = { ...event1 };
 
-        const eventMap = new Map<string, any>();
+        const eventMap = new Map<string, unknown>();
         for (const e of [event1, event1Copy]) {
             if (!eventMap.has(e.id)) {
                 eventMap.set(e.id, e);
@@ -161,7 +161,7 @@ describe('event deduplication', () => {
         const event2 = { ...event1, name: 'Event X (conflict)' };
 
         const warnings: string[] = [];
-        const eventMap = new Map<string, any>();
+        const eventMap = new Map<string, unknown>();
 
         for (const e of [event1, event2]) {
             if (!eventMap.has(e.id)) {
@@ -185,7 +185,7 @@ describe('event deduplication', () => {
         // getAllUniverseEventFolders returns all Events/ folders
         // loadEventsFromFolders deduplicates by UUID
         const allEvents = [...universeEvents, ...seriesEvents, ...bookAEvents, ...bookBEvents];
-        const eventMap = new Map<string, any>();
+        const eventMap = new Map<string, unknown>();
         for (const e of allEvents) {
             if (!eventMap.has(e.id)) {
                 eventMap.set(e.id, e);

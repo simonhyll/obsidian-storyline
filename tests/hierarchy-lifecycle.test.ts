@@ -5,11 +5,11 @@ import { UniverseManager } from '../src/services/UniverseManager';
 import { normalizePath, TFile } from 'obsidian';
 
 describe('Hierarchy lifecycle', () => {
-    let mockAdapter: any;
-    let mockApp: any;
+    let mockAdapter: unknown;
+    let mockApp: unknown;
     let seriesManager: SeriesManager;
     let sceneManager: SceneManager;
-    let plugin: any;
+    let plugin: unknown;
 
     function createMockAdapter() {
         const fs = new Map<string, string | { folder: true }>();
@@ -73,7 +73,7 @@ describe('Hierarchy lifecycle', () => {
     }
 
     /** Create a markdown project file in the mock filesystem */
-    function createProjectFile(adapter: any, filePath: string, frontmatter: Record<string, unknown>) {
+    function createProjectFile(adapter: unknown, filePath: string, frontmatter: Record<string, unknown>) {
         const lines = ['---'];
         for (const [key, value] of Object.entries(frontmatter)) {
             if (typeof value === 'object' && value !== null) {
@@ -87,7 +87,7 @@ describe('Hierarchy lifecycle', () => {
         adapter.fs.set(normalizePath(filePath), content);
     }
 
-    function setupManagers(adapter: any) {
+    function setupManagers(adapter: unknown) {
         mockApp = {
             vault: {
                 adapter,
@@ -111,7 +111,7 @@ describe('Hierarchy lifecycle', () => {
                     return null;
                 },
                 getMarkdownFiles: () => {
-                    const result: any[] = [];
+                    const result: unknown[] = [];
                     for (const [key, val] of adapter.fs) {
                         if (typeof val === 'string' && key.endsWith('.md')) {
                             const f = new TFile();
@@ -144,10 +144,10 @@ describe('Hierarchy lifecycle', () => {
                 createFolder: async (path: string) => {
                     await adapter.mkdir(path);
                 },
-                modify: async (file: any, data: string) => {
+                modify: async (file: unknown, data: string) => {
                     await adapter.write(file.path, data);
                 },
-                read: async (file: any) => {
+                read: async (file: unknown) => {
                     return await adapter.read(file.path);
                 },
             },
@@ -160,7 +160,7 @@ describe('Hierarchy lifecycle', () => {
             scope: {},
             plugins: {},
             fileManager: {
-                renameFile: async (file: any, newName: string) => {
+                renameFile: async (file: unknown, newName: string) => {
                     const oldPath = normalizePath(file.path);
                     const newPath = normalizePath(newName);
                     const val = adapter.fs.get(oldPath);
@@ -169,7 +169,7 @@ describe('Hierarchy lifecycle', () => {
                         adapter.fs.set(newPath, val);
                     }
                 },
-                trashFile: async (file: any) => {
+                trashFile: async (file: unknown) => {
                     adapter.fs.delete(normalizePath(file.path));
                 },
             },
@@ -196,13 +196,13 @@ describe('Hierarchy lifecycle', () => {
             saveData: vi.fn(),
         };
 
-        sceneManager = new SceneManager(mockApp, plugin as any);
+        sceneManager = new SceneManager(mockApp, plugin);
         plugin.sceneManager = sceneManager;
 
-        seriesManager = new SeriesManager(mockApp, plugin as any);
+        seriesManager = new SeriesManager(mockApp, plugin);
         plugin.seriesManager = seriesManager;
 
-        plugin.universeManager = new UniverseManager(mockApp, plugin as any);
+        plugin.universeManager = new UniverseManager(mockApp, plugin);
     }
 
     beforeEach(() => {
@@ -222,17 +222,17 @@ describe('Hierarchy lifecycle', () => {
                 sceneFolder: 'StoryLine/Old Book/Scenes',
                 bookId: 'test-book-id',
                 created: '2024-01-01',
-            } as any;
+            } as unknown;
 
-            (sceneManager as any).projects.set(oldPath, project);
-            expect((sceneManager as any).projects.has(oldPath)).toBe(true);
-            expect((sceneManager as any).projects.has(newPath)).toBe(false);
+            (sceneManager as unknown).projects.set(oldPath, project);
+            expect((sceneManager as unknown).projects.has(oldPath)).toBe(true);
+            expect((sceneManager as unknown).projects.has(newPath)).toBe(false);
 
             sceneManager.updateProjectPath(oldPath, newPath, project);
 
-            expect((sceneManager as any).projects.has(oldPath)).toBe(false);
-            expect((sceneManager as any).projects.has(newPath)).toBe(true);
-            expect((sceneManager as any).projects.get(newPath)).toBe(project);
+            expect((sceneManager as unknown).projects.has(oldPath)).toBe(false);
+            expect((sceneManager as unknown).projects.has(newPath)).toBe(true);
+            expect((sceneManager as unknown).projects.get(newPath)).toBe(project);
         });
 
         it('re-derives folder paths from new file path', () => {
@@ -247,9 +247,9 @@ describe('Hierarchy lifecycle', () => {
                 sceneFolder: 'StoryLine/Old Book/Scenes',
                 bookId: 'test-book-id',
                 created: '2024-01-01',
-            } as any;
+            } as unknown;
 
-            (sceneManager as any).projects.set(oldPath, project);
+            (sceneManager as unknown).projects.set(oldPath, project);
             sceneManager.updateProjectPath(oldPath, newPath, project);
 
             expect(project.sceneFolder).toBe('StoryLine/My Series/Old Book/Scenes');
@@ -293,7 +293,7 @@ describe('Hierarchy lifecycle', () => {
                 sceneFolder: `${standaloneBookFolder}/Scenes`,
                 bookId: 'standalone-id',
                 created: '2024-01-01',
-            } as any;
+            } as unknown;
 
             await expect(seriesManager.addBookToSeries(seriesUuid, project)).rejects.toThrow('already exists');
         });
@@ -326,7 +326,7 @@ describe('Hierarchy lifecycle', () => {
                 sceneFolder: `${oldBookFolder}/Scenes`,
                 bookId: 'test-book-id',
                 created: '2024-01-01',
-            } as any;
+            } as unknown;
 
             await seriesManager.addBookToSeries(seriesUuid, project);
 
@@ -363,7 +363,7 @@ describe('Hierarchy lifecycle', () => {
                 sceneFolder: `${oldBookFolder}/Scenes`,
                 bookId: 'test-book-id',
                 created: '2024-01-01',
-            } as any;
+            } as unknown;
 
             await seriesManager.addBookToSeries(seriesUuid, project);
 
@@ -400,18 +400,18 @@ describe('Hierarchy lifecycle', () => {
                 sceneFolder: `${oldBookFolder}/Scenes`,
                 bookId: 'test-book-id',
                 created: '2024-01-01',
-            } as any;
+            } as unknown;
 
             // Register project and set as active
-            (sceneManager as any).projects.set(oldFilePath, project);
-            (sceneManager as any)._activeProject = project;
+            (sceneManager as unknown).projects.set(oldFilePath, project);
+            (sceneManager as unknown)._activeProject = project;
             plugin.settings.activeProjectFile = oldFilePath;
 
             await seriesManager.addBookToSeries(seriesUuid, project);
 
             const newFilePath = `${seriesFolder}/Test Book/Test Book.md`;
-            expect((sceneManager as any).projects.has(oldFilePath)).toBe(false);
-            expect((sceneManager as any).projects.has(newFilePath)).toBe(true);
+            expect((sceneManager as unknown).projects.has(oldFilePath)).toBe(false);
+            expect((sceneManager as unknown).projects.has(newFilePath)).toBe(true);
             expect(plugin.settings.activeProjectFile).toBe(newFilePath);
             expect(plugin.saveSettings).toHaveBeenCalled();
         });
@@ -451,7 +451,7 @@ describe('Hierarchy lifecycle', () => {
                 created: '2024-01-01',
                 seriesId: 'My Series',
                 seriesUuid,
-            } as any;
+            } as unknown;
 
             await seriesManager.removeBookFromSeries(seriesUuid, project);
 
@@ -491,7 +491,7 @@ describe('Hierarchy lifecycle', () => {
                 created: '2024-01-01',
                 seriesId: 'My Series',
                 seriesUuid,
-            } as any;
+            } as unknown;
 
             await seriesManager.removeBookFromSeries(seriesUuid, project);
 
@@ -530,7 +530,7 @@ describe('Hierarchy lifecycle', () => {
                 created: '2024-01-01',
                 seriesId: 'My Series',
                 seriesUuid,
-            } as any;
+            } as unknown;
 
             await seriesManager.removeBookFromSeries(seriesUuid, project);
 
@@ -574,7 +574,7 @@ describe('Hierarchy lifecycle', () => {
                 created: '2024-01-01',
                 seriesId: 'My Series',
                 seriesUuid,
-            } as any;
+            } as unknown;
 
             await expect(seriesManager.removeBookFromSeries(seriesUuid, project)).rejects.toThrow('already exists');
 
@@ -614,18 +614,18 @@ describe('Hierarchy lifecycle', () => {
                 created: '2024-01-01',
                 seriesId: 'My Series',
                 seriesUuid,
-            } as any;
+            } as unknown;
 
             // Register project and set as active
-            (sceneManager as any).projects.set(project.filePath, project);
-            (sceneManager as any)._activeProject = project;
+            (sceneManager as unknown).projects.set(project.filePath, project);
+            (sceneManager as unknown)._activeProject = project;
             plugin.settings.activeProjectFile = project.filePath;
 
             await seriesManager.removeBookFromSeries(seriesUuid, project);
 
             const newFilePath = 'StoryLine/Test Book/Test Book.md';
-            expect((sceneManager as any).projects.has(bookInSeriesFolder + '/Test Book.md')).toBe(false);
-            expect((sceneManager as any).projects.has(newFilePath)).toBe(true);
+            expect((sceneManager as unknown).projects.has(bookInSeriesFolder + '/Test Book.md')).toBe(false);
+            expect((sceneManager as unknown).projects.has(newFilePath)).toBe(true);
             expect(plugin.settings.activeProjectFile).toBe(newFilePath);
             expect(plugin.saveSettings).toHaveBeenCalled();
         });
@@ -661,7 +661,7 @@ describe('Hierarchy lifecycle', () => {
                 bookId: 'test-book-id',
                 created: '2024-01-01',
                 universeId: 'old-universe-xyz',
-            } as any;
+            } as unknown;
 
             await seriesManager.addBookToSeries(seriesUuid, project);
 
@@ -699,7 +699,7 @@ describe('Hierarchy lifecycle', () => {
                 sceneFolder: `${oldBookFolder}/Scenes`,
                 bookId: 'test-book-id',
                 created: '2024-01-01',
-            } as any;
+            } as unknown;
 
             await seriesManager.addBookToSeries(seriesUuid, project);
 
