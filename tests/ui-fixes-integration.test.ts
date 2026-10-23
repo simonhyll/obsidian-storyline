@@ -74,7 +74,7 @@ describe('Project creation guard', () => {
         // This is tested by verifying the guard pattern exists
         const plugin = {
             _newProjectModalOpen: false,
-        } as unknown;
+        } as any;
 
         // First call would set the guard
         plugin._newProjectModalOpen = true;

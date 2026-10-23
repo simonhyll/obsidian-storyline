@@ -2541,7 +2541,7 @@ export class TimelineView extends ItemView {
         }
 
         // Create popover
-        const popover = createDiv();
+        const popover = document.createElement('div');
         popover.className = 'story-line-book-selector-popover';
         popover.style.position = 'absolute';
         popover.style.zIndex = '1000';

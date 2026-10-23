@@ -22,7 +22,7 @@ function createMockApp() {
             modify: async () => {},
             getAbstractFileByPath: () => null,
         },
-    } as unknown;
+    } as any;
 }
 
 describe('EventSelectorModal', () => {
@@ -60,7 +60,7 @@ describe('EventSelectorModal', () => {
         const modal = new EventSelectorModal(app, eventManager, timeSpanService, selectedIds);
 
         // Access the private selectedIds via any cast for testing
-        const actualSelected = (modal as unknown).selectedIds;
+        const actualSelected = (modal as any).selectedIds;
         expect(actualSelected).toEqual(['uuid-1', 'uuid-2']);
         // Verify it's a copy, not the same reference
         expect(actualSelected).not.toBe(selectedIds);
@@ -92,7 +92,7 @@ describe('EventModal TimeSpanPicker integration', () => {
 
         const onChange = vi.fn();
         const picker = new TimeSpanPicker(
-            container as unknown,
+            container as any,
             timeSpanService,
             onChange
         );
@@ -133,14 +133,14 @@ describe('EventModal TimeSpanPicker integration', () => {
 
         const onChange = vi.fn();
         const picker = new TimeSpanPicker(
-            container as unknown,
+            container as any,
             timeSpanService,
             onChange
         );
 
         picker.setValue(null);
         // After setValue(null), kind should be 'unknown'
-        expect((picker as unknown).kind).toBe('unknown');
+        expect((picker as any).kind).toBe('unknown');
     });
 });
 
@@ -167,7 +167,7 @@ describe('EventModal data preservation', () => {
 
         const modal = new EventModal(
             app,
-            {} as unknown, // plugin
+            {} as any, // plugin
             eventManager,
             timeSpanService,
             'StoryLine/Book/Events',
@@ -175,11 +175,11 @@ describe('EventModal data preservation', () => {
         );
 
         // Verify fields are initialized
-        expect((modal as unknown).name).toBe('Test Event');
-        expect((modal as unknown).description).toBe('A test description');
-        expect((modal as unknown).location).toBe('[[Waterloo]]');
-        expect((modal as unknown).participants).toBe('char-1, char-2');
-        expect((modal as unknown).tags).toBe('battle, historical');
-        expect((modal as unknown).timeSpan).toEqual(existingEvent.timeSpan);
+        expect((modal as any).name).toBe('Test Event');
+        expect((modal as any).description).toBe('A test description');
+        expect((modal as any).location).toBe('[[Waterloo]]');
+        expect((modal as any).participants).toBe('char-1, char-2');
+        expect((modal as any).tags).toBe('battle, historical');
+        expect((modal as any).timeSpan).toEqual(existingEvent.timeSpan);
     });
 });

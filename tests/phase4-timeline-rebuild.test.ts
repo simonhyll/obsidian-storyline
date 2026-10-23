@@ -45,7 +45,7 @@ function createEvent(overrides: Partial<Event> = {}): Event {
         name: 'Test Event',
         timeSpan: undefined,
         ...overrides,
-    };
+    } as Event;
 }
 
 function createInstant(year: number, month: number, day: number): TimeSpan {

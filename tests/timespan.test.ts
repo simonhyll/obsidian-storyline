@@ -84,10 +84,10 @@ describe('TimeSpan', () => {
             const ts = createInstantTimeSpan(2024, 6, 15);
             expect(ts.kind).toBe('instant');
             expect(ts.instant).toBeDefined();
-            expect(ts.instant.year).toBe(2024);
-            expect(ts.instant.month).toBe(6);
-            expect(ts.instant.day).toBe(15);
-            expect(ts.instant.calendar).toBe(DEFAULT_CALENDAR);
+            expect(ts.instant!.year).toBe(2024);
+            expect(ts.instant!.month).toBe(6);
+            expect(ts.instant!.day).toBe(15);
+            expect(ts.instant!.calendar).toBe(DEFAULT_CALENDAR);
         });
 
         it('createIntervalTimeSpan creates interval with end', () => {
@@ -122,9 +122,9 @@ describe('TimeSpan', () => {
             const ts = createRelativeTimeSpan('scene-abc', 7, 'week', 'after');
             expect(ts.kind).toBe('relative');
             expect(ts.relativeTo).toBe('scene-abc');
-            expect(ts.offset.amount).toBe(7);
-            expect(ts.offset.unit).toBe('week');
-            expect(ts.offset.direction).toBe('after');
+            expect(ts.offset!.amount).toBe(7);
+            expect(ts.offset!.unit).toBe('week');
+            expect(ts.offset!.direction).toBe('after');
         });
     });
 
