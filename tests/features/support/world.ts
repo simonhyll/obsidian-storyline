@@ -2,7 +2,7 @@
  * Cucumber test world — holds shared state between steps.
  * Uses real production services with mocked Obsidian vault.
  */
-import type { TimeSpan } from '../../../src/models/TimeSpan';
+import type { TimelineNavItem } from '../../../src/services/TimelineNavigationService';
 import type { Event } from '../../../src/models/Event';
 import type { Scene } from '../../../src/models/Scene';
 import type { StoryLineProject } from '../../../src/models/StoryLineProject';
@@ -23,7 +23,9 @@ export interface TestWorld {
   /** Files that would be created (simulated filesystem) */
   createdFiles: Map<string, string>;
   /** Timeline items after sorting (scenes + events merged) */
-  timelineItems: Array<{ scene?: Scene; event?: Event; timestamp?: { year: number; month: number; day: number } }>;
+  timelineItems: TimelineNavItem[];
+  /** Simulated compatible Book choice, not a rendered Obsidian selector */
+  selectableBooks: StoryLineProject[];
   /** Whether the last creation was cancelled */
   cancelled: boolean;
   /** Files before creation (for cancellation verification) */
