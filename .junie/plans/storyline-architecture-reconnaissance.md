@@ -1419,8 +1419,8 @@ Requested technical improvements, grouped into independent, verifiable stages:
 
 - [ ] Baseline / smoke-test milestone 2B against a disposable Obsidian vault and record real build, typecheck, test and lint outcomes.
 - [ ] Fix existing TypeScript errors, tighten typing/linting incrementally, and enforce CI checks on development branch without hiding a historical baseline.
-- [ ] Relocate source TypeScript to `src/` and actual distributable source assets to `assets/`, preserving Obsidian's required root `main.js`, `manifest.json`, `styles.css`.
-- [ ] Convert monolithic CSS to modular SCSS source, compiled as root `styles.css` with working dev/release/vault watchers.
+- [ ] Move TypeScript source to `src/`, put authoritative source manifest/assets in `assets/`, and generate ONLY `dist/main.js`, `dist/styles.css`, `dist/manifest.json`. Migrate vault sync, CI and release paths. Installed Obsidian plugin folder still has the three files flat at its root.
+- [ ] Convert monolithic CSS to modular SCSS source, compiled as `dist/styles.css` with working dev/release/vault watchers.
 - [ ] Introduce **Cucumber BDD for real user acceptance flows**, retaining Vitest for fast unit/service tests; use production APIs and safe test vaults.
 - [ ] Introduce **Conventional Commits and automatically generated changelog entries** without automatically releasing new plugin versions or modifying published tags.
 - [ ] Resume **Phase 3 Saved Views** after the structural and quality prerequisites have passed.
