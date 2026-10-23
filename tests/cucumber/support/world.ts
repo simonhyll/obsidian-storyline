@@ -147,10 +147,16 @@ export interface TestWorld {
   alphaScenes?: import('../../../src/models/Scene').Scene[];
   /** Scenes from Beta universe (for isolation test) */
   betaScenes?: import('../../../src/models/Scene').Scene[];
+  /** Scene UUIDs from Alpha universe (for exact UUID assertion) */
+  alphaSceneUuids?: string[];
+  /** Scene UUIDs from Beta universe (for exact UUID assertion) */
+  betaSceneUuids?: string[];
   /** SceneManager for hierarchy tests (real production instance) */
   hierarchySceneManager?: import('../../../src/services/SceneManager').SceneManager;
   /** Book directly in universe (for book-in-universe test) */
   bookInUniverse?: StoryLineProject;
   /** Book in series in universe (for book-in-series test) */
   bookInSeries?: StoryLineProject;
+  /** Beta universe folder (for exclusive membership test) */
+  universeBetaFolder?: string;
 }

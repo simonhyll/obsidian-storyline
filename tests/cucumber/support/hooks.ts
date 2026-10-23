@@ -3,9 +3,11 @@
  *
  * Sets up the Obsidian module mock so that production code importing
  * from 'obsidian' (TFile, parseYaml, stringifyYaml) works in Node.js.
+ * Runs vault harness regression tests at bootstrap time.
  */
-import { Before } from '@cucumber/cucumber';
+import { Before, BeforeAll } from '@cucumber/cucumber';
 import { TestWorld } from './world';
+import { runVaultHarnessTests } from './vault-harness-tests';
 
 // Patch the 'obsidian' module in the module registry so that production
 // code (EventManager, SceneManager) can import TFile, parseYaml, and
@@ -19,6 +21,11 @@ Module._resolveFilename = function (request: string, ...rest: unknown[]): string
     }
     return originalResolveFilename.apply(this, [request, ...rest]);
 };
+
+// Run vault harness regression tests once at test bootstrap
+BeforeAll(async () => {
+    await runVaultHarnessTests();
+});
 
 Before(function (this: TestWorld) {
   this.scenes = [];

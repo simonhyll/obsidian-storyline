@@ -276,3 +276,4 @@ export function createAppMock(vault: TestVault): AppMock {
   };
   return { vault, fileManager };
 }
+

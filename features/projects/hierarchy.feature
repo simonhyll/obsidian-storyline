@@ -18,6 +18,13 @@ Feature: Universe and Series hierarchy
     Given I create a series "My Series" in universe "My Universe"
     Then the series universe ID matches "My Universe"
 
+  Scenario: Series membership is exclusive across universes
+    Given I create a series "Shared Series" in universe "Alpha"
+    And I create a second universe "Beta"
+    When I move the series to universe "Beta"
+    Then the series belongs to universe "Beta"
+    And the series no longer belongs to universe "Alpha"
+
   Scenario: Books from different universes are isolated
     Given a book in universe "Alpha"
     And a book in universe "Beta"
