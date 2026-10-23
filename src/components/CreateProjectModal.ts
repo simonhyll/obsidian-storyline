@@ -10,7 +10,7 @@ import type { App } from 'obsidian';
 import type { StoryLineProject } from '../models/StoryLineProject';
 import { executeCreation, type ProjectType, type CreationFormState, type ProjectCreationDeps } from '../services/projectCreation';
 import { updateSeriesDropdownInPlace } from './CreateProjectDropdowns';
-import type { DropdownDeps } from './CreateProjectDropdowns';
+import type { DropdownDeps, ModalClosedChecker } from './CreateProjectDropdowns';
 import { buildFormFields, updateFieldVisibility, type FormFieldRefs } from './CreateProjectFields';
 
 /**
@@ -54,7 +54,9 @@ export class CreateProjectModal extends Modal {
     private resolvePromise: ((result: StoryLineProject | null) => void) | null = null;
     private settled = false;
     private isCreating = false;
-    isClosed = false;
+    private isClosed_ = false;
+    /** Returns whether the modal has been closed (satisfies ModalClosedChecker). */
+    get isClosed(): boolean { return this.isClosed_; }
 
     constructor(
         app: App,
@@ -152,11 +154,14 @@ export class CreateProjectModal extends Modal {
         const dropdownEl = this.refs.seriesSetting?.controlEl.querySelector('select');
         if (!dropdownEl) return;
         const requestId = ++this.seriesDropdownRequestId;
-        const state = {
+        await updateSeriesDropdownInPlace({
+            deps: this.deps,
+            dropdownEl,
             selectedUniverseId: this.form.selectedUniverseId,
-            seriesDropdownRequestId: requestId,
-        };
-        await updateSeriesDropdownInPlace(this.deps, dropdownEl, state, requestId, this);
+            requestId,
+            getCurrentRequestId: () => this.seriesDropdownRequestId,
+            modalChecker: this,
+        });
     }
 
     private async handleCreate(): Promise<void> {
@@ -173,7 +178,7 @@ export class CreateProjectModal extends Modal {
         this.refs.createBtn?.setDisabled(true);
         try {
             const result = await executeCreation(this.form, this.deps);
-            if (!this.isClosed) {
+            if (!this.isClosed_) {
                 this.showCreationNotice();
             }
             this.settle(result);
@@ -203,7 +208,7 @@ export class CreateProjectModal extends Modal {
     }
 
     onClose(): void {
-        this.isClosed = true;
+        this.isClosed_ = true;
         this.settle(null);
     }
 }

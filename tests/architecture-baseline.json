@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "description": "Architecture debt baseline for StoryLine Step 6A",
-  "generatedAt": "2026-10-23T14:52:41.025Z",
+  "generatedAt": "2026-10-23T15:18:49.521Z",
   "files": {
     "src/components/AddFieldModal.ts": {
       "violations": [
@@ -68,14 +68,6 @@
         {
           "rule": "max-lines",
           "line": 212
-        }
-      ]
-    },
-    "src/components/CreateProjectDropdowns.ts": {
-      "violations": [
-        {
-          "rule": "max-params",
-          "line": 124
         }
       ]
     },
@@ -5283,19 +5275,35 @@
         }
       ]
     },
-    "tests/project-creation.test.ts": {
+    "tests/project-creation-dropdown.test.ts": {
       "violations": [
         {
           "rule": "max-lines-per-function",
-          "line": 156
-        },
-        {
-          "rule": "max-lines",
-          "line": 242
-        },
+          "line": 26
+        }
+      ]
+    },
+    "tests/project-creation-flows.test.ts": {
+      "violations": [
         {
           "rule": "max-lines-per-function",
-          "line": 266
+          "line": 20
+        }
+      ]
+    },
+    "tests/project-creation-race.test.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 26
+        }
+      ]
+    },
+    "tests/project-creation-validation.test.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 19
         }
       ]
     },
@@ -5449,14 +5457,14 @@
     }
   },
   "summary": {
-    "totalFilesWithViolations": 96,
+    "totalFilesWithViolations": 98,
     "totalViolations": 1265,
     "byRule": {
-      "max-params": 50,
-      "max-lines-per-function": 337,
+      "max-params": 49,
+      "max-lines-per-function": 339,
       "complexity": 308,
       "max-statements": 230,
-      "max-lines": 79,
+      "max-lines": 78,
       "max-depth": 261
     }
   }

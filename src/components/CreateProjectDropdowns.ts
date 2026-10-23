@@ -25,21 +25,33 @@ export interface DropdownDeps {
 }
 
 /**
- * State required for dropdown operations.
- */
-export interface DropdownState {
-    /** Currently selected universe ID. */
-    selectedUniverseId: string;
-    /** Monotonically increasing request ID for stale-response protection. */
-    seriesDropdownRequestId: number;
-}
-
-/**
  * A minimal interface for checking whether the modal is still open.
  */
 export interface ModalClosedChecker {
     /** True if the modal has been closed. */
     isClosed: boolean;
+}
+
+/**
+ * Options for updating a series dropdown in-place.
+ *
+ * Uses a live request-id getter function so the freshness check compares
+ * against the current modal counter, not a stale snapshot taken before
+ * the async await.
+ */
+export interface UpdateSeriesDropdownOptions {
+    /** Dropdown dependencies. */
+    deps: DropdownDeps;
+    /** The select element to update. */
+    dropdownEl: HTMLSelectElement;
+    /** Currently selected universe ID. */
+    selectedUniverseId: string;
+    /** The request ID this call was made with. */
+    requestId: number;
+    /** Get the current live request ID from the modal. */
+    getCurrentRequestId: () => number;
+    /** Check if the modal has been closed. */
+    modalChecker: ModalClosedChecker;
 }
 
 /**
@@ -77,13 +89,13 @@ export async function populateUniverseDropdown(
  * Populate the series dropdown with series filtered by the selected universe.
  *
  * @param deps - Dropdown dependencies.
- * @param state - Current dropdown state.
+ * @param selectedUniverseId - Currently selected universe ID.
  * @param defaultSeriesUuid - Optional pre-selected series.
  * @returns The populated dropdown element.
  */
 export async function populateSeriesDropdown(
     deps: DropdownDeps,
-    state: DropdownState,
+    selectedUniverseId: string,
     defaultSeriesUuid?: string,
 ): Promise<HTMLSelectElement> {
     const dropdownEl = document.createElement('select');
@@ -98,7 +110,7 @@ export async function populateSeriesDropdown(
     dropdownEl.add(optNew);
 
     try {
-        const seriesList = await fetchSeriesForUniverse(deps, state.selectedUniverseId);
+        const seriesList = await fetchSeriesForUniverse(deps, selectedUniverseId);
         for (const s of seriesList) {
             const opt = document.createElement('option');
             opt.value = s.uuid;
@@ -115,45 +127,44 @@ export async function populateSeriesDropdown(
  * Update an existing series dropdown in-place, preserving the current selection.
  * Skips the update if the modal has been closed or if a newer request has arrived.
  *
- * @param deps - Dropdown dependencies.
- * @param dropdownEl - The select element to update.
- * @param state - Current dropdown state (snapshot at call time).
- * @param requestId - The request ID this call was made with.
- * @param modalChecker - Interface to check if the modal is closed.
+ * The freshness check uses a live request-id getter so it compares against
+ * the current modal counter after the async await, not a stale snapshot.
+ *
+ * @param opts - Options object containing all parameters.
  */
 export async function updateSeriesDropdownInPlace(
-    deps: DropdownDeps,
-    dropdownEl: HTMLSelectElement,
-    state: DropdownState,
-    requestId: number,
-    modalChecker: ModalClosedChecker,
+    opts: UpdateSeriesDropdownOptions,
 ): Promise<void> {
-    const currentVal = dropdownEl.value;
-    dropdownEl.innerHTML = '';
+    const currentVal = opts.dropdownEl.value;
+    opts.dropdownEl.innerHTML = '';
     const optNone = document.createElement('option');
     optNone.value = '';
     optNone.text = '— None —';
-    dropdownEl.add(optNone);
+    opts.dropdownEl.add(optNone);
     const optNew = document.createElement('option');
     optNew.value = '__new__';
     optNew.text = '+ Create new series…';
-    dropdownEl.add(optNew);
+    opts.dropdownEl.add(optNew);
 
     try {
-        const seriesList = await fetchSeriesForUniverse(deps, state.selectedUniverseId);
-        // Skip if modal closed or a newer request superseded this one
-        if (modalChecker.isClosed) return;
-        if (state.seriesDropdownRequestId !== requestId) return;
+        const seriesList = await fetchSeriesForUniverse(
+            opts.deps,
+            opts.selectedUniverseId,
+        );
+        // Skip if modal closed
+        if (opts.modalChecker.isClosed) return;
+        // Check freshness against the LIVE modal counter, not a snapshot
+        if (opts.getCurrentRequestId() !== opts.requestId) return;
         for (const s of seriesList) {
             const opt = document.createElement('option');
             opt.value = s.uuid;
             opt.text = s.name;
-            dropdownEl.add(opt);
+            opts.dropdownEl.add(opt);
         }
         // If the previously selected series is still valid, restore it;
         // otherwise reset to none so an incompatible selection isn't kept.
-        if (currentVal && Array.from(dropdownEl.options).some(o => o.value === currentVal)) {
-            dropdownEl.value = currentVal;
+        if (currentVal && Array.from(opts.dropdownEl.options).some(o => o.value === currentVal)) {
+            opts.dropdownEl.value = currentVal;
         }
     } catch { /* no series yet */ }
 }
