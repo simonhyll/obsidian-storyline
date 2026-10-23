@@ -82,15 +82,25 @@ Before Step 6B, use Husky v9 to register `.husky/pre-commit`. Each local commit 
 
 **Step 6B.4a implementation report (2026-10-23):** Independent code review of Step 6B.4 (`fa6da07`) uncovered 4 functional regressions in the extracted project creation modules. All repaired in commit `438b622`:
 
-1. **Empty form callbacks** — `CreateProjectFields.ts` had empty `onChange` handlers for title and newSeriesName fields. Users could type but the form state never updated, making creation impossible. Fixed by passing `onTitleChange` and `onNewSeriesNameChange` through `BuildFormFieldsConfig`.
+1. **Empty form callbacks** — `CreateProjectFields.ts` had empty `onChange` handlers for title and newSeriesName fields. Fixed by passing callbacks through `BuildFormFieldsConfig`.
 
-2. **Stale dropdown responses** — `CreateProjectDropdowns.ts` accepted `seriesDropdownRequestId` but never checked it. Async results from older requests always overwrote newer selections. Fixed by passing `requestId` and `ModalClosedChecker` to `updateSeriesDropdownInPlace`, which now skips stale results and resets invalid selections.
+2. **Stale dropdown responses** — `CreateProjectDropdowns.ts` accepted `seriesDropdownRequestId` but never checked it against the live counter. Fixed by passing `requestId` and `ModalClosedChecker`.
 
-3. **No concurrency guard** — `CreateProjectModal.handleCreate()` had no in-flight guard. Double-clicking could trigger concurrent creation. Fixed with `isCreating` flag and `isClosed` flag to reject stale async updates after modal close.
+3. **No concurrency guard** — `CreateProjectModal.handleCreate()` had no in-flight guard. Fixed with `isCreating` and `isClosed` flags.
 
-4. **No pre-persistence validation** — `projectCreation.ts` created files before validating input. Empty titles and missing series names were only caught by the UI, not the service layer. Fixed with `CreationValidationError` thrown by `validateForm()` before any persistence.
+4. **No pre-persistence validation** — `projectCreation.ts` created files before validating. Fixed with `CreationValidationError`.
 
-Added 28 behavioral tests covering validation, creation flows, dropdown race conditions, cancellation, and form bindings. Updated `eslint.config.mjs` to disable `no-explicit-any` and `no-unsafe-*` rules for test files so mock-based tests compile cleanly. Architecture baseline updated to include new test file (1,265 total violations, delta 0).
+**Step 6B.4b implementation report (2026-10-23):** Commit `a6abbdb` completed the project creation hardening:
+
+1. **Real async dropdown race fix** — `updateSeriesDropdownInPlace` now accepts `UpdateSeriesDropdownOptions` with a live `getCurrentRequestId()` getter. The freshness check compares against the current modal counter after the async await, not a stale snapshot. Function signature reduced from 5 params to 1 options object, eliminating the `max-params` violation.
+
+2. **Private modal internals** — `isClosed` field made private (`isClosed_`) with a getter to satisfy `ModalClosedChecker` without exposing mutable internals.
+
+3. **Strict test linting restored** — Removed blanket `no-explicit-any` and `no-unsafe-*` exemptions from `eslint.config.mjs` for test files. Tests now use properly typed fixtures (`tests/fixtures/project-creation-fixtures.ts`) with shared `vi.fn()` mock instances.
+
+4. **Test file split** — `tests/project-creation.test.ts` (447 lines, 3 violations) split into 4 files: validation (91 lines), flows (142 lines), dropdown (158 lines), and race (107 lines). Added real deferred-promise tests where two async requests finish in reverse order.
+
+5. **Architecture baseline** — Updated to reflect new file structure. Total violations unchanged at 1,265. All 484 tests pass, TypeScript zero errors, architecture gate passes.
 
 **Proposed Step 6B.4:** Decompose the large Book/Series/Universe project creation and bootstrap flow currently embedded around `src/main.ts` `bootstrapProjects()` and its nested modal handling. Separate project discovery/retry/selection, modal view state, asynchronous Universe/Series dropdown requests and durable Book/Series/Universe creation by responsibility, preserving the current active Book and preventing duplicate writes. Build real behavior-oriented tests around cancellation, retries after a slow metadata-cache scan, stale async responses, errors during creation, and correct hierarchy ownership. Keep each extracted file under 200 effective lines and every method under the configured limits; do not create new public plugin methods merely to make a new interface compile. A meaningful decrease in violations is required; prefer substantial root-cause reduction over another nominal 5-violation decrease.
 
