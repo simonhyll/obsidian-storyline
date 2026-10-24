@@ -14,12 +14,15 @@ import { runSettingsPayloadTests } from './settings-payload-tests';
 // Patch the 'obsidian' module in the module registry so that production
 // code (EventManager, SceneManager) can import TFile, parseYaml, and
 // stringifyYaml without failing. The real 'obsidian' package is types-only.
-// eslint-disable-next-line @typescript-eslint/no-require-imports -- module patching
-const Module = require('module');
+// The ESM hook (obsidian-hook.mjs) handles ESM imports; this CJS patch
+// handles any remaining CommonJS require() calls.
+import { createRequire } from 'node:module';
+const requireCjs = createRequire(import.meta.url);
+const Module = requireCjs('module');
 const originalResolveFilename = Module._resolveFilename;
 Module._resolveFilename = function (request: string, ...rest: unknown[]): string {
     if (request === 'obsidian') {
-        return require.resolve('./obsidian-mock');
+        return requireCjs.resolve('./obsidian-mock');
     }
     return originalResolveFilename.apply(this, [request, ...rest]);
 };
@@ -30,8 +33,7 @@ BeforeAll(async () => {
     runMigrationIntegrationTests();
     await runSettingsPayloadTests();
     // Load headless modal tests after the obsidian module patch is in place
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- .cjs file loaded after module patch
-    const { runHeadlessModalTests } = require('./headless-modal-tests.cjs');
+    const { runHeadlessModalTests } = await import('./headless-modal-tests');
     await runHeadlessModalTests();
 });
 

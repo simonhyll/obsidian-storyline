@@ -21,8 +21,7 @@
 
 import { TFile } from './obsidian-mock';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports -- js-yaml is a test-only dep
-const yaml = require('js-yaml');
+import * as yaml from 'js-yaml';
 
 /** Parse YAML string to object (matches Obsidian's parseYaml). */
 export function parseYaml(text: string): unknown {

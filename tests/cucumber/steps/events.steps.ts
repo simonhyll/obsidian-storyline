@@ -162,7 +162,7 @@ Then('no Scene is accidentally written into another Book', function (this: TestW
 });
 
 // Cancellation scenario — verifies no persistence operations occur.
-// The dedicated headless-modal-tests.cjs verifies the actual production
+// The dedicated headless-modal-tests verifies the actual production
 // modal classes (EventModal, QuickAddModal, CreateProjectModal) with jsdom,
 // instantiating the real classes and triggering their real close() handlers.
 // These Cucumber steps verify the safety property: when cancellation occurs,
@@ -185,7 +185,7 @@ Given('an Event or Scene creation dialog is open', function (this: TestWorld) {
 When('the author cancels', function (this: TestWorld) {
   // In production, EventModal.cancel calls resolve(null) then close(),
   // and QuickAddModal.cancel calls close() without calling onSubmit.
-  // The headless-modal-tests.cjs verifies these actual production paths.
+  // The headless-modal-tests verifies these actual production paths.
   // Here we verify the safety property: no persistence operations occurred.
   this.cancelled = true;
   if (this.eventManagerOperations && this.eventManagerOperations.length > 0) {

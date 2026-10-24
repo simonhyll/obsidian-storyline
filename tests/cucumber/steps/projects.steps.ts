@@ -1,7 +1,7 @@
 /**
  * Step definitions for project creation scenarios (Given/When steps only).
  *
- * Then steps are in project-assertions.cjs to keep this file under 200 lines.
+ * Then steps are in project-assertions.ts to keep this file under 200 lines.
  * Exercises real project creation services via executeCreation.
  * Mock dependencies record all calls for verification.
  */
@@ -9,10 +9,8 @@ import { Given, When } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
 import { executeCreation } from '../../../src/services/projectCreation';
 import { makeRecordingDeps } from '../support/project-creation-mock';
-// eslint-disable-next-line @typescript-eslint/no-require-imports -- CJS test helpers
-const { runDropdownRaceTest } = require('../support/dropdown-race-test.cjs');
-// eslint-disable-next-line @typescript-eslint/no-require-imports -- CJS test helper
-const { runConcurrencyGuardTest } = require('../support/concurrency-guard-test.cjs');
+import { runDropdownRaceTest } from '../support/dropdown-race-test';
+import { runConcurrencyGuardTest } from '../support/concurrency-guard-test';
 
 // ---------------------------------------------------------------------------
 // Given steps — form state setup
@@ -54,7 +52,7 @@ Given('an existing series {string}', function (this: TestWorld, name: string) {
 });
 
 Given('I select series {string}', function (this: TestWorld, name: string) {
-    const series = this.seriesList.find(s => s.name === name);
+    const series = this.seriesList.find((s: { name: string; seriesUuid: string }) => s.name === name);
     if (series && this.formState) {
         this.formState.selectedSeriesUuid = series.seriesUuid;
     }
@@ -137,7 +135,7 @@ When('I create the universe', async function (this: TestWorld) {
 When('I cancel', async function (this: TestWorld) {
     // Exercise the real CreateProjectModal cancellation path.
     // The modal's onCancelClick calls settle(null) then close().
-    // The dedicated headless-modal-tests.cjs verifies this behavior
+    // The dedicated headless-modal-tests verifies this behavior
     // with the actual production CreateProjectModal class, using jsdom.
     // Here we verify that no executeCreation was called.
     this.cancelled = true;
@@ -175,5 +173,5 @@ When('the async results arrive out of order', async function (this: TestWorld) {
 });
 
 // ---------------------------------------------------------------------------
-// Then steps are in project-assertions.cjs
+// Then steps are in project-assertions.ts
 // ---------------------------------------------------------------------------

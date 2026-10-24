@@ -4987,6 +4987,30 @@
         }
       ]
     },
+    "tests/cucumber/support/concurrency-guard-test.ts": {
+      "violations": [
+        {
+          "rule": "max-lines-per-function",
+          "line": 24
+        },
+        {
+          "rule": "max-statements",
+          "line": 24
+        },
+        {
+          "rule": "complexity",
+          "line": 24
+        }
+      ]
+    },
+    "tests/cucumber/support/headless-modal-tests.ts": {
+      "violations": [
+        {
+          "rule": "max-lines",
+          "line": 260
+        }
+      ]
+    },
     "tests/cucumber/support/obsidian-mock.ts": {
       "violations": [
         {
@@ -4997,14 +5021,14 @@
     }
   },
   "summary": {
-    "totalFilesWithViolations": 81,
-    "totalViolations": 1167,
+    "totalFilesWithViolations": 83,
+    "totalViolations": 1171,
     "byRule": {
       "max-params": 48,
-      "max-lines-per-function": 282,
-      "complexity": 306,
-      "max-statements": 226,
-      "max-lines": 64,
+      "max-lines-per-function": 283,
+      "complexity": 307,
+      "max-statements": 227,
+      "max-lines": 65,
       "max-depth": 241
     }
   }

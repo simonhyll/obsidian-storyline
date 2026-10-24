@@ -3,50 +3,49 @@
  *
  * Exercises updateSeriesDropdownInPlace() from CreateProjectDropdowns.ts
  * using jsdom to simulate the browser environment.
- *
- * This is a CommonJS module because it needs require() for jsdom and
- * the production TypeScript module, and uses globalThis for jsdom setup.
  */
 
-"use strict";
-
-const { JSDOM } = require("jsdom");
+import { JSDOM } from 'jsdom';
 
 /**
  * Run the dropdown race test and return the resulting options.
- * @returns {Array<{name: string, seriesUuid: string}>}
  */
-async function runDropdownRaceTest() {
-	const dom = new JSDOM("<!DOCTYPE html><html><body></body></html>");
+export async function runDropdownRaceTest(): Promise<Array<{ name: string; seriesUuid: string }>> {
+	const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
 	const doc = dom.window.document;
 	const win = dom.window;
 
 	// Set up globals for jsdom — needed because the production code uses document.createElement
-	global.document = doc;
-	global.window = win;
+	(globalThis as any).document = doc;
+	(globalThis as any).window = win;
 
 	try {
 		return await runRace(doc);
 	} finally {
-		delete global.document;
-		delete global.window;
+		delete (globalThis as any).document;
+		delete (globalThis as any).window;
 	}
 }
 
 /**
  * Build mock dropdown deps that wait on a controllable promise.
  */
-function buildDeps(wait, universeId, seriesUuid, seriesName) {
+function buildDeps(
+	wait: Promise<void>,
+	universeId: string,
+	seriesUuid: string,
+	seriesName: string,
+) {
 	return {
 		discoverSeries: async () => {
 			await wait;
-			return [{ folder: "StoryLine/Series", meta: { seriesUuid, name: seriesName, bookOrder: [], created: "" } }];
+			return [{ folder: 'StoryLine/Series', meta: { seriesUuid, name: seriesName, bookOrder: [], created: '' } }];
 		},
 		discoverHierarchy: async () => {
 			await wait;
 			return [{
-				universe: { id: universeId, name: `Universe ${universeId.slice(-1)}`, seriesIds: [seriesUuid], created: "" },
-				series: [{ folder: "StoryLine/Series", meta: { seriesUuid, name: seriesName, bookOrder: [], created: "" } }],
+				universe: { id: universeId, name: `Universe ${universeId.slice(-1)}`, seriesIds: [seriesUuid], created: '' },
+				series: [{ folder: 'StoryLine/Series', meta: { seriesUuid, name: seriesName, bookOrder: [], created: '' } }],
 			}];
 		},
 		getAllUniverses: async () => [],
@@ -56,24 +55,26 @@ function buildDeps(wait, universeId, seriesUuid, seriesName) {
 /**
  * Run the actual race test against production updateSeriesDropdownInPlace.
  */
-async function runRace(doc) {
-	const { updateSeriesDropdownInPlace } = require("../../../src/components/CreateProjectDropdowns");
+async function runRace(
+	doc: Document,
+): Promise<Array<{ name: string; seriesUuid: string }>> {
+	const { updateSeriesDropdownInPlace } = await import('../../../src/components/CreateProjectDropdowns');
 
-	const dropdownEl = doc.createElement("select");
-	const optNone = doc.createElement("option");
-	optNone.value = "";
-	optNone.text = "— None —";
+	const dropdownEl = doc.createElement('select');
+	const optNone = doc.createElement('option');
+	optNone.value = '';
+	optNone.text = '— None —';
 	dropdownEl.add(optNone);
 
 	let currentRequestId = 0;
 
-	let resolveA;
-	let resolveB;
-	const waitA = new Promise(r => { resolveA = r; });
-	const waitB = new Promise(r => { resolveB = r; });
+	let resolveA: (() => void) | undefined;
+	let resolveB: (() => void) | undefined;
+	const waitA = new Promise<void>(r => { resolveA = r; });
+	const waitB = new Promise<void>(r => { resolveB = r; });
 
-	const depsA = buildDeps(waitA, "universe-1", "series-a", "Series A");
-	const depsB = buildDeps(waitB, "universe-2", "series-b", "Series B");
+	const depsA = buildDeps(waitA, 'universe-1', 'series-a', 'Series A');
+	const depsB = buildDeps(waitB, 'universe-2', 'series-b', 'Series B');
 
 	const modalChecker = { isClosed: false };
 
@@ -82,7 +83,7 @@ async function runRace(doc) {
 	const promiseA = updateSeriesDropdownInPlace({
 		deps: depsA,
 		dropdownEl,
-		selectedUniverseId: "universe-1",
+		selectedUniverseId: 'universe-1',
 		requestId: 1,
 		getCurrentRequestId: () => currentRequestId,
 		modalChecker,
@@ -93,23 +94,21 @@ async function runRace(doc) {
 	const promiseB = updateSeriesDropdownInPlace({
 		deps: depsB,
 		dropdownEl,
-		selectedUniverseId: "universe-2",
+		selectedUniverseId: 'universe-2',
 		requestId: 2,
 		getCurrentRequestId: () => currentRequestId,
 		modalChecker,
 	});
 
 	// B resolves first (faster), A resolves last (stale)
-	resolveB();
+	resolveB!();
 	await Promise.resolve();
-	resolveA();
+	resolveA!();
 	await Promise.all([promiseA, promiseB]);
 
 	// Collect series options (exclude sentinel options)
 	return Array.from(dropdownEl.options)
 		.map(o => ({ value: o.value, text: o.text }))
-		.filter(o => o.value !== "" && o.value !== "__new__")
+		.filter(o => o.value !== '' && o.value !== '__new__')
 		.map(o => ({ name: o.text, seriesUuid: o.value }));
 }
-
-module.exports = { runDropdownRaceTest };
