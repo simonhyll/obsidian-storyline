@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          lfs: true
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -51,7 +53,7 @@ jobs:
 
   deploy:
     needs: build
-    if: github.event_name != 'pull_request'
+    # if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
