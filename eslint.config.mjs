@@ -14,7 +14,7 @@ const architectureRules = {
 };
 
 const architectureOnlyConfig = defineConfig([{
-  ignores: ["dist/**", "node_modules/**", "docs/.nuxt/**", "docs/.output/**"],
+  ignores: ["dist/**", "node_modules/**", "docs/**"],
 }, {
   files: ["**/*.ts"],
   languageOptions: { parser: tsparser, parserOptions: { project: false } },
@@ -23,7 +23,7 @@ const architectureOnlyConfig = defineConfig([{
 
 const fullLintConfig = defineConfig([
   {
-    ignores: ["dist/**", "node_modules/**", "docs/.nuxt/**", "docs/.output/**"],
+    ignores: ["dist/**", "node_modules/**", "docs/**"],
   },
   // ---------------------------------------------------------------------------
   // TypeScript source files (Obsidian plugin code)
