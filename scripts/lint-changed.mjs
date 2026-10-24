@@ -16,7 +16,11 @@ import { execFileSync } from 'node:child_process';
 import { ESLint } from 'eslint';
 import { resolve } from 'node:path';
 
-const QUALITY_BASELINE = 'd42b83c4d6952f9150fbbd1b81fde87a243a5ac7';
+// Accepted feature-branch lint checkpoint: push-CI succeeded on 2026-10-24.
+// The previous SHA was outside the current branch ancestry, so long-lived
+// pull requests compared against their old base and reclassified historical
+// lint debt as new. Keep enforcing every changed-line error after this point.
+const QUALITY_BASELINE = '17b191c0fc3ca880b5fc0f12db2978fa6386e5bc';
 const args = process.argv.slice(2);
 const staged = args.includes('--staged');
 const baseIndex = args.indexOf('--base');
