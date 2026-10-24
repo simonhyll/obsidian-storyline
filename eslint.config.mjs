@@ -4,7 +4,7 @@ import obsidianmd from "eslint-plugin-obsidianmd";
 
 export default defineConfig([
   {
-    ignores: ["dist/**", "node_modules/**"],
+    ignores: ["dist/**", "node_modules/**", "docs/.nuxt/**", "docs/.output/**"],
   },
   // ---------------------------------------------------------------------------
   // TypeScript source files (Obsidian plugin code)

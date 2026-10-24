@@ -14,3 +14,7 @@ coverage/
 
 # dist/ contains generated plugin artifacts (main.js, styles.css, manifest.json).
 # The authoritative source manifest lives in assets/manifest.json.
+
+# Nuxt build output in docs
+docs/.nuxt/
+docs/.output/
