@@ -208,12 +208,12 @@ export class TimelineFilterService {
         if (!project) return false;
 
         // Series-owned events visible to books in that series
-        if (event.ownerId === project.seriesUuid) {
+        if (event.ownerId && project.seriesUuid && event.ownerId === project.seriesUuid) {
             return true;
         }
 
         // Universe-owned events visible to books in that universe
-        if (event.ownerId === project.universeId) {
+        if (event.ownerId && project.universeId && event.ownerId === project.universeId) {
             return true;
         }
 
