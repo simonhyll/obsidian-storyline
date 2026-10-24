@@ -201,16 +201,13 @@ export class SavedViewService {
      * Generate a short UUID for the preset ID.
      */
     private generateId(): string {
-        // Use Obsidian's uuid if available, otherwise fallback
-        try {
-            const { uuid } = require('obsidian');
-            return uuid();
-        } catch {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c: string) => {
-                const r = (Math.random() * 16) | 0;
-                const v = c === 'x' ? r : (r & 0x3) | 0x8;
-                return v.toString(16);
-            });
-        }
+        // Use the platform's secure UUID generator where available.
+        const nativeId = globalThis.crypto?.randomUUID?.();
+        if (nativeId) return nativeId;
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c: string) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === 'x' ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        });
     }
 }
