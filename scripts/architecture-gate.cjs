@@ -17,7 +17,7 @@
  * --update           Update the baseline file with current violations (use carefully)
  */
 
-const { execSync } = require("child_process");
+const { execSync, spawnSync } = require("child_process");
 const { readFileSync, writeFileSync, existsSync } = require("fs");
 const { resolve, dirname } = require("path");
 
@@ -49,51 +49,34 @@ function parseArgs() {
  * Writes to a temp file to avoid buffer overflow with large reports.
  */
 function getLintReport() {
-  const tmpFile = resolve(ROOT, ".junie", "lint-report.json");
-  // Ensure .junie directory exists
-  execSync("mkdir -p " + resolve(ROOT, ".junie"), { cwd: ROOT });
+  // Structural budgets only depend on syntax, not TypeScript type information.
+  // The ESLint config's architecture mode keeps the exact same six rules and
+  // avoids loading an expensive full-project type graph for every commit.
+  const cli = resolve(ROOT, "node_modules", "eslint", "bin", "eslint.js");
+  const result = spawnSync(process.execPath, [
+    "--max-old-space-size=1536", cli, "**/*.ts", "--format", "json",
+  ], {
+    cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024,
+    env: { ...process.env, STORYLINE_ARCH_ONLY: "1" },
+  });
 
+  if (result.error || (result.status !== 0 && result.status !== 1)) {
+    throw new Error("ESLint architecture worker failed: " +
+      (result.stderr || result.error?.message || `exit ${result.status}`));
+  }
+
+  let report;
   try {
-    // Run eslint directly and write JSON to file, avoiding pnpm's output prefix
-    execSync(
-      "npx eslint '**/*.ts' --format json > " + tmpFile + " 2>/dev/null || " +
-      "npx eslint '**/*.ts' --format json > " + tmpFile + " 2>&1",
-      { cwd: ROOT, maxBuffer: 50 * 1024 * 1024 }
-    );
+    report = JSON.parse(result.stdout);
   } catch {
-    // ESLint exits nonzero on errors; the file should still have been written
+    throw new Error("Architecture ESLint did not produce valid JSON: " +
+      (result.stderr || result.stdout?.slice(0, 500)));
   }
-
-  if (!existsSync(tmpFile)) {
-    console.error("ESLint did not produce a report file.");
-    process.exit(2);
+  if (!Array.isArray(report) || report.some(file =>
+    file.fatalErrorCount > 0 || file.messages?.some(message => message.fatal))) {
+    throw new Error("Architecture ESLint encountered fatal parsing/config errors.");
   }
-
-  const content = readFileSync(tmpFile, "utf8").trim();
-  if (!content.startsWith("[")) {
-    // Find the JSON line (skip pnpm prefix lines)
-    const lines = content.split("\n");
-    const jsonLine = lines.find((l) => l.trim().startsWith("["));
-    if (!jsonLine) {
-      console.error("Failed to find JSON in ESLint output.");
-      console.error(content.slice(0, 500));
-      process.exit(2);
-    }
-    try {
-      return JSON.parse(jsonLine);
-    } catch (err) {
-      console.error("Failed to parse ESLint JSON output.");
-      process.exit(2);
-    }
-  }
-
-  try {
-    return JSON.parse(content);
-  } catch (err) {
-    console.error("Failed to parse ESLint JSON output.");
-    console.error(content.slice(0, 500));
-    process.exit(2);
-  }
+  return report;
 }
 
 /**
