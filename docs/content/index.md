@@ -42,7 +42,7 @@ Transform your Obsidian vault into a full-featured book planning tool. Organize 
 
 #default
 <div class="flex justify-center mb-6">
-  <img src="/logo.png" alt="Störyline Logo" class="h-auto w-auto" />
+  <Logo />
 </div>
 :::
 
