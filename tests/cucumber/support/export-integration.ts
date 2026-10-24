@@ -127,14 +127,14 @@ export function buildScenes(
 /**
  * Common setup: seed vault, build mocks, and return ExportService instance.
  */
-function buildExportService(
+async function buildExportService(
   project: StoryLineProject,
   scenes: Scene[],
-): { service: ExportService; vault: TestVault } {
+): Promise<{ service: ExportService; vault: TestVault }> {
   const vault = createInMemoryVault();
   for (const scene of scenes) {
     const content = `---\ntitle: ${scene.title}\n---\n${scene.body}`;
-    void vault.create(scene.filePath, content);
+    await vault.create(scene.filePath, content);
   }
   const sceneManager = buildSceneManager(project, scenes);
   const characterManager = buildCharacterManager();
@@ -169,7 +169,7 @@ export async function runExport(
   project: StoryLineProject,
   scenes: Scene[],
 ): Promise<ExportTestResult> {
-  const { service, vault } = buildExportService(project, scenes);
+  const { service, vault } = await buildExportService(project, scenes);
   const filePath = await service.export('md', 'manuscript');
   if (!filePath || typeof filePath !== 'string') {
     throw new Error('Export returned no file path');
@@ -186,7 +186,7 @@ export async function runExportWithRange(
   field: 'sequence' | 'chapter',
   ranges: Array<{ start: number; end: number }>,
 ): Promise<ExportTestResult> {
-  const { service, vault } = buildExportService(project, scenes);
+  const { service, vault } = await buildExportService(project, scenes);
   service.setExportRange({ field, sequenceRanges: ranges });
   const filePath = await service.export('md', 'manuscript');
   if (!filePath || typeof filePath !== 'string') {
@@ -203,7 +203,7 @@ export async function runExportWithOptions(
   scenes: Scene[],
   options: { includeInactiveScenes?: boolean; includeCorkboardNotes?: boolean },
 ): Promise<ExportTestResult> {
-  const { service, vault } = buildExportService(project, scenes);
+  const { service, vault } = await buildExportService(project, scenes);
   if (options.includeInactiveScenes !== undefined) {
     service.setExportOptions({ includeInactiveScenes: options.includeInactiveScenes });
   }
