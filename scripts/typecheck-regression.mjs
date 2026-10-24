@@ -15,7 +15,7 @@
 // Fingerprint = file + error_code + normalized_message (line numbers excluded).
 // This survives line insertions/deletions while still detecting new error types.
 
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -28,15 +28,25 @@ const baselinePath = join(__dirname, 'ts-baseline.json');
  * Run the TypeScript compiler and return raw stderr/stdout output.
  */
 function runTypeScript() {
-    let output;
-    try {
-        output = execSync(
-            'npx tsc --noEmit --pretty false 2>&1',
-            { cwd: root, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }
-        );
-    } catch (err) {
-        // tsc exits nonzero on errors — that's expected.
-        output = err.stdout || err.stderr || '';
+    // Avoid shells and npx fallback resolution. A missing compiler, an OS
+    // failure, a signal, or a compiler crash must never be mistaken for
+    // "zero TypeScript diagnostics".
+    const result = spawnSync(process.execPath, [
+        join(root, 'node_modules', 'typescript', 'bin', 'tsc'),
+        '--noEmit', '--pretty', 'false',
+    ], {
+        cwd: root,
+        encoding: 'utf8',
+        maxBuffer: 20 * 1024 * 1024,
+    });
+    if (result.error || result.signal || result.status === null) {
+        throw new Error('TypeScript compiler failed to execute: ' +
+            (result.error?.message || result.signal || 'unknown process failure'));
+    }
+    const output = (result.stdout || '') + (result.stderr || '');
+    if (result.status !== 0 &&
+        !/^.+\\(\\d+,\\d+\\):\\s*error\\s+TS\\d+:/m.test(output)) {
+        throw new Error(`TypeScript compiler exited ${result.status} without recognized diagnostics:\\n${output.slice(0, 1500)}`);
     }
     return output;
 }
@@ -209,6 +219,10 @@ function main() {
     }
 
     const diagnostics = parseDiagnostics(raw);
+    if (diagnostics.length === 0) {
+        throw new Error('TypeScript emitted output but no recognized diagnostics; refusing a false green result: ' +
+            raw.slice(0, 1500));
+    }
     const totalErrors = diagnostics.length;
 
     if (isGenerate) {
