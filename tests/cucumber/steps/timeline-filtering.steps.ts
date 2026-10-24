@@ -169,6 +169,14 @@ Given('a book-owned event for the first book only', function () {
     w.testEvents.push(buildEvent('StoryLine/Book 1/Events/Book 1 Event.md', 'book1-event', 'Book 1 Event', { ownerId: 'book-1' }));
 });
 
+Given('an unowned event outside the selected universe', function () {
+    const w = this as any;
+    w.testEvents.push({
+        ...buildEvent('StoryLine/Outside/Events/Unowned.md', 'outside-event', 'Outside Event'),
+        ownerId: undefined,
+    });
+});
+
 Given('I have {int} books referencing the same event', function (_count: number) {
     const w = this as any;
     w.testUniverseId = 'universe-1';
@@ -393,6 +401,13 @@ Then('the book-owned event is visible', function () {
 Then('the book-owned event for the first book is not visible', function () {
     const w = this as any;
     if (w.filteredEvents.find((e: Event) => e.ownerId === 'book-1')) throw new Error('Book event should not be visible');
+});
+
+Then('the outside unowned event is not visible', function () {
+    const w = this as any;
+    if (w.filteredEvents.some((event: Event) => event.id === 'outside-event')) {
+        throw new Error('Unowned Event outside the selected universe leaked into the Timeline');
+    }
 });
 
 Then('the shared event appears only once', function () {
