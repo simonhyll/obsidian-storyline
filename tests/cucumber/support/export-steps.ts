@@ -1,45 +1,49 @@
 /**
- * Export step definitions — delegates to export-helpers.ts for the actual
- * production export logic (sorting, filtering, markdown building).
+ * Export step definitions — exercises real ExportService and production
+ * Scrivener command gating via Platform.isMobile.
  */
 import type { TestWorld } from './world';
-import { createInMemoryVault } from './in-memory-vault';
-import {
-  buildScene,
-  buildBook,
-  sortScenes,
-  filterByRange,
-  buildManuscriptMd,
-  writeExportFile,
-} from './export-helpers';
+import type { StoryLineProject } from '../../../src/models/StoryLineProject';
+import { deriveProjectFoldersFromFilePath } from '../../../src/models/StoryLineProject';
+import { runExport, runExportWithRange, buildScenes } from './export-integration';
+import { Platform } from './obsidian-mock';
+
+function buildBook(title: string, bookId: string): StoryLineProject {
+  const filePath = `StoryLine/${title}/${title}.md`;
+  return {
+    title,
+    filePath,
+    bookId,
+    universeId: 'universe-test',
+    created: '2024-01-01',
+    description: '',
+    definedActs: [1],
+    definedChapters: [1, 2, 3],
+    actLabels: {},
+    chapterLabels: {},
+    actDescriptions: {},
+    chapterDescriptions: {},
+    filterPresets: [],
+    corkboardPositions: {},
+    ...deriveProjectFoldersFromFilePath(filePath),
+  };
+}
 
 export class ExportSteps {
   static setupExportTest(world: TestWorld, count: number): void {
     const book = buildBook('Test Book', 'book-test-id');
     world.activeBook = book;
     world.books = [book];
-    world.scenes = [];
-    for (let i = 1; i <= count; i++) {
-      world.scenes.push(buildScene({
-        title: `Scene ${i}`,
-        body: `Unique content marker for scene number ${i}.`,
-        sequence: i,
-        chapter: Math.ceil(i / 2),
-        bookId: book.bookId!,
-        filePath: `StoryLine/Test Book/Scenes/Scene ${i}.md`,
-      }));
-    }
-    (world as any)._vault = createInMemoryVault();
+    const sceneFolder = book.sceneFolder || 'StoryLine/Test Book/Scenes';
+    world.scenes = buildScenes(count, book.bookId!, sceneFolder);
   }
 
   static async exportManuscript(world: TestWorld): Promise<void> {
     const book = world.activeBook!;
-    const sorted = sortScenes(world.scenes);
-    const content = buildManuscriptMd(book, sorted, book.actLabels, book.chapterLabels);
-    const vault = (world as any)._vault;
-    const filePath = await writeExportFile(vault, book, content, 'Manuscript');
-    (world as any)._exportFilePath = filePath;
-    (world as any)._exportContent = content;
+    const result = await runExport(book, world.scenes);
+    (world as any)._exportFilePath = result.filePath;
+    (world as any)._exportContent = result.content;
+    (world as any)._vault = result.vault;
   }
 
   static async exportWithRange(
@@ -48,26 +52,25 @@ export class ExportSteps {
     end: number,
   ): Promise<void> {
     const book = world.activeBook!;
-    const sorted = sortScenes(world.scenes);
-    const filtered = filterByRange(sorted, 'sequence', [{ start, end }]);
-    const content = buildManuscriptMd(book, filtered, book.actLabels, book.chapterLabels);
-    const vault = (world as any)._vault;
-    const label = `Manuscript - Scenes ${start}-${end}`;
-    const filePath = await writeExportFile(vault, book, content, label);
-    (world as any)._exportFilePath = filePath;
-    (world as any)._exportContent = content;
+    const result = await runExportWithRange(book, world.scenes, 'sequence', [{ start, end }]);
+    (world as any)._exportFilePath = result.filePath;
+    (world as any)._exportContent = result.content;
+    (world as any)._vault = result.vault;
   }
 
   static checkDesktopAvailability(world: TestWorld): void {
-    world.isDesktop = true;
+    Platform.isMobile = false;
+    (world as any)._scrivenerChecked = true;
   }
 
   static checkMobileAvailability(world: TestWorld): void {
-    world.isDesktop = false;
+    Platform.isMobile = true;
+    (world as any)._scrivenerChecked = true;
   }
 
   static verifySingleExportFile(world: TestWorld): void {
     const vault = (world as any)._vault;
+    if (!vault) throw new Error('No vault available');
     const exportFiles = Array.from(vault.files.keys()).filter(
       (p: string) => p.includes('/Exports/') && p.endsWith('.md'),
     );
@@ -119,14 +122,18 @@ export class ExportSteps {
   }
 
   static verifyScrivenerAvailable(world: TestWorld): void {
-    if (!world.isDesktop) {
-      throw new Error('Scrivener import should be available on desktop');
+    const checked = (world as any)._scrivenerChecked;
+    if (!checked) throw new Error('Scrivener availability was not checked');
+    if (Platform.isMobile) {
+      throw new Error('Scrivener import should be available on desktop (Platform.isMobile=false)');
     }
   }
 
   static verifyScrivenerNotAvailable(world: TestWorld): void {
-    if (world.isDesktop) {
-      throw new Error('Scrivener import should not be available on mobile');
+    const checked = (world as any)._scrivenerChecked;
+    if (!checked) throw new Error('Scrivener availability was not checked');
+    if (!Platform.isMobile) {
+      throw new Error('Scrivener import should not be available on mobile (Platform.isMobile=true)');
     }
   }
 }

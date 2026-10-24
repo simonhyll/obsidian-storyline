@@ -37,6 +37,18 @@ export class Notice {
     constructor(_message: string) {}
 }
 
+/** Mock requestUrl so DocxConverter can be imported in Node.js. */
+export async function requestUrl(_url: string): Promise<never> {
+    throw new Error('requestUrl is not available in headless tests');
+}
+
+/** Controllable Platform mock for testing mobile/desktop command gating. */
+export const Platform = {
+    _isMobile: false,
+    get isMobile(): boolean { return (Platform as any)._isMobile; },
+    set isMobile(value: boolean) { (Platform as any)._isMobile = value; },
+};
+
 function patchObsidianElement(el: HTMLElement): void {
     if (typeof (el as any).createEl !== 'undefined') return;
     const doc = el.ownerDocument;

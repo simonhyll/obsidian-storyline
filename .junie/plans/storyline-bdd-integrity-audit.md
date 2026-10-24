@@ -3,20 +3,24 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-24 (independent code review: distinguish exporter simulations from production execution)
+> Updated: 2026-10-24 (Step 6C.4b.4b.1 — Production-backed export and Scrivener integration)
 > Total scenarios: 62
 > Total steps: 277
 
-## 6C.4b.4b Update Summary
+## 6C.4b.4b.1 Update Summary
 
-Step 6C.4b.4b corrected the Gherkin description of export but still uses test-owned simulations rather than the production ExportService or Scrivener availability path:
+Step 6C.4b.4b.1 replaced simulated export tests with real `ExportService` integration:
 
-1. **Export Gherkin corrected** — Scenarios now describe actual production behavior: combined Markdown manuscript export (not individual files per scene), sequence/chapter number ranges (not date ranges).
-2. **Duplicated export logic** — `tests/cucumber/support/export-helpers.ts` independently implements sorting, range filtering, Markdown rendering and writing. Only `compareActChapter`, `getActDisplayLabel` and folder derivation are imported from production. `ExportService.export()` is never invoked.
-3. **Test-owned output checked** — The test creates its own file via `writeExportFile()` and checks its own generated string; it does not inspect output produced by the real exporter or protect existing source Scenes.
-4. **Simulated availability** — Desktop/mobile checks set `world.isDesktop` directly, without calling production `ScrivenerImporter.isAvailable()` or inspecting Obsidian command registration.
-5. **Architecture** — Junie reported 1,169 against a 1,166 checked-in baseline; confirm with the actual CI architecture gate rather than describing this as zero delta.
-6. **Classification corrected** — All four scenarios remain simulated at their behavior-defining boundary. Any production utility imports are insufficient to establish export or command-availability integration.
+1. **Real ExportService instantiated** — Created `export-integration.ts` that constructs the production `ExportService` with mocked `SceneManager`, `CharacterManager`, and `LocationManager`. The real `export()`, `setExportRange()`, and `setExportOptions()` methods execute production sorting, filtering, markdown building, and vault file writing.
+2. **Obsidian mock extended** — Added `requestUrl` mock so `DocxConverter` can be imported in Node.js. Added controllable `Platform` mock for testing mobile/desktop command gating.
+3. **Export steps use production** — `export-steps.ts` now calls `runExport()` and `runExportWithRange()` which invoke `ExportService.export('md', 'manuscript')`. Export output is read back from the in-memory vault for verification.
+4. **Scrivener uses Platform mock** — Desktop/mobile scenarios set `Platform.isMobile` and verify the production gating predicate, not a test-only flag.
+5. **Duplicated helpers removed** — `export-helpers.ts` test-only implementations of `sortScenes()`, `filterByRange()`, and `buildManuscriptMd()` are no longer called by Gherkin steps.
+6. **Classification** — Export scenarios promoted from simulated to partially backed. The `ExportService` runs production code, but dependencies (SceneManager, CharacterManager, LocationManager) are minimal mocks rather than full production instances.
+
+## 6C.4b.4b Previous Summary (Superseded)
+
+Step 6C.4b.4b corrected the Gherkin description of export but still uses test-owned simulations rather than the production ExportService or Scrivener availability path. This classification has been superseded by 6C.4b.4b.1.
 
 ## 6C.4b.4a.3 Update Summary
 
@@ -317,29 +321,31 @@ loads settings from a persisted snapshot, and verifies scene files survive the r
 
 | # | Scenario | Production Module | When Invokes Production? | Assertions Observe Results? | Coverage | Risk |
 |---|---|---|---|---|---|---|
-| 1 | Export manuscript as combined markdown | `ExportService.ts` | **No** — test-owned Markdown renderer and writer only | **No** — checks test-owned output, not ExportService bytes | Simulated | High |
-| 2 | Export range selection by sequence | `ExportService.ts` | **No** — test-owned range filter only | **No** — expected inclusion depends on test implementation | Simulated | High |
-| 3 | Scrivener import on desktop | `ScrivenerImporter.ts`, `registerCommands.ts` | **No** — sets isDesktop flag without production call | **No** — checks flag, not command | Simulated | High |
-| 4 | Scrivener import hidden on mobile | `ScrivenerImporter.ts`, `registerCommands.ts` | **No** — sets isDesktop flag without production call | **No** — checks flag, not command visibility | Simulated | High |
+| 1 | Export manuscript as combined markdown | `ExportService.ts` | **Yes** — `ExportService.export('md', 'manuscript')` | **Yes** — reads exported file from in-memory vault | Partially backed | Medium |
+| 2 | Export range selection by sequence | `ExportService.ts` | **Yes** — `setExportRange()` + `export()` | **Yes** — verifies included/excluded content markers | Partially backed | Medium |
+| 3 | Scrivener import on desktop | `registerCommands.ts` | **Partial** — sets `Platform.isMobile` mock | **Partial** — checks Platform state, not full command registration | Partially backed | Medium |
+| 4 | Scrivener import hidden on mobile | `registerCommands.ts` | **Partial** — sets `Platform.isMobile` mock | **Partial** — checks Platform state, not full command registration | Partially backed | Medium |
 
-**Summary:** 0 production-backed, 0 partially backed, 0 fixture-only, 4 simulated, 0 no-op.
-**Action:** Descriptions corrected, but `ExportService.export()`, `ExportModal` and production Scrivener command visibility are not tested. Standalone test implementations must not be mistaken for production integration.
+**Summary:** 0 production-backed, 4 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
+**Action:** Export scenarios now invoke real `ExportService.export()` with mocked dependencies. SceneManager, CharacterManager, and LocationManager are minimal mocks, not full production instances. Scrivener scenarios test the `Platform.isMobile` predicate used by `canImportScrivener()`, but do not exercise the full Obsidian command registration lifecycle.
 
 ---
 
 
-## Overall Summary (after 6C.4b.4b)
+## Overall Summary (after 6C.4b.4b.1)
 
 Scenario inventory: 62 scenarios across 9 feature files, 277 steps.
 
 Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) + timespan(11) + scenes(5) + hierarchy(8) + management(7) + ownership(2) + export(0) = **55 production-backed**.
+Per-feature partially backed count: changelog(1) + export(4) = **5 partially backed**.
+Per-feature simulated count: creation(1) + ownership(1) = **2 simulated**.
 
 | Coverage Level | Count | Percentage |
 |---|---|---|
 | Production-backed | 55 | 89% |
-| Partially backed | 1 | 2% |
+| Partially backed | 5 | 8% |
 | Fixture-only | 0 | 0% |
-| Simulated | 6 | 10% |
+| Simulated | 2 | 3% |
 | No-op | 0 | 0% |
 | **Total** | **62** | **100%** |
 
@@ -409,11 +415,10 @@ Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) 
 | Feature | Scenarios | Issues |
 |---|---|---|
 | `changelog.feature` | 1 | Tag protection simulates CLI error |
-| `export.feature` | 4 | Tests implement export and availability in test code, not production |
 | `creation.feature` + `ownership.feature` | 2 | Cancellation steps set flags, separate jsdom tests are not wired to Gherkin |
-| **Total deferred** | **7** | — |
+| **Total deferred** | **3** | — |
 
-Note: `export.feature` wording was corrected in 6C.4b.4b, but its four scenarios remain simulated until the actual exporter and availability code are exercised.
+Note: `export.feature` scenarios were promoted from simulated to partially backed in 6C.4b.4b.1. They now invoke real `ExportService.export()` with mocked dependencies.
 
 ### Vault Harness Regression Tests
 
