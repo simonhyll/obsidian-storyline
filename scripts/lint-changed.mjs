@@ -12,9 +12,10 @@
  * Usage: pnpm lint:changed [--base <git-ref>]
  * CI: LINT_BASE is the push's before SHA or PR base SHA.
  */
-import { execFileSync } from 'node:child_process';
-import { ESLint } from 'eslint';
-import { resolve } from 'node:path';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { accessSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 
 // Accepted feature-branch lint checkpoint: push-CI succeeded on 2026-10-24.
 // The previous SHA was outside the current branch ancestry, so long-lived
@@ -111,16 +112,57 @@ const changedLines = new Map(changes.map(({ filename, oldPath }) =>
 // structural rule cannot retroactively reject old files in a long-lived PR.
 const ARCH_RULES = new Set(['max-lines', 'max-lines-per-function', 'complexity',
     'max-depth', 'max-statements', 'max-params']);
-const eslint = new ESLint();
-// lintFiles(), unlike lintText() on old revisions, retains valid TS project
-// context and matches diagnostics from `pnpm lint`.
+// Each worker runs the full repository rule set, but its TypeScript project
+// includes only its input files and global declarations. Import dependencies
+// are still resolved by TypeScript; the maintainer's tsconfig is NOT modified.
+// Sequential bounded-heap workers prevent a large staged commit from exhausting
+// the developer's RAM (including when NODE_OPTIONS was set to 8192 elsewhere).
 const existingFiles = changes
-  .filter(({ filename }) => {
-    try { require('node:fs').accessSync(filename); return true; }
-    catch { return false; }
-  })
-  .map(({ filename }) => filename);
-const results = await eslint.lintFiles(existingFiles);
+    .filter(({ filename }) => {
+        try { accessSync(filename); return true; }
+        catch { return false; }
+    })
+    .map(({ filename }) => filename);
+
+function lintBatch(files) {
+    const tsFiles = files.filter(file => /\.tsx?$/.test(file));
+    const directory = mkdtempSync(join(tmpdir(), 'storyline-lint-'));
+    try {
+        let project;
+        if (tsFiles.length) {
+            project = join(directory, 'tsconfig.json');
+            writeFileSync(project, JSON.stringify({
+                extends: resolve('tsconfig.json'),
+                files: tsFiles.map(file => resolve(file)),
+                include: [resolve('src/**/*.d.ts'), resolve('tests/**/*.d.ts')],
+            }));
+        }
+        const worker = spawnSync(process.execPath, [
+            '--max-old-space-size=1536',
+            resolve('scripts/lint-changed-worker.mjs'),
+        ], {
+            cwd: process.cwd(),
+            input: JSON.stringify({ files, project }),
+            encoding: 'utf8',
+            maxBuffer: 64 * 1024 * 1024,
+        });
+        if (worker.status !== 0 || worker.error) {
+            // Never report success when ESLint crashes or fails to initialize.
+            throw new Error(worker.stderr || worker.error?.message ||
+                `ESLint worker exited with status ${worker.status}`);
+        }
+        return JSON.parse(worker.stdout);
+    } finally {
+        rmSync(directory, { recursive: true, force: true });
+    }
+}
+
+const results = [];
+// A small project means typed rules remain active without loading every TS
+// source and test as a project root. Never run more than one worker at a time.
+for (let index = 0; index < existingFiles.length; index += 4) {
+    results.push(...lintBatch(existingFiles.slice(index, index + 4)));
+}
 let totalCurrent = 0;
 let newErrors = 0;
 for (const result of results) {
