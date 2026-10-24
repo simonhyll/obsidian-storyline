@@ -2,7 +2,26 @@ import tsparser from "@typescript-eslint/parser";
 import { defineConfig } from "eslint/config";
 import obsidianmd from "eslint-plugin-obsidianmd";
 
-export default defineConfig([
+// Architecture lint needs syntax only, never a full TypeScript program.
+// Use the same six structural rules for both ordinary and architecture lint.
+const architectureRules = {
+  "max-lines": ["error", { max: 200, skipBlankLines: true, skipComments: true }],
+  "max-lines-per-function": ["error", { max: 50, skipBlankLines: true, skipComments: true }],
+  "complexity": ["error", { max: 10 }],
+  "max-depth": ["error", { max: 3 }],
+  "max-statements": ["error", { max: 25 }],
+  "max-params": ["error", { max: 4 }],
+};
+
+const architectureOnlyConfig = defineConfig([{
+  ignores: ["dist/**", "node_modules/**", "docs/.nuxt/**", "docs/.output/**"],
+}, {
+  files: ["**/*.ts"],
+  languageOptions: { parser: tsparser, parserOptions: { project: false } },
+  rules: architectureRules,
+}]);
+
+const fullLintConfig = defineConfig([
   {
     ignores: ["dist/**", "node_modules/**", "docs/.nuxt/**", "docs/.output/**"],
   },
@@ -29,12 +48,7 @@ export default defineConfig([
 
       // Structural budgets: count executable code, not blank/comment-only lines.
       // Legacy violations will be refactored in bounded module groups.
-      "max-lines": ["error", { max: 200, skipBlankLines: true, skipComments: true }],
-      "max-lines-per-function": ["error", { max: 50, skipBlankLines: true, skipComments: true }],
-      "complexity": ["error", { max: 10 }],
-      "max-depth": ["error", { max: 3 }],
-      "max-statements": ["error", { max: 25 }],
-      "max-params": ["error", { max: 4 }],
+      ...architectureRules,
     },
   },
   {
@@ -80,3 +94,7 @@ export default defineConfig([
     },
   },
 ]);
+
+export default process.env.STORYLINE_ARCH_ONLY === '1'
+  ? architectureOnlyConfig
+  : fullLintConfig;
