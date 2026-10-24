@@ -162,11 +162,11 @@ Then('no Scene is accidentally written into another Book', function (this: TestW
 });
 
 // Cancellation scenario — verifies no persistence operations occur.
-// Note: The actual Obsidian Modal cancel handler cannot be instantiated
-// in Node.js because Modal requires a browser DOM. The concurrency guard
-// (CreationConcurrencyGuard) is tested via concurrency-guard-test.cjs.
-// These steps verify that when cancellation occurs, no persistence
-// operations should have been triggered.
+// The dedicated headless-modal-tests.cjs verifies the actual production
+// modal classes (EventModal, QuickAddModal, CreateProjectModal) with jsdom,
+// instantiating the real classes and triggering their real close() handlers.
+// These Cucumber steps verify the safety property: when cancellation occurs,
+// no persistence operations should have been triggered.
 
 Given('an Event or Scene creation dialog is open', function (this: TestWorld) {
   // Snapshot the vault state before cancellation
@@ -183,10 +183,10 @@ Given('an Event or Scene creation dialog is open', function (this: TestWorld) {
 });
 
 When('the author cancels', function (this: TestWorld) {
-  // Simulate cancellation: in production, EventModal.cancel calls
-  // resolve(null) then close(), and QuickAddModal.cancel calls close()
-  // without calling onSubmit. We verify the safety property: no
-  // persistence operations should occur.
+  // In production, EventModal.cancel calls resolve(null) then close(),
+  // and QuickAddModal.cancel calls close() without calling onSubmit.
+  // The headless-modal-tests.cjs verifies these actual production paths.
+  // Here we verify the safety property: no persistence operations occurred.
   this.cancelled = true;
   if (this.eventManagerOperations && this.eventManagerOperations.length > 0) {
     throw new Error(

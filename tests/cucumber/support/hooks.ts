@@ -24,11 +24,15 @@ Module._resolveFilename = function (request: string, ...rest: unknown[]): string
     return originalResolveFilename.apply(this, [request, ...rest]);
 };
 
-// Run vault harness, migration safety and settings payload regression tests
+// Run vault harness, migration safety, settings payload, and headless modal regression tests
 BeforeAll(async () => {
     await runVaultHarnessTests();
     runMigrationIntegrationTests();
     await runSettingsPayloadTests();
+    // Load headless modal tests after the obsidian module patch is in place
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- .cjs file loaded after module patch
+    const { runHeadlessModalTests } = require('./headless-modal-tests.cjs');
+    await runHeadlessModalTests();
 });
 
 Before(function (this: TestWorld) {

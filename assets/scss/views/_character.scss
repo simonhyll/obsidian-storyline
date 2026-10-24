@@ -1134,6 +1134,23 @@
     gap: 0 12px;
 }
 
+.relation-builder-type-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.relation-builder-type-controls .character-field-input {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 0;
+}
+
+.relation-builder-type-controls .relation-builder-custom-category {
+    flex: 0 1 46%;
+}
+
 .relation-builder-options {
     display: flex;
     align-items: center;

@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "description": "Architecture debt baseline for StoryLine Step 6A",
-  "generatedAt": "2026-10-23T23:49:39.402Z",
+  "generatedAt": "2026-10-24T00:11:27.443Z",
   "files": {
     "src/components/AddFieldModal.ts": {
       "violations": [
@@ -4983,18 +4983,26 @@
       "violations": [
         {
           "rule": "max-statements",
-          "line": 34
+          "line": 38
+        }
+      ]
+    },
+    "tests/cucumber/support/obsidian-mock.ts": {
+      "violations": [
+        {
+          "rule": "complexity",
+          "line": 217
         }
       ]
     }
   },
   "summary": {
-    "totalFilesWithViolations": 80,
-    "totalViolations": 1166,
+    "totalFilesWithViolations": 81,
+    "totalViolations": 1167,
     "byRule": {
       "max-params": 48,
       "max-lines-per-function": 282,
-      "complexity": 305,
+      "complexity": 306,
       "max-statements": 226,
       "max-lines": 64,
       "max-depth": 241
