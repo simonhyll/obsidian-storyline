@@ -1,9 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  app: {
-    baseURL: process.env.NUXT_APP_BASE_URL || '/'
-  },
-
   modules: [
     '@nuxt/eslint',
     '@nuxt/image',
@@ -14,6 +10,10 @@ export default defineNuxtConfig({
     'nuxt-agent-discovery',
     '@nuxtjs/mcp-toolkit'
   ],
+
+  app: {
+    baseURL: process.env.NUXT_APP_BASE_URL || '/'
+  },
 
   ssr: process.env.NODE_ENV === 'production',
 
