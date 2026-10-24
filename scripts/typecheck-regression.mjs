@@ -45,8 +45,8 @@ function runTypeScript() {
     }
     const output = (result.stdout || '') + (result.stderr || '');
     if (result.status !== 0 &&
-        !/^.+\\(\\d+,\\d+\\):\\s*error\\s+TS\\d+:/m.test(output)) {
-        throw new Error(`TypeScript compiler exited ${result.status} without recognized diagnostics:\\n${output.slice(0, 1500)}`);
+        !/^.+\(\d+,\d+\):\s*error\s+TS\d+:/m.test(output)) {
+        throw new Error(`TypeScript compiler exited ${result.status} without recognized diagnostics:\n${output.slice(0, 1500)}`);
     }
     return output;
 }
