@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# Husky v9 pre-commit: do not suppress failures or bypass the quality gates.
+set -eu
+pnpm lint:staged
+pnpm lint:architecture
+pnpm typecheck:regression

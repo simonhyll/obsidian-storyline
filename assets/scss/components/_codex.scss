@@ -1,0 +1,702 @@
+/* ── Side panel sections ────────────────────────────── */
+
+.codex-side-section {
+    margin-bottom: 16px;
+}
+.codex-side-section h4 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+/* Gallery grid */
+.codex-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.codex-gallery-thumb {
+    position: relative;
+    border-radius: 4px;
+    overflow: hidden;
+    aspect-ratio: 1;
+    background: var(--background-modifier-border);
+}
+.codex-gallery-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.codex-gallery-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 18px;
+    height: 18px;
+    background: rgba(0,0,0,0.6);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.codex-gallery-thumb:hover .codex-gallery-remove { opacity: 1; }
+.codex-gallery-remove svg { width: 12px; height: 12px; }
+
+/* Notes textarea (side panel) */
+.codex-notes-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+    box-sizing: border-box;
+}
+.codex-notes-textarea:focus {
+    border-color: var(--interactive-accent);
+    outline: none;
+}
+
+/* ── Category manager modal ─────────────────────────── */
+
+.codex-category-manager {
+    min-width: 360px;
+}
+.codex-category-manager-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+}
+.codex-category-manager-drag-handle {
+    flex: 0 0 auto;
+    cursor: grab;
+    color: var(--text-muted);
+}
+.codex-category-manager-drag-handle:active {
+    cursor: grabbing;
+}
+.codex-category-manager-row[draggable="true"] {
+    cursor: grab;
+}
+.codex-category-manager-row.codex-group-dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+.codex-category-manager-row.codex-group-drag-over {
+    border-top: 2px solid var(--interactive-accent);
+}
+.codex-category-manager-row input[type="checkbox"] {
+    margin: 0;
+}
+.codex-visual-group-name-input {
+    flex: 1;
+    min-width: 0;
+}
+.codex-visual-group-count {
+    color: var(--text-muted);
+    font-size: 11px;
+}
+.codex-category-manager-icon {
+    display: flex;
+    align-items: center;
+}
+.codex-category-manager-icon svg { width: 16px; height: 16px; }
+
+.codex-category-delete-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px;
+}
+.codex-category-delete-btn:hover { color: var(--text-error); }
+
+/* ── Toolbar buttons ────────────────────────────────── */
+
+.codex-manage-categories-btn {
+    background: none;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+}
+.codex-manage-categories-btn:hover {
+    color: var(--text-normal);
+    background: var(--background-modifier-hover);
+}
+
+.codex-add-entry-btn {
+    min-width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Back to Codex navigation button ────────────────── */
+
+.codex-nav-back {
+    padding: 4px 0 0;
+}
+.codex-nav-back-btn.codex-nav-back-btn,
+.codex-nav-back-link.codex-nav-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    box-shadow: none;
+    outline: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px 0;
+    font-size: 13px;
+}
+.codex-nav-back-btn.codex-nav-back-btn:hover,
+.codex-nav-back-link.codex-nav-back-link:hover {
+    color: var(--interactive-accent);
+    background: none;
+}
+.codex-nav-back-btn svg,
+.codex-nav-back-link svg { width: 18px; height: 18px; }
+
+/* ── Codex icon-only toolbar buttons ────────────────── */
+
+.codex-toolbar-icon-btn.codex-toolbar-icon-btn {
+    background: none;
+    border: none;
+    box-shadow: none;
+    outline: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    height: auto;
+}
+.codex-toolbar-icon-btn.codex-toolbar-icon-btn:hover {
+    color: var(--text-normal);
+    background: none;
+}
+.codex-toolbar-icon-btn.codex-toolbar-icon-btn:focus,
+.codex-toolbar-icon-btn.codex-toolbar-icon-btn:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+.codex-toolbar-icon-btn svg { width: 16px; height: 16px; }
+
+.codex-toolbar-add-btn {
+    color: var(--text-muted);
+}
+.codex-toolbar-add-btn.codex-toolbar-add-btn:hover {
+    color: var(--text-normal);
+    background: none;
+}
+
+/* ── Codex dropdown (ViewSwitcher) ──────────────────── */
+
+.codex-dropdown-chevron {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 2px;
+}
+.codex-dropdown-chevron svg { width: 12px; height: 12px; }
+
+.codex-dropdown-menu {
+    position: fixed;
+    z-index: 1000;
+    min-width: 180px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    padding: 4px 0;
+    animation: codex-dropdown-fade 0.12s ease-out;
+}
+@keyframes codex-dropdown-fade {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.codex-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    cursor: pointer;
+    color: var(--text-normal);
+    font-size: 13px;
+    transition: background 0.1s;
+}
+.codex-dropdown-item:hover {
+    background: var(--background-modifier-hover);
+}
+.codex-dropdown-item.active {
+    color: var(--interactive-accent);
+    font-weight: 600;
+}
+.codex-dropdown-item-icon {
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+}
+.codex-dropdown-item.active .codex-dropdown-item-icon {
+    color: var(--interactive-accent);
+}
+.codex-dropdown-item-icon svg { width: 16px; height: 16px; }
+
+.codex-dropdown-divider {
+    height: 1px;
+    background: var(--background-modifier-border);
+    margin: 4px 8px;
+}
+
+/* ─── Instant JS tooltips (plotgrid toolbar etc.) ─────────── */
+.sl-instant-tooltip {
+    position: fixed;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background: var(--background-secondary);
+    color: var(--text-normal);
+    font-size: 11px;
+    line-height: 1.3;
+    white-space: nowrap;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 10000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    border: 1px solid var(--background-modifier-border);
+}
+
+/* ── Scene Inspector Sidebar ── */
+.sl-scene-inspector-sidebar .story-line-inspector-panel.sl-sidebar-inspector {
+    position: static;
+    width: 100%;
+    border-left: none;
+    box-shadow: none;
+    z-index: auto;
+}
+
+.sl-scene-inspector-empty {
+    padding: 24px 16px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Manuscript View
+   ═══════════════════════════════════════════════════════════ */
+
+.story-line-manuscript-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.sl-manuscript-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 24px 48px 64px;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Act divider */
+.sl-manuscript-act-divider {
+    text-align: center;
+    margin: 24px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.sl-manuscript-act-divider:first-child {
+    margin-top: 8px;
+}
+
+/* Issue #105 — when a scene block is immediately followed by an act or chapter
+   divider, drop its bottom padding/margin so we don't compound spacing.
+    Class is applied by ManuscriptView at render time. */
+.sl-manuscript-scene-block.is-before-divider {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+}
+
+.sl-manuscript-act-label {
+    font-size: 1.3em;
+    font-weight: 700;
+    color: var(--text-normal);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+/* Chapter divider */
+.sl-manuscript-chapter-divider {
+    text-align: center;
+    margin: 32px 0 16px;
+}
+
+.sl-manuscript-chapter-label {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* Scene block */
+.sl-manuscript-scene-block {
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--background-modifier-border-hover);
+}
+
+.sl-manuscript-scene-block:last-child {
+    border-bottom: none;
+}
+
+/* ── Focus mode ───────────────────────────────────────── */
+.sl-focus-btn {
+    color: var(--text-faint);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+}
+.sl-focus-btn:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+.sl-focus-btn.is-active { color: var(--text-accent); }
+
+/* Hide non-writing UI in focus mode */
+.sl-manuscript-focus.sl-manuscript-focus .story-line-filter-bar > .story-line-search-wrapper,
+.sl-manuscript-focus.sl-manuscript-focus .story-line-filter-bar > .story-line-sort,
+.sl-manuscript-focus.sl-manuscript-focus .story-line-filter-bar > button:not(.sl-focus-btn),
+.sl-manuscript-focus.sl-manuscript-focus .story-line-filter-bar > .sl-toggle-wrap,
+.sl-manuscript-focus.sl-manuscript-focus .story-line-filter-panel,
+.sl-manuscript-focus.sl-manuscript-focus .sl-fmt-toolbar,
+.sl-manuscript-focus.sl-manuscript-focus .sl-manuscript-footer,
+.sl-manuscript-focus.sl-manuscript-focus .sl-manuscript-act-divider,
+.sl-manuscript-focus.sl-manuscript-focus .sl-manuscript-chapter-divider,
+.sl-manuscript-focus.sl-manuscript-focus .sl-manuscript-scene-header {
+    display: none;
+}
+
+/* Scene header */
+.sl-manuscript-scene-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.sl-manuscript-scene-title {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.sl-manuscript-scene-title:hover {
+    color: var(--text-accent);
+    text-decoration: underline;
+}
+
+/* Status badge */
+.sl-manuscript-status {
+    font-size: 0.7em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    background: var(--background-modifier-hover);
+    color: var(--text-muted);
+}
+
+.sl-manuscript-status.sl-status-idea       { background: #e8d5f5; color: #6b3fa0; }
+.sl-manuscript-status.sl-status-outlined   { background: #d5e8f5; color: #2b6cb0; }
+.sl-manuscript-status.sl-status-draft      { background: #fef3cd; color: #856404; }
+.sl-manuscript-status.sl-status-written    { background: #d4edda; color: #155724; }
+.sl-manuscript-status.sl-status-revised    { background: #cce5ff; color: #004085; }
+.sl-manuscript-status.sl-status-final      { background: #d1ecf1; color: #0c5460; }
+
+/* Scene body */
+.sl-manuscript-editor-wrap {
+    min-height: 3em;
+}
+
+.sl-manuscript-loading {
+    padding: 24px 0;
+    font-size: 0;
+    color: transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.sl-manuscript-loading::before,
+.sl-manuscript-loading::after {
+    content: '';
+    display: block;
+    height: 14px;
+    border-radius: 4px;
+    background: linear-gradient(
+        90deg,
+        var(--background-modifier-hover) 25%,
+        var(--background-modifier-border) 50%,
+        var(--background-modifier-hover) 75%
+    );
+    background-size: 200% 100%;
+    animation: sl-skeleton-shimmer 1.5s ease-in-out infinite;
+}
+.sl-manuscript-loading::before { width: 100%; }
+.sl-manuscript-loading::after  { width: 70%; }
+@keyframes sl-skeleton-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ── Embedded editor chrome removal ────────────────────── */
+
+/*
+ * The splitEl gets an explicit pixel height set via JS (syncHeight).
+ * Obsidian's workspace children use position:absolute inside it, so
+ * we just need relative positioning on the container and to hide chrome.
+ */
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split {
+    position: relative;
+    overflow: hidden;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+/* Hide the file-name header bar */
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .view-header {
+    display: none;
+}
+
+/* Hide the view-actions / navigation buttons */
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .view-actions,
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .view-header-nav-buttons {
+    display: none;
+}
+
+/* Hide frontmatter / properties in Manuscript view only. */
+body.sl-hide-manuscript-frontmatter .sl-manuscript-embedded-split.sl-manuscript-embedded-split .metadata-container,
+body.sl-hide-manuscript-frontmatter .sl-manuscript-embedded-split.sl-manuscript-embedded-split .metadata-properties-container,
+body.sl-hide-manuscript-frontmatter .sl-manuscript-embedded-split.sl-manuscript-embedded-split .metadata-properties-heading {
+    display: none !important;
+}
+
+/* Issue #104 / #110 — Scoped hide-frontmatter (only when "Hide frontmatter"
+   is on AND the markdown leaf is showing a file inside the StoryLine root).
+   This avoids touching Obsidian's global "Properties in document" editor
+   setting. Targets both the Properties UI (.metadata-container) and the raw
+   YAML lines shown in Source mode (.HyperMD-frontmatter in CM6). All rules
+   are also gated on body.sl-hide-frontmatter-global so toggling the setting
+   OFF reliably restores frontmatter even if the per-leaf class lingers. */
+body.sl-hide-frontmatter-global .view-content.sl-hide-frontmatter.sl-hide-frontmatter .metadata-container.metadata-container,
+body.sl-hide-frontmatter-global .view-content.sl-hide-frontmatter.sl-hide-frontmatter .metadata-properties-container.metadata-properties-container,
+body.sl-hide-frontmatter-global .view-content.sl-hide-frontmatter.sl-hide-frontmatter .metadata-properties-heading.metadata-properties-heading,
+body.sl-hide-frontmatter-global .view-content.sl-hide-frontmatter.sl-hide-frontmatter .cm-line.HyperMD-frontmatter.HyperMD-frontmatter,
+body.sl-hide-frontmatter-global .view-content.sl-hide-frontmatter.sl-hide-frontmatter .markdown-source-view .cm-line.HyperMD-frontmatter.HyperMD-frontmatter {
+    display: none;
+}
+
+/* Frontmatter inside StoryLine custom views (Board, Scene Inspector sidebar,
+    Research, etc.) — exclude Manuscript's embedded editors because they have
+    their own setting above. */
+body.sl-hide-frontmatter-global .workspace-leaf-content.workspace-leaf-content[data-type^="story-line-"] .metadata-container.metadata-container:not(.sl-manuscript-embedded-split .metadata-container),
+body.sl-hide-frontmatter-global .workspace-leaf-content.workspace-leaf-content[data-type^="story-line-"] .metadata-properties-container.metadata-properties-container:not(.sl-manuscript-embedded-split .metadata-properties-container),
+body.sl-hide-frontmatter-global .workspace-leaf-content.workspace-leaf-content[data-type^="story-line-"] .metadata-properties-heading.metadata-properties-heading:not(.sl-manuscript-embedded-split .metadata-properties-heading),
+body.sl-hide-frontmatter-global .workspace-leaf-content.workspace-leaf-content[data-type^="story-line-"] .cm-line.HyperMD-frontmatter.HyperMD-frontmatter:not(.sl-manuscript-embedded-split .cm-line.HyperMD-frontmatter) {
+    display: none;
+}
+
+/* Manuscript view embeds scene editors via detached splits, so the JS toggle
+    in updateFrontmatterVisibility() can't reach their raw YAML lines. */
+body.sl-hide-manuscript-frontmatter .sl-manuscript-embedded-split .cm-line.HyperMD-frontmatter {
+    display: none !important;
+}
+
+/* Remove background from inner containers */
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .workspace-tabs,
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .workspace-tab-container,
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .workspace-leaf,
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .workspace-leaf-content,
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .view-content,
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .markdown-source-view {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+/* CodeMirror transparent background */
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .cm-editor {
+    background: transparent;
+    border: none;
+}
+
+/* Strip CM6 scrollPastEnd padding from .cm-content and remove the
+   inner scroller so .cm-scroller.scrollHeight equals real document
+   content (without ~70vh of trailing padding).
+   !important is required: CM6 injects a per-editor-instance theme rule
+   targeting .cm-content with equal specificity that loads after our
+   styles.css. Scoped tightly to .sl-manuscript-embedded-split so no
+   other editor in Obsidian is affected. */
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .cm-scroller {
+    overflow: visible !important;
+}
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .cm-content {
+    padding-bottom: 0 !important;
+}
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .cm-sizer {
+    padding-bottom: 0 !important;
+}
+
+/* Remove view-content padding */
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .view-content {
+    padding: 0;
+}
+
+/* Remove markdown-source-view internal padding */
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .markdown-source-view {
+    padding: 0;
+}
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .markdown-source-view .cm-contentContainer {
+    padding-bottom: 0;
+}
+
+/* Hide gutters (line numbers etc.) */
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .cm-gutters {
+    display: none;
+}
+
+/* Remove the resize handle between leaves */
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .workspace-leaf-resize-handle {
+    display: none;
+}
+
+/* Remove tab headers if present */
+.sl-manuscript-embedded-split.sl-manuscript-embedded-split .workspace-tab-header-container {
+    display: none;
+}
+
+.sl-manuscript-scene-empty {
+    font-style: italic;
+    color: var(--text-faint);
+}
+
+/* Empty state */
+.sl-manuscript-empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 64px 24px;
+    font-size: 1.1em;
+}
+
+/* Footer */
+.sl-manuscript-footer {
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    text-align: center;
+    font-size: 0.8em;
+    color: var(--text-muted);
+    border-top: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+}
+
+/* Dark theme adjustments for status badges */
+.theme-dark .sl-manuscript-status.sl-status-idea       { background: #3b2552; color: #d4b5f0; }
+.theme-dark .sl-manuscript-status.sl-status-outlined   { background: #1e3a5f; color: #a3c9f0; }
+.theme-dark .sl-manuscript-status.sl-status-draft      { background: #4a3d1a; color: #f0d98c; }
+.theme-dark .sl-manuscript-status.sl-status-written    { background: #1a3d25; color: #8fd4a8; }
+.theme-dark .sl-manuscript-status.sl-status-revised    { background: #1a2d4a; color: #8cb3e0; }
+.theme-dark .sl-manuscript-status.sl-status-final      { background: #1a3a40; color: #80c8d4; }
+
+body /* ── Plain-text mode: hide link/tag decorations ────────── */
+
+/* Wiki-links: remove link styling, make them look like normal text */
+.sl-manuscript-plain.sl-manuscript-plain .cm-hmd-internal-link,
+.sl-manuscript-plain.sl-manuscript-plain .cm-hmd-internal-link .cm-underline,
+.sl-manuscript-plain.sl-manuscript-plain .internal-link,
+.sl-manuscript-plain.sl-manuscript-plain .cm-link,
+.sl-manuscript-plain.sl-manuscript-plain .cm-url,
+.sl-manuscript-plain.sl-manuscript-plain a.internal-link,
+.sl-manuscript-plain.sl-manuscript-plain .cm-hmd-internal-link.cm-link-alias,
+.sl-manuscript-plain.sl-manuscript-plain .cm-hmd-internal-link.cm-link-alias .cm-underline,
+.sl-manuscript-plain.sl-manuscript-plain .is-live-preview .internal-link,
+.sl-manuscript-plain.sl-manuscript-plain .markdown-rendered .internal-link {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: none;
+    box-shadow: none;
+    cursor: text;
+    pointer-events: none;
+}
+
+/* Wikilink brackets [[]] — hide in Live Preview */
+.sl-manuscript-plain.sl-manuscript-plain .cm-formatting-link,
+.sl-manuscript-plain.sl-manuscript-plain .cm-formatting-link-string {
+    display: none;
+}
+
+/* Tags: hide the # prefix and remove tag styling */
+.sl-manuscript-plain.sl-manuscript-plain .cm-hashtag,
+.sl-manuscript-plain.sl-manuscript-plain .cm-tag,
+.sl-manuscript-plain.sl-manuscript-plain a.tag {
+    color: inherit;
+    text-decoration: none;
+    background: none;
+    cursor: text;
+    pointer-events: none;
+    padding: 0;
+    border: none;
+    font-size: inherit;
+}
+
+/* Hide the # character in tags (Live Preview renders it as a separate span) */
+.sl-manuscript-plain.sl-manuscript-plain .cm-hashtag-begin::first-letter,
+.sl-manuscript-plain.sl-manuscript-plain .cm-formatting-hashtag {
+    font-size: 0;
+}
+
+/* Tags in reading/preview mode */
+.sl-manuscript-plain.sl-manuscript-plain a.tag::before {
+    content: '';
+}
+.sl-manuscript-plain.sl-manuscript-plain a.tag {
+    font-variant: normal;
+}
+
+/* External links: plain text */
+.sl-manuscript-plain.sl-manuscript-plain .cm-url {
+    display: none;
+}
+.sl-manuscript-plain.sl-manuscript-plain .external-link {
+    color: inherit;
+    text-decoration: none;
+    background: none;
+    cursor: text;
+    pointer-events: none;
+}

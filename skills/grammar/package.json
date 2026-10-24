@@ -1,0 +1,24 @@
+{
+  "name": "@obsidian-storyline/grammar",
+  "version": "1.0.0",
+  "description": "Grammar checking and correction skill for Obsidian StoryLine",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "obsidian",
+    "storyline",
+    "grammar",
+    "writing",
+    "proofreading"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

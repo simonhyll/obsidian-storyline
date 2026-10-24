@@ -1,0 +1,913 @@
+/* ── Formatting Toolbar ────────────────────────────────── */
+
+.sl-fmt-toolbar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    padding: 6px 12px;
+    margin: 4px auto;
+    width: fit-content;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    flex-wrap: wrap;
+    flex: 0 0 auto;
+    user-select: none;
+}
+
+.sl-fmt-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 30px;
+    color: var(--text-normal);
+    cursor: pointer;
+    border-radius: var(--radius-s);
+}
+.sl-fmt-btn:hover {
+    background: var(--background-modifier-hover);
+}
+.sl-fmt-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Text-label buttons (H2, H3, Hn) */
+.sl-fmt-btn.sl-fmt-text {
+    font-size: 15px;
+    font-weight: 600;
+    font-family: var(--font-interface);
+    line-height: 1;
+}
+
+/* Small triangle indicator for sub-menu triggers */
+.sl-fmt-btn.sl-fmt-has-sub::after {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-left: 3px solid transparent;
+    border-right: 3px solid transparent;
+    border-top: 3.5px solid var(--text-muted);
+    margin-left: 1px;
+    margin-top: 2px;
+}
+
+.sl-fmt-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--background-modifier-border);
+    margin: 0 8px;
+    flex-shrink: 0;
+}
+
+/* Sub-menu wrapper (hover-reveal like Editing Toolbar) */
+.sl-fmt-submenu {
+    display: inline-flex;
+    position: relative;
+}
+
+.sl-fmt-subpanel {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 4px 6px;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border-hover);
+    border-radius: var(--radius-m);
+    z-index: 100;
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0.15s, opacity 0.15s;
+}
+
+.sl-fmt-submenu:hover > .sl-fmt-subpanel {
+    visibility: visible;
+    opacity: 1;
+    transition: visibility 0.2s, opacity 0.2s;
+}
+
+/* ── Manuscript mobile adjustments ─────────────────────── */
+
+/* Phone: tighter padding */
+.sl-phone .sl-manuscript-scroll {
+    padding: 16px 16px 48px;
+}
+
+/* Tablet: moderate padding */
+.sl-tablet .sl-manuscript-scroll {
+    padding: 20px 32px 48px;
+}
+
+/* ── Issue #195 — Manuscript cross-scene search & replace ──── */
+
+.sl-manuscript-search {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 12px;
+    margin: 4px auto;
+    width: fit-content;
+    max-width: 720px;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    flex: 0 0 auto;
+}
+
+.sl-manuscript-search-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sl-manuscript-search-input {
+    flex: 1 1 auto;
+    min-width: 180px;
+    padding: 4px 8px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    color: var(--text-normal);
+    font-size: var(--font-ui-small);
+}
+
+.sl-manuscript-search-input:focus {
+    border-color: var(--interactive-accent);
+    outline: none;
+}
+
+.sl-manuscript-search-count {
+    flex: 0 0 auto;
+    min-width: 70px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+}
+
+.sl-manuscript-search-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    color: var(--text-normal);
+    cursor: pointer;
+    border-radius: var(--radius-s);
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+.sl-manuscript-search-btn:hover {
+    background: var(--background-modifier-hover);
+}
+.sl-manuscript-search-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.75;
+}
+
+.sl-manuscript-search-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-s);
+    background: transparent;
+    border: 1px solid transparent;
+    font-size: 14px;
+    font-weight: 600;
+}
+.sl-manuscript-search-toggle:hover {
+    background: var(--background-modifier-hover);
+}
+.sl-manuscript-search-toggle.is-active {
+    color: var(--text-on-accent);
+    background: var(--interactive-accent);
+    border-color: var(--interactive-accent);
+}
+.sl-manuscript-search-toggle svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.75;
+}
+
+.sl-manuscript-replace-row .sl-manuscript-search-input {
+    min-width: 180px;
+}
+
+/* Read-only preview fallback (phone) — normal markdown rendering */
+.sl-manuscript-preview {
+    line-height: 1.6;
+}
+
+/* ── Referenced By panel ───────────────────────────── */
+.character-references-panel,
+.location-references-panel,
+.codex-references-panel,
+.character-linked-aliases-panel {
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 8px;
+    background: var(--background-secondary);
+}
+
+.character-references-panel h3,
+.location-references-panel h3,
+.codex-references-panel h3,
+.character-linked-aliases-panel h3 {
+    margin: 0 0 8px;
+    font-size: 0.95em;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.reference-group h4 {
+    margin: 8px 0 4px;
+    font-size: 0.85em;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: capitalize;
+}
+
+.reference-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.reference-list li {
+    padding: 3px 0;
+}
+
+.reference-link {
+    color: var(--text-accent);
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.reference-link:hover {
+    text-decoration: underline;
+}
+
+/* ── Linked Aliases panel ──────────────────────────── */
+.linked-aliases-list {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+}
+
+.linked-alias-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    flex-wrap: wrap;
+}
+
+.linked-alias-name {
+    font-weight: 600;
+    color: var(--text-normal);
+    font-size: 0.9em;
+}
+
+.linked-alias-target {
+    color: var(--text-muted);
+    font-size: 0.85em;
+}
+
+.linked-alias-unlink-btn {
+    margin-left: auto;
+    font-size: 0.8em;
+    padding: 2px 8px;
+    height: auto;
+    line-height: 1.4;
+}
+
+/* ── Plot Grid: Codex entity tags in cells ─────────── */
+.pg-codex-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 4px;
+    justify-content: center;
+}
+
+.pg-codex-tag {
+    display: inline-block;
+    font-size: 9px;
+    line-height: 1;
+    padding: 2px 5px;
+    border-radius: 8px;
+    white-space: nowrap;
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+}
+
+.pg-codex-tag-character {
+    background: hsla(210, 70%, 55%, 0.18);
+    color: hsl(210, 70%, 45%);
+}
+
+.pg-codex-tag-location {
+    background: hsla(145, 55%, 45%, 0.18);
+    color: hsl(145, 55%, 35%);
+}
+
+.pg-codex-tag-codex {
+    background: hsla(275, 55%, 55%, 0.18);
+    color: hsl(275, 55%, 45%);
+}
+
+.theme-dark .pg-codex-tag-character {
+    background: hsla(210, 60%, 50%, 0.22);
+    color: hsl(210, 60%, 72%);
+}
+
+.theme-dark .pg-codex-tag-location {
+    background: hsla(145, 50%, 45%, 0.22);
+    color: hsl(145, 50%, 68%);
+}
+
+.theme-dark .pg-codex-tag-codex {
+    background: hsla(275, 50%, 55%, 0.22);
+    color: hsl(275, 50%, 72%);
+}
+
+/* ── Codex stale-entry warning ─────────────────────── */
+.codex-stale-warning {
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 8px;
+    background: hsla(40, 90%, 55%, 0.12);
+    border-left: 3px solid hsl(40, 90%, 55%);
+}
+
+.codex-stale-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 0.9em;
+    color: hsl(40, 80%, 40%);
+}
+
+.theme-dark .codex-stale-header {
+    color: hsl(40, 80%, 65%);
+}
+
+.codex-stale-header svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.codex-stale-scene-list {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0;
+}
+
+.codex-stale-scene-list li {
+    padding: 2px 0;
+}
+
+.codex-stale-scene-list .reference-link {
+    font-size: 0.85em;
+}
+
+.codex-stale-reviewed-btn {
+    margin-top: 6px;
+    padding: 4px 12px;
+    font-size: 0.8em;
+    border-radius: 4px;
+    cursor: pointer;
+    background: var(--interactive-normal);
+    border: 1px solid var(--background-modifier-border);
+    color: var(--text-normal);
+}
+
+.codex-stale-reviewed-btn:hover {
+    background: var(--interactive-hover);
+}
+
+/* ── Hide/show built-in fields ─────────────────────── */
+.field-hide-btn {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 6px;
+    opacity: 0;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: opacity 0.15s;
+    vertical-align: middle;
+}
+
+.field-hide-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.character-field-row:hover .field-hide-btn,
+.codex-field-row:hover .field-hide-btn,
+.location-field-row:hover .field-hide-btn {
+    opacity: 0.6;
+}
+
+.field-hide-btn.field-hide-btn:hover {
+    opacity: 1;
+    color: var(--text-accent);
+}
+
+/* ── Hide-category button (issue #233 discussion — hide full categories) ─ */
+.character-section-hide-cat-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    opacity: 0;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: opacity 0.15s;
+    vertical-align: middle;
+    background: transparent;
+    border: none;
+    padding: 2px;
+}
+.character-section-hide-cat-btn svg {
+    width: 14px;
+    height: 14px;
+}
+.character-section-header:hover .character-section-hide-cat-btn,
+.codex-section-header:hover .character-section-hide-cat-btn,
+.location-section-header:hover .character-section-hide-cat-btn {
+    opacity: 0.6;
+}
+.character-section-hide-cat-btn:hover {
+    opacity: 1;
+    color: var(--text-accent);
+}
+/* When a category is hidden, keep its eye button visible so the user can un-hide it */
+.is-category-hidden .character-section-hide-cat-btn {
+    opacity: 0.6;
+}
+.is-category-hidden .character-section-body,
+.is-category-hidden .codex-section-body,
+.is-category-hidden .location-section-body {
+    display: none;
+}
+
+/* Issue #236 — hidden categories container (mirrors hidden-fields-container).
+   Hidden categories are collected here instead of leaving their header
+   visible in the normal flow, so hiding a category truly removes it from
+   view (like hiding a field) rather than just collapsing it. */
+.hidden-categories-container {
+    border-left: 2px solid var(--background-modifier-border);
+    padding-left: 8px;
+    margin-top: 4px;
+    opacity: 0.8;
+}
+
+/* ── Move-up / move-down chevrons (built-in field rows) ─ */
+.field-move-btn {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+    opacity: 0;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: opacity 0.15s, color 0.15s;
+    vertical-align: middle;
+}
+.field-move-btn svg {
+    width: 14px;
+    height: 14px;
+}
+.character-field-row:hover .field-move-btn,
+.codex-field-row:hover .field-move-btn,
+.location-field-row:hover .field-move-btn {
+    opacity: 0.6;
+}
+.field-move-btn.field-move-btn:hover {
+    opacity: 1;
+    color: var(--text-accent);
+}
+
+.hidden-fields-toggle {
+    padding: 4px 0;
+    margin-top: 4px;
+}
+
+.hidden-fields-toggle-link {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.hidden-fields-toggle-link:hover {
+    color: var(--text-accent);
+    text-decoration: underline;
+}
+
+.hidden-fields-container {
+    border-left: 2px solid var(--background-modifier-border);
+    padding-left: 8px;
+    margin-top: 4px;
+    opacity: 0.7;
+}
+
+/* ═══════════════════════════════════════════
+   Research Sidebar
+   ═══════════════════════════════════════════ */
+
+.sl-research-panel {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.sl-research-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sl-research-title {
+    font-weight: 600;
+    font-size: 1.05em;
+    flex: 1;
+}
+
+.sl-research-question-badge {
+    background: var(--text-error);
+    color: var(--text-on-accent);
+    font-size: 0.75em;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+}
+
+.sl-research-new-btn {
+    margin-left: auto;
+}
+
+/* Search row */
+.sl-research-search-row {
+    display: flex;
+    gap: 4px;
+}
+
+.sl-research-search-input {
+    flex: 1;
+    padding: 4px 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 0.9em;
+}
+
+.sl-research-auto-btn.is-active {
+    color: var(--text-accent);
+}
+
+/* Tag chips */
+.sl-research-tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.sl-research-tag-chip {
+    font-size: 0.78em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--background-secondary);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.sl-research-tag-chip:hover {
+    background: var(--background-modifier-hover);
+}
+
+.sl-research-tag-chip.is-active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+/* Type filter row */
+.sl-research-type-row {
+    display: flex;
+    justify-content: space-evenly;
+    padding: 8px 0 10px;
+}
+
+.sl-research-type-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border: none;
+    border-radius: var(--radius-s);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.sl-research-type-btn:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.sl-research-type-btn.is-active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.sl-research-type-btn .svg-icon {
+    width: 14px;
+    height: 14px;
+}
+
+/* Results */
+.sl-research-results {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sl-research-empty {
+    color: var(--text-muted);
+    font-size: 0.88em;
+    font-style: italic;
+    padding: 12px 4px;
+    text-align: center;
+}
+
+/* Folder groups */
+.sl-research-folder-group {
+    margin-top: 6px;
+}
+.sl-research-folder-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 4px;
+    font-weight: 600;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+}
+.sl-research-folder-header:hover {
+    color: var(--text-normal);
+}
+.sl-research-folder-icon .svg-icon {
+    width: 14px;
+    height: 14px;
+}
+.sl-research-folder-count {
+    font-size: 0.8em;
+    font-weight: 400;
+    color: var(--text-faint);
+    margin-left: auto;
+}
+.sl-research-folder-group .sl-research-card {
+    margin-left: 10px;
+}
+
+/* Card */
+.sl-research-card {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    background: var(--background-primary);
+    transition: border-color 0.15s;
+}
+
+.sl-research-card:hover {
+    border-color: var(--interactive-accent);
+}
+
+.sl-research-card.is-expanded {
+    border-color: var(--interactive-accent);
+}
+
+.sl-research-card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.sl-research-card-icon {
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+
+.sl-research-card-icon .svg-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.sl-research-card-icon.is-resolved {
+    color: var(--text-success);
+}
+
+.sl-research-card-icon.is-open {
+    color: var(--text-error);
+}
+
+.sl-research-card-title {
+    font-weight: 500;
+    font-size: 0.9em;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sl-research-card-link-icon {
+    flex-shrink: 0;
+    color: var(--text-accent);
+    opacity: 0.7;
+}
+
+.sl-research-card-link-icon .svg-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.sl-research-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 4px;
+}
+
+.sl-research-mini-tag {
+    font-size: 0.72em;
+    padding: 1px 5px;
+    border-radius: 8px;
+    background: var(--background-secondary);
+    color: var(--text-faint);
+}
+
+/* Expanded body */
+.sl-research-card-body {
+    margin-top: 8px;
+    font-size: 0.88em;
+    line-height: 1.5;
+    overflow-y: auto;
+    border-top: 1px solid var(--background-modifier-border);
+    padding-top: 6px;
+}
+
+/* Image preview in research cards */
+.sl-research-card-image-preview {
+    margin-top: 8px;
+    text-align: center;
+    padding: 6px;
+    border-radius: 6px;
+    background: var(--background-secondary);
+}
+.sl-research-image-not-found {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 0.85em;
+    padding: 12px;
+}
+/* Image preview in create/edit modal */
+.sl-research-image-preview {
+    margin-top: 4px;
+    text-align: center;
+}
+
+.sl-research-card-source {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    margin-top: 6px;
+}
+
+.sl-research-card-source a {
+    color: var(--text-accent);
+}
+
+/* Action buttons */
+.sl-research-card-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.sl-research-action-btn {
+    padding: 3px 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-secondary);
+    color: var(--text-normal);
+    font-size: 0.8em;
+    cursor: pointer;
+}
+
+.sl-research-action-btn:hover {
+    background: var(--background-modifier-hover);
+}
+
+.sl-research-action-btn.mod-destructive {
+    margin-left: auto;
+    color: var(--text-normal);
+}
+
+.sl-research-action-btn.mod-destructive:hover {
+    background: var(--background-modifier-hover);
+}
+
+/* Create modal */
+.sl-research-create-modal {
+    max-width: 500px;
+}
+
+.sl-research-create-modal .setting-item {
+    border-top: none;
+    padding-top: 6px;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.sl-research-create-modal .setting-item-info {
+    flex: none;
+}
+
+.sl-research-create-modal .setting-item-control {
+    width: 100%;
+}
+
+.sl-research-create-modal .setting-item-control input[type="text"],
+.sl-research-create-modal .setting-item-control textarea {
+    width: 100%;
+}
+
+.sl-research-type-picker {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.sl-research-type-pick-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border: none;
+    border-radius: var(--radius-s);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.sl-research-type-pick-btn:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.sl-research-type-pick-btn.is-active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.sl-research-type-pick-btn .svg-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* Create modal buttons */
+.sl-research-modal-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 12px;
+}

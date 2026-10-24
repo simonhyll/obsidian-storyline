@@ -46,14 +46,14 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Releasing version $VERSION"
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: 20.19.1
-          cache: npm
-
-      - name: Pin npm
-        run: npm install --global npm@10.8.2
+          cache: pnpm
 
       - name: Verify release metadata
         env:
@@ -63,15 +63,11 @@ jobs:
           const fs = require('fs');
           const version = process.env.RELEASE_VERSION;
           const read = file => JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
-          const manifest = read('manifest.json');
+          const manifest = read('assets/manifest.json');
           const packageJson = read('package.json');
-          const lock = read('package-lock.json');
-          const lockRoot = lock.packages && lock.packages[''];
           const actual = {
             manifest: manifest.version,
             package: packageJson.version,
-            lock: lock.version,
-            lockRoot: lockRoot && lockRoot.version,
           };
           if (Object.values(actual).some(value => value !== version)) {
             console.error(`Release ${version} does not match release metadata: ${JSON.stringify(actual)}`);
@@ -84,17 +80,17 @@ jobs:
           NODE
 
       - name: Install dependencies (exact lockfile)
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build plugin
-        run: npm run build
+        run: pnpm build
 
       - name: Verify build artifacts exist
         run: |
-          test -f main.js      || { echo "main.js missing";  exit 1; }
-          test -f manifest.json || { echo "manifest.json missing"; exit 1; }
-          test -f styles.css    || { echo "styles.css missing"; exit 1; }
-          sha256sum main.js
+          test -f dist/main.js      || { echo "dist/main.js missing";  exit 1; }
+          test -f dist/manifest.json || { echo "dist/manifest.json missing"; exit 1; }
+          test -f dist/styles.css    || { echo "dist/styles.css missing"; exit 1; }
+          sha256sum dist/main.js
 
       - name: Commit version and build output
         env:
@@ -102,7 +98,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add manifest.json package.json package-lock.json versions.json main.js
+          git add assets/manifest.json package.json pnpm-lock.yaml versions.json
           if git diff --cached --quiet; then
             echo "No release file changes to commit."
           else
@@ -114,8 +110,13 @@ jobs:
         env:
           RELEASE_VERSION: ${{ steps.rel.outputs.version }}
         run: |
-          git tag -f "$RELEASE_VERSION"
-          git push --force origin "refs/tags/$RELEASE_VERSION"
+          # Refuse to overwrite an existing tag — this is a safety gate.
+          if git tag -l "$RELEASE_VERSION" | grep -q .; then
+            echo "Error: tag $RELEASE_VERSION already exists. Will not overwrite."
+            exit 1
+          fi
+          git tag "$RELEASE_VERSION"
+          git push origin "refs/tags/$RELEASE_VERSION"
 
       - name: Create / update GitHub Release with build assets
         uses: softprops/action-gh-release@v2
@@ -127,8 +128,8 @@ jobs:
           body: |
             See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for release notes.
           files: |
-            main.js
-            manifest.json
-            styles.css
+            dist/main.js
+            dist/manifest.json
+            dist/styles.css
           fail_on_unmatched_files: true
           overwrite_files: true

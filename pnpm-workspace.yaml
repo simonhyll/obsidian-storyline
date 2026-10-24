@@ -1,0 +1,10 @@
+packages:
+  - docs
+  - skills/*
+
+allowBuilds:
+  esbuild: true
+  '@parcel/watcher': true
+  sharp: true
+  unrs-resolver: true
+  vue-demi: true

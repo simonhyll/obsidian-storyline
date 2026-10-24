@@ -1,0 +1,980 @@
+/* --- Statistics View --- */
+.story-line-stats-content {
+    padding: 16px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.stats-section {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--sc-card-border);
+}
+
+.stats-section h4 {
+    margin: 0 0 10px;
+    font-size: 0.95em;
+    color: var(--sc-text);
+}
+
+.stats-big-number {
+    font-size: 1.3em;
+    font-weight: 700;
+}
+
+.stats-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.stats-list li {
+    padding: 6px 0;
+    font-size: 0.85em;
+}
+
+.stats-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--background-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.stats-bar-wide {
+    height: 14px;
+    border-radius: 7px;
+}
+
+.stats-bar-fill {
+    height: 100%;
+    border-radius: inherit;
+    transition: width 0.3s;
+    background: var(--sc-accent);
+}
+
+.stats-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 0.85em;
+}
+
+.stats-row span:first-child {
+    min-width: 180px;
+}
+
+.stats-row .stats-bar {
+    flex: 1;
+}
+
+.stats-percent {
+    min-width: 40px;
+    text-align: right;
+    color: var(--sc-text-muted);
+    font-size: 0.9em;
+}
+
+.stats-warning {
+    color: var(--sl-warning);
+    font-weight: 600;
+}
+
+.stats-ok {
+    color: var(--sl-success);
+}
+
+/* Plot Hole Detection - Severity Styling */
+.stats-warning-summary {
+    display: flex;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--background-secondary);
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-size: 0.9em;
+}
+
+.stats-severity-error {
+    color: var(--sl-error);
+    font-weight: 600;
+}
+
+.stats-severity-warning {
+    color: var(--sl-warning);
+    font-weight: 600;
+}
+
+.stats-severity-info {
+    color: var(--text-muted);
+}
+
+.stats-warning-category {
+    margin-top: 12px;
+    margin-bottom: 4px;
+    font-weight: 600;
+    font-size: 0.95em;
+    color: var(--text-normal);
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-bottom: 4px;
+}
+
+.stats-warning-icon {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 0.88em;
+    line-height: 1.4;
+}
+
+.stats-warning-icon svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+/* Writing Sprint / Velocity Tracking */
+
+/* Sprint timer controls */
+.stats-sprint-controls {
+    padding: 12px;
+    background: var(--sc-card-bg);
+    border: 1px solid var(--sc-card-border);
+    border-radius: var(--sc-radius);
+    margin-bottom: 16px;
+}
+.stats-sprint-duration-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+.stats-sprint-duration-label {
+    font-size: 0.85em;
+    color: var(--sc-text-muted);
+}
+.stats-sprint-duration-input {
+    width: 52px;
+    padding: 3px 6px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 0.9em;
+    text-align: center;
+}
+.stats-sprint-duration-input:disabled {
+    opacity: 0.5;
+}
+.stats-sprint-duration-unit {
+    font-size: 0.85em;
+    color: var(--sc-text-muted);
+}
+.stats-sprint-timer {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.stats-sprint-timer-display {
+    font-size: 2em;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--sc-text);
+    letter-spacing: 0.02em;
+}
+.stats-sprint-timer-display.stats-sprint-timer-overtime {
+    color: var(--text-error, #e74c3c);
+}
+.stats-sprint-timer-words,
+.stats-sprint-timer-wpm {
+    font-size: 0.9em;
+    color: var(--sc-text-muted);
+}
+.stats-sprint-btn-row {
+    display: flex;
+    gap: 8px;
+}
+.stats-sprint-btn {
+    padding: 4px 16px;
+    border-radius: 6px;
+    font-size: 0.85em;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    color: var(--text-normal);
+    transition: background 0.15s;
+}
+.stats-sprint-btn:hover:not(:disabled) {
+    background: var(--background-modifier-hover);
+}
+.stats-sprint-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+.stats-sprint-btn-start {
+    background: var(--sl-success, #4CAF50);
+    color: #ffffff;
+    border-color: var(--sl-success, #4CAF50);
+}
+.stats-sprint-btn-start:hover:not(:disabled) {
+    opacity: 0.9;
+}
+.stats-sprint-btn-stop {
+    background: var(--text-error, #e74c3c);
+    color: #ffffff;
+    border-color: var(--text-error, #e74c3c);
+}
+.stats-sprint-btn-stop:hover:not(:disabled) {
+    opacity: 0.9;
+}
+.stats-sprint-log-list {
+    font-size: 0.85em;
+    color: var(--sc-text-muted);
+    margin: 6px 0 0 18px;
+    padding: 0;
+}
+.stats-sprint-log-list li {
+    margin-bottom: 2px;
+}
+
+.stats-sprint-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.stats-sprint-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--sc-card-bg);
+    border: 1px solid var(--sc-card-border);
+    border-radius: var(--sc-radius);
+    min-width: 80px;
+    flex: 1;
+}
+
+.stats-sprint-card-icon {
+    margin-bottom: 4px;
+    color: var(--sc-accent);
+}
+
+.stats-sprint-card-value {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--sc-text);
+}
+
+.stats-sprint-card-label {
+    font-size: 0.8em;
+    color: var(--sc-text-muted);
+    margin-top: 2px;
+}
+
+.stats-sprint-goal {
+    margin-bottom: 12px;
+}
+
+.stats-sprint-goal span {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.9em;
+}
+
+.stats-rings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 12px 0 4px;
+    justify-content: center;
+}
+
+.stats-ring {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 110px;
+    gap: 4px;
+}
+
+.stats-ring-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.stats-ring-svg {
+    display: block;
+}
+
+.stats-ring-pct {
+    font-size: 16px;
+    font-weight: 600;
+    fill: var(--text-normal);
+}
+
+.stats-ring-sub {
+    font-size: 11px;
+    color: var(--sc-text-muted, var(--text-muted));
+}
+
+.stats-sprint-sparkline {
+    margin-top: 8px;
+}
+
+.stats-sprint-sparkline-label {
+    font-size: 0.85em;
+    color: var(--sc-text-muted);
+    margin-bottom: 4px;
+    display: block;
+}
+
+.stats-sprint-spark-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    height: 130px;
+}
+
+.stats-sprint-spark-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+    height: 100%;
+}
+
+.stats-sprint-spark-bar {
+    width: 100%;
+    background: var(--sc-accent);
+    border-radius: 2px 2px 0 0;
+    min-height: 2px;
+    transition: height 0.3s;
+    cursor: pointer;
+}
+
+.stats-sprint-spark-bar:hover {
+    opacity: 0.8;
+}
+
+.stats-sprint-spark-label {
+    font-size: 0.65em;
+    color: var(--sc-text-faint);
+    margin-top: 2px;
+}
+
+/* Pacing Analysis */
+.pacing-avg-table {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pacing-avg-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pacing-avg-label {
+    min-width: 70px;
+    font-weight: 600;
+    font-size: 0.88em;
+}
+
+.pacing-avg-value {
+    font-size: 0.82em;
+    color: var(--text-muted);
+    min-width: 160px;
+}
+
+.pacing-avg-row .stats-bar {
+    flex: 1;
+    min-width: 60px;
+}
+
+/* Word-count distribution histogram */
+.pacing-dist-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    height: 130px;
+    padding: 8px 0;
+    border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.pacing-dist-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+    height: 100%;
+}
+
+.pacing-dist-bar {
+    width: 100%;
+    background: var(--sl-info, #2196F3);
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+    transition: height 0.3s;
+    cursor: default;
+}
+
+.pacing-dist-bar:hover {
+    opacity: 0.8;
+}
+
+.pacing-dist-count {
+    font-size: 0.72em;
+    font-weight: 600;
+    color: var(--text-normal);
+    margin-top: 3px;
+}
+
+.pacing-dist-label {
+    font-size: 0.62em;
+    color: var(--text-muted);
+    margin-top: 1px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Tension Curve */
+.tension-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 120px;
+    padding: 8px 0;
+    border-bottom: 2px solid var(--sc-card-border);
+}
+
+.tension-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+    height: 100%;
+}
+
+.tension-bar {
+    width: 100%;
+    max-width: 30px;
+    background: var(--sc-accent);
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+    transition: height 0.3s;
+    cursor: pointer;
+}
+
+.tension-bar:hover {
+    opacity: 0.8;
+}
+
+.tension-label {
+    font-size: 0.7em;
+    color: var(--sc-text-faint);
+    margin-top: 4px;
+}
+
+/* ── Collapsible sections ── */
+.stats-collapsible {
+    margin-bottom: 16px;
+    border: 1px solid var(--sc-card-border);
+    border-radius: var(--sc-radius, 8px);
+    overflow: hidden;
+}
+
+.stats-collapsible-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 0.95em;
+    cursor: pointer;
+    background: var(--background-secondary);
+    user-select: none;
+    list-style: none;
+}
+
+.stats-collapsible-summary::-webkit-details-marker { display: none; }
+
+.stats-collapsible-summary::before {
+    content: '▸';
+    display: inline-block;
+    transition: transform 0.15s;
+    font-size: 0.8em;
+    color: var(--sc-text-muted);
+}
+
+.stats-collapsible[open] > .stats-collapsible-summary::before {
+    transform: rotate(90deg);
+}
+
+.stats-collapsible-icon {
+    display: flex;
+    color: var(--sc-accent);
+}
+
+.stats-collapsible-icon svg { width: 16px; height: 16px; }
+
+.stats-collapsible-body {
+    padding: 12px 14px;
+}
+
+/* ── Subsection titles inside collapsibles ── */
+.stats-subsection {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.stats-subsection:last-child { border-bottom: none; margin-bottom: 0; }
+
+.stats-subsection-title {
+    margin: 0 0 8px;
+    font-size: 0.88em;
+    font-weight: 600;
+    color: var(--sc-text);
+}
+
+/* ── Pace projection ── */
+.stats-pace-projection {
+    font-size: 0.82em;
+    color: var(--sc-text-muted);
+    margin-top: 6px;
+    font-style: italic;
+}
+
+/* ── Writing History ── */
+.stats-history-range-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.stats-range-btn {
+    padding: 2px 6px;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.stats-range-btn:hover {
+    color: var(--sc-text);
+    background: var(--background-modifier-hover);
+}
+
+.stats-range-btn.active {
+    color: var(--sc-accent);
+    background: transparent;
+    font-weight: 600;
+}
+
+.stats-history-chart-wrap {
+    margin-top: 8px;
+}
+
+.stats-history-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 120px;
+    padding: 4px 0;
+    border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.stats-history-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+    height: 100%;
+}
+
+.stats-history-bar {
+    width: 100%;
+    border-radius: 2px 2px 0 0;
+    min-height: 2px;
+    transition: height 0.3s;
+    cursor: pointer;
+    background: var(--sc-accent);
+}
+
+.stats-history-bar:hover { opacity: 0.8; }
+
+.stats-history-label {
+    font-size: 0.55em;
+    color: var(--sc-text-faint);
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+/* ── Cumulative / line chart ── */
+.stats-line-chart-wrap {
+    margin-top: 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--background-primary);
+}
+
+.stats-line-chart {
+    width: 100%;
+    height: 120px;
+    display: block;
+}
+
+.stats-goal-line {
+    stroke: var(--sl-warning, #FF9800);
+    stroke-width: 1;
+    stroke-dasharray: 6 3;
+}
+
+.stats-goal-label {
+    fill: var(--sl-warning, #FF9800);
+    font-size: 9px;
+}
+
+.stats-cumulative-line {
+    fill: none;
+    stroke: var(--sc-accent);
+    stroke-width: 2;
+}
+
+.stats-cumulative-area {
+    fill: var(--sc-accent);
+    opacity: 0.12;
+}
+
+/* ── Outlier highlighting ── */
+.stats-outlier {
+    background: rgba(255, 152, 0, 0.08);
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+
+.stats-outlier-item { list-style: none; padding: 4px 0; }
+
+.stats-scene-link {
+    color: var(--sc-accent);
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.stats-scene-link:hover { opacity: 0.8; }
+
+/* ── Dialogue / narrative stacked bar ── */
+.stats-stacked-bar {
+    display: flex;
+    overflow: hidden;
+}
+
+.stats-dialogue-fill {
+    background: var(--sc-accent);
+}
+
+.stats-narrative-fill {
+    background: var(--background-modifier-border);
+}
+
+/* ── Prose analysis ── */
+.stats-spinner-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    color: var(--sc-text-muted);
+    font-size: 0.9em;
+}
+
+.stats-spinner svg {
+    animation: sl-spin 1s linear infinite;
+}
+
+@keyframes sl-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.stats-word-freq-row {
+    gap: 8px;
+}
+
+.stats-word-freq-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.stats-word-freq-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8em;
+    color: var(--sc-text-muted);
+    cursor: pointer;
+}
+
+.stats-word-freq-toggle-label {
+    white-space: nowrap;
+}
+
+.stats-word-freq-list {
+    margin-top: 8px;
+}
+
+.stats-word-freq-word {
+    min-width: 100px;
+    font-weight: 600;
+    font-size: 0.88em;
+}
+
+.stats-word-freq-count {
+    min-width: 110px;
+    font-size: 0.8em;
+    color: var(--sc-text-muted);
+    text-align: right;
+}
+
+.stats-overused-title {
+    color: var(--sl-warning, #FF9800);
+}
+
+.stats-overused-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.stats-overused-tag {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 0.8em;
+    border-radius: 12px;
+    background: rgba(255, 152, 0, 0.15);
+    color: var(--sl-warning, #FF9800);
+    font-weight: 600;
+}
+
+/* ── Echo Finder ── */
+/* Scrollable container for large manuscripts (was hard-capped at 10 scenes). */
+.stats-echo-list {
+    max-height: 600px;
+    overflow-y: auto;
+}
+.stats-echo-scene {
+    margin-bottom: 10px;
+}
+.stats-echo-scene .stats-scene-link {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+    font-size: 0.88em;
+}
+.stats-echo-tag {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 0.8em;
+    border-radius: 12px;
+    background: rgba(156, 39, 176, 0.15);
+    color: var(--sl-echo, #9C27B0);
+    font-weight: 600;
+    cursor: default;
+}
+
+/* ── Character × Chapter Heatmap ── */
+.stats-heatmap-scroll {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 60vh;
+    /* Keep the first column (character names) visible while scrolling
+       horizontally — issue #229. */
+    position: relative;
+}
+.stats-heatmap-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78em;
+    margin-top: 8px;
+}
+.stats-heatmap-table th,
+.stats-heatmap-table td {
+    padding: 4px 6px;
+    text-align: center;
+    border: 1px solid var(--sc-card-border);
+}
+.stats-heatmap-ch-header {
+    font-weight: 600;
+    font-size: 0.85em;
+    white-space: nowrap;
+}
+.stats-heatmap-name.stats-heatmap-name {
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* Sticky so the name column stays in view while scrolling chapters. */
+    position: sticky;
+    left: 0;
+    background: var(--background-primary);
+    z-index: 1;
+}
+.stats-heatmap-cell {
+    min-width: 28px;
+    font-size: 0.85em;
+    color: var(--text-normal);
+    transition: background-color 0.15s;
+}
+
+/* ── Setup & Payoff Map ── */
+.stats-setup-payoff-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+.stats-setup-payoff-row:last-child {
+    border-bottom: none;
+}
+.stats-sp-from {
+    flex-shrink: 0;
+    min-width: 140px;
+}
+.stats-sp-arrow {
+    color: var(--sc-text-muted);
+    font-size: 1.1em;
+    flex-shrink: 0;
+}
+.stats-sp-to {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+}
+.stats-sp-target {
+    padding: 2px 8px;
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 4px;
+    font-size: 0.88em;
+}
+
+/* ── Revision sparkline bar colour ── */
+.stats-revision-bar.stats-revision-bar {
+    background: var(--sl-revision, #FF9800);
+}
+
+/* ── Pacing Coach chart ── */
+.pacing-coach-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 120px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--sc-card-border);
+}
+.pacing-coach-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    min-width: 4px;
+}
+.pacing-coach-bar {
+    width: 100%;
+    min-height: 2px;
+    background: var(--sl-info, #2196F3);
+    border-radius: 2px 2px 0 0;
+    transition: height 0.2s;
+}
+.pacing-coach-bar.pacing-no-conflict {
+    background: var(--sl-warning, #FF9800);
+    opacity: 0.7;
+}
+.pacing-coach-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 3px;
+    background: transparent;
+}
+.pacing-coach-dot.pacing-has-conflict {
+    background: var(--sl-success, #4CAF50);
+}
+.pacing-coach-legend {
+    display: flex;
+    gap: 16px;
+    font-size: 0.78em;
+    color: var(--sc-text-muted);
+    margin-top: 6px;
+}
+.pacing-coach-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.pacing-coach-legend-swatch {
+    display: inline-block;
+    width: 12px;
+    height: 8px;
+    border-radius: 2px;
+}
+.pacing-coach-bar-swatch {
+    background: var(--sl-info, #2196F3);
+}
+.pacing-coach-noconflict-swatch {
+    background: var(--sl-warning, #FF9800);
+    opacity: 0.7;
+}
+
+/* ── Misc stats helpers ── */
+.stats-hint {
+    font-size: 0.82em;
+    color: var(--sc-text-muted);
+    font-style: italic;
+    margin: 4px 0 8px;
+}
+
+.stats-empty {
+    color: var(--sc-text-muted);
+    font-style: italic;
+    font-size: 0.9em;
+}
+
+.stats-show-more-btn {
+    margin-top: 6px;
+    padding: 4px 10px;
+    border: 1px solid var(--sc-card-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--sc-accent);
+    font-size: 0.8em;
+    cursor: pointer;
+}
+
+.stats-show-more-btn:hover {
+    background: var(--sc-accent);
+    color: var(--background-primary);
+}

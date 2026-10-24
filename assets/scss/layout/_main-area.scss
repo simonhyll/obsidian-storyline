@@ -1,0 +1,9 @@
+/* --- Main Area --- */
+.story-line-main-area {
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 52px);
+    position: relative;
+    min-width: 0;        /* allow flex child to shrink below content width */
+    overflow: hidden;    /* contain children so swimlane scrollbar appears on the right element */
+}

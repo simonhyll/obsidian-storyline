@@ -1,0 +1,194 @@
+/**
+ * Cucumber test world — holds per-scenario state.
+ * All mutable state lives here; step definitions must NOT use module-level variables.
+ */
+import type { TimelineNavItem } from '../../../src/services/TimelineNavigationService';
+import type { Event } from '../../../src/models/Event';
+import type { Scene } from '../../../src/models/Scene';
+import type { StoryLineProject } from '../../../src/models/StoryLineProject';
+import type { TimeSpan } from '../../../src/models/TimeSpan';
+import type { CreationFormState } from '../../../src/services/projectCreation';
+import type { TestVault } from './in-memory-vault';
+
+export interface TestWorld {
+  /** Scenes created during the scenario */
+  scenes: Scene[];
+  /** Events created during the scenario */
+  events: Event[];
+  /** Books/projects created during the scenario */
+  books: StoryLineProject[];
+  /** Universe ID shared by books in the same universe */
+  universeId: string | undefined;
+  /** Second universe ID for cross-universe tests */
+  universeId2: string | undefined;
+  /** Active book (simulates active project) */
+  activeBook: StoryLineProject | undefined;
+  /** Files that would be created (simulated filesystem) */
+  createdFiles: Map<string, string>;
+  /** Timeline items after sorting (scenes + events merged) */
+  timelineItems: TimelineNavItem[];
+  /** Simulated compatible Book choice */
+  selectableBooks: StoryLineProject[];
+  /** Whether the last creation was cancelled */
+  cancelled: boolean;
+  /** Files before creation (for cancellation verification) */
+  filesBeforeCreation: Map<string, string>;
+  /** Event name for event creation scenarios */
+  eventName?: string;
+  /** TimeSpan for date-related scenarios */
+  timeSpan?: TimeSpan;
+  /** Project settings */
+  settings: Map<string, string>;
+  /** Changelog preview output */
+  changelogOutput?: string;
+  /** Changelog error output */
+  changelogError?: string;
+  /** Changelog commit blocks for preview testing */
+  changelogCommits?: string[];
+  /** Classified commit from parsing */
+  classifiedCommit?: { section: string; type: string; scope: string | null; subject: string; breaking: boolean };
+  /** Changelog content for duplicate-prevention testing */
+  changelogContent?: string;
+  /** Whether changelog content was modified */
+  changelogContentModified?: boolean;
+  /** Existing git tag for tag-protection testing */
+  existingTag?: string;
+  /** Whether files were modified (for preview test) */
+  filesModified?: boolean;
+  /** Last error thrown */
+  lastError?: Error;
+  /** Created project result */
+  createdProject?: StoryLineProject;
+  /** Form state for project creation */
+  formState?: CreationFormState;
+  /** Series list for dropdown tests */
+  seriesList: Array<{ name: string; seriesUuid: string }>;
+  /** Universes list */
+  universesList: Array<{ id: string; name: string }>;
+  /** Last parsed TimeSpan (for timespan steps) */
+  lastParseResult?: TimeSpan | null;
+  /** Comparison result (for timespan steps) */
+  compareResult?: number;
+  /** Last validation error (for timespan steps) */
+  lastValidationError?: string | null;
+  /** Exported file count (for export steps) */
+  exportedCount?: number;
+  /** Whether platform is desktop (for import-export steps) */
+  isDesktop?: boolean;
+  /** Book title entered for project creation */
+  bookTitle?: string;
+  /** Series name entered for project creation */
+  seriesName?: string;
+  /** Universe name entered for project creation */
+  universeName?: string;
+  /** Number of times create was called (concurrency guard) */
+  createCount?: number;
+  /** Last event for management steps */
+  lastEvent?: Event;
+  /** Scene title for scene steps */
+  sceneTitle?: string;
+  /** Scene UUID for scene steps */
+  sceneUuid?: string;
+  /** Mock dependency call log for project creation tests */
+  mockDepsLog?: Array<{ action: string; args?: unknown[] }>;
+  /** Dropdown results for async race testing */
+  dropdownResults?: Array<{ name: string; seriesUuid: string }>;
+  /** Latest request ID for async race testing */
+  latestRequestId?: number;
+  /** Timeline navigation service instance */
+  navService?: import('../../../src/services/TimelineNavigationService').TimelineNavigationService;
+  /** Last navigation result (navigateNext/navigatePrevious) */
+  lastNavigationResult?: import('../../../src/services/TimelineNavigationService').TimelineNavItem | null;
+  /** In-memory vault for persistence tests */
+  testVault?: TestVault;
+  /** EventManager instance for persistence tests */
+  eventManager?: import('../../../src/services/EventManager').EventManager;
+  /** Events folder path for persistence tests */
+  eventsFolder?: string;
+  /** Original date before update (for reload verification) */
+  originalDate?: TimeSpan;
+  /** SceneManager instance for scene persistence tests */
+  sceneManager?: import('../../../src/services/SceneManager').SceneManager;
+  /** Scene file path for persistence tests */
+  sceneFilePath?: string;
+  /** Scene ID for persistence tests */
+  sceneId?: string;
+  /** Scene date for persistence tests */
+  sceneDate?: string;
+  /** Scene count for ordering tests */
+  sceneCount?: number;
+  /** Original scene content for update verification */
+  sceneOriginalContent?: string;
+  /** Scene UUIDs in creation order (for ordering test) */
+  sceneUuidsInOrder?: string[];
+  /** UniverseManager instance for hierarchy tests */
+  universeManager?: import('../../../src/services/UniverseManager').UniverseManager;
+  /** SeriesManager instance for hierarchy tests */
+  seriesManager?: import('../../../src/services/SeriesManager').SeriesManager;
+  /** Plugin mock for hierarchy tests */
+  hierarchyPlugin?: import('../../../src/main').default;
+  /** Created universe metadata for hierarchy tests */
+  universeMetadata?: import('../../../src/models/Universe').UniverseMetadata;
+  /** Created series metadata for hierarchy tests */
+  seriesMetadata?: import('../../../src/models/StoryLineProject').SeriesMetadata;
+  /** Universe folder path for hierarchy tests */
+  universeFolder?: string;
+  /** Series folder path for hierarchy tests */
+  seriesFolder?: string;
+  /** Book in universe Alpha (for isolation test) */
+  bookAlpha?: StoryLineProject;
+  /** Book in universe Beta (for isolation test) */
+  bookBeta?: StoryLineProject;
+  /** Universe Alpha ID (for isolation test) */
+  universeAlphaId?: string;
+  /** Universe Beta ID (for isolation test) */
+  universeBetaId?: string;
+  /** Scenes from Alpha universe (for isolation test) */
+  alphaScenes?: import('../../../src/models/Scene').Scene[];
+  /** Scenes from Beta universe (for isolation test) */
+  betaScenes?: import('../../../src/models/Scene').Scene[];
+  /** Scene UUIDs from Alpha universe (for exact UUID assertion) */
+  alphaSceneUuids?: string[];
+  /** Scene UUIDs from Beta universe (for exact UUID assertion) */
+  betaSceneUuids?: string[];
+  /** SceneManager for hierarchy tests (real production instance) */
+  hierarchySceneManager?: import('../../../src/services/SceneManager').SceneManager;
+  /** Book directly in universe (for book-in-universe test) */
+  bookInUniverse?: StoryLineProject;
+  /** Book in series in universe (for book-in-series test) */
+  bookInSeries?: StoryLineProject;
+  /** Beta universe folder (for exclusive membership test) */
+  universeBetaFolder?: string;
+  /** Legacy data.json content (for migration test) */
+  legacyData?: Record<string, unknown>;
+  /** Book being migrated (for migration test) */
+  legacyBook?: StoryLineProject;
+  /** Book A for restart test */
+  bookA?: StoryLineProject;
+  /** Book B for restart test */
+  bookB?: StoryLineProject;
+  /** Projects after restart */
+  restartedProjects?: StoryLineProject[];
+  /** SceneManager after restart */
+  restartedSceneManager?: import('../../../src/services/SceneManager').SceneManager;
+  /** Plugin data store for restart tests (simulates data.json) */
+  pluginDataStore?: import('./plugin-data-store').PluginDataStore;
+  /** Scene A for restart test */
+  sceneA?: Scene;
+  /** Scene B for restart test */
+  sceneB?: Scene;
+  /** EventManager operations called during cancellation test */
+  eventManagerOperations?: string[];
+  /** SavedViewService instance for saved views tests */
+  savedViewService?: import('../../../src/services/SavedViewService').SavedViewService;
+  /** Current timeline configuration for saved views tests */
+  currentTimelineConfig?: import('../../../src/services/SavedViewService').SavedViewConfig;
+  /** Last saved view metadata */
+  lastSavedView?: import('../../../src/services/SavedViewService').SavedViewMeta;
+  /** Saved view ID for rename tests */
+  savedViewId?: string;
+  /** Original saved view config for rename verification */
+  savedViewOriginalConfig?: import('../../../src/services/SavedViewService').SavedViewConfig;
+  /** Scene original content map for saved views file integrity tests */
+  sceneOriginalContentMap?: Map<string, string>;
+}

@@ -1,0 +1,491 @@
+/* --- Quick Add Modal --- */
+/*
+   The following rules are commented out or removed to prevent style leakage into Obsidian modals.
+   If you need to style the plugin's own modals, use a unique container class and scope all rules to it.
+*/
+
+/* --- Timeline View --- */
+.story-line-timeline {
+    padding: 16px 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Vertical timeline track */
+.timeline-track {
+    position: relative;
+    padding-left: 0;
+}
+
+/* ── Temporal ruler (horizontal time axis) ── */
+.timeline-temporal-ruler {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    position: relative;
+    height: 36px;
+    margin: 0 0 8px 100px;
+    padding: 0 4px;
+    border-bottom: 2px solid var(--sc-card-border, var(--background-modifier-border));
+    cursor: pointer;
+    user-select: none;
+}
+
+.timeline-ruler-marker {
+    position: absolute;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+.timeline-ruler-marker.is-major {
+    pointer-events: auto;
+}
+
+.timeline-ruler-marker::after {
+    content: '';
+    width: 1px;
+    height: 8px;
+    background: var(--sc-text-faint, var(--text-faint));
+}
+
+.timeline-ruler-marker.is-major::after {
+    height: 14px;
+    background: var(--sc-text-muted, var(--text-muted));
+    width: 2px;
+}
+
+.timeline-ruler-label {
+    font-family: var(--font-monospace);
+    font-size: 0.7em;
+    color: var(--sc-text-faint, var(--text-faint));
+    margin-bottom: 4px;
+    white-space: nowrap;
+}
+
+.timeline-ruler-marker.is-major .timeline-ruler-label {
+    color: var(--sc-text-muted, var(--text-muted));
+    font-weight: 600;
+}
+
+.timeline-ruler-marker.is-major {
+    cursor: pointer;
+}
+
+.timeline-ruler-marker.is-major:hover .timeline-ruler-label {
+    color: var(--sc-accent, var(--interactive-accent));
+}
+
+/* Act divider */
+.timeline-act-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0 12px 0;
+    padding-left: 60px;
+    position: relative;
+}
+
+.timeline-act-label {
+    font-size: 0.85em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--sc-accent);
+    background: var(--background-secondary);
+    padding: 4px 14px;
+    border-radius: 12px;
+}
+
+/* Timeline entry row */
+.timeline-entry {
+    display: flex;
+    align-items: stretch;
+    min-height: 60px;
+    position: relative;
+}
+
+/* Left: sequence badge + date/time */
+.timeline-entry-seq {
+    width: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding-top: 10px;
+    padding-right: 10px;
+    flex-shrink: 0;
+    gap: 2px;
+}
+
+.timeline-seq-clickable {
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 4px 6px;
+    transition: background 0.15s;
+}
+
+.timeline-seq-clickable:hover {
+    background: var(--background-modifier-hover);
+}
+
+.timeline-seq-badge {
+    font-family: var(--font-monospace);
+    font-size: 0.72em;
+    font-weight: 600;
+    color: var(--sc-text-faint);
+    white-space: nowrap;
+}
+
+/* Chronological order badge — shown when chrono order differs from reading order */
+.timeline-chrono-badge {
+    display: inline-block;
+    font-family: var(--font-monospace);
+    font-size: 0.65em;
+    font-weight: 500;
+    color: var(--sl-accent, var(--interactive-accent));
+    background: var(--sl-accent-muted, rgba(var(--interactive-accent-rgb, 72, 120, 220), 0.12));
+    border-radius: 4px;
+    padding: 1px 4px;
+    margin-left: 4px;
+    white-space: nowrap;
+}
+
+/* Inspector chronological order badge */
+.inspector-chrono-seq {
+    display: inline-block;
+    font-family: var(--font-monospace);
+    font-size: 0.75em;
+    font-weight: 500;
+    color: var(--sl-accent, var(--interactive-accent));
+    background: var(--sl-accent-muted, rgba(var(--interactive-accent-rgb, 72, 120, 220), 0.12));
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-left: 4px;
+}
+
+/* Order selector dropdown */
+.story-line-order-select {
+    font-size: 0.82em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--sc-card-border);
+    background: var(--sc-card-bg);
+    color: var(--sc-text-normal);
+    cursor: pointer;
+}
+
+/* Hint icon shown when no date/time is set */
+.timeline-add-time-hint {
+    display: none;
+    color: var(--sc-text-faint);
+    opacity: 0.4;
+}
+
+.timeline-add-time-hint svg {
+    width: 12px;
+    height: 12px;
+}
+
+.timeline-seq-clickable:hover .timeline-add-time-hint {
+    display: inline-flex;
+}
+
+/* Center: dot + vertical line */
+.timeline-entry-dot-col {
+    width: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    position: relative;
+}
+
+/* The connecting line behind dots */
+.timeline-entry-dot-col::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background: var(--sc-card-border);
+    transform: translateX(-50%);
+}
+
+.timeline-entry:first-child .timeline-entry-dot-col::before {
+    top: 14px;
+}
+
+.timeline-entry:last-child .timeline-entry-dot-col::before {
+    bottom: 50%;
+}
+
+.timeline-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--sc-accent);
+    border: 2px solid var(--background-primary);
+    position: relative;
+    z-index: 2;
+    margin-top: 14px;
+    flex-shrink: 0;
+}
+
+.timeline-dot[data-status="idea"]     { background: var(--sl-status-idea); }
+.timeline-dot[data-status="outlined"] { background: var(--sl-status-outlined); }
+.timeline-dot[data-status="draft"]    { background: var(--sl-status-draft); }
+.timeline-dot[data-status="written"]  { background: var(--sl-status-written); }
+.timeline-dot[data-status="revised"]  { background: var(--sl-status-revised); }
+.timeline-dot[data-status="final"]    { background: var(--sl-status-final); border-color: var(--sl-status-final); }
+
+/* Right: scene card */
+.timeline-entry-card {
+    flex: 1;
+    padding: 6px 0 6px 12px;
+    min-width: 0;
+}
+
+.timeline-card {
+    background: var(--sc-card-bg);
+    border: 1px solid var(--sc-card-border);
+    border-radius: var(--sc-radius);
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.15s;
+    max-width: 500px;
+    contain: content;
+}
+
+.timeline-card:hover {
+    box-shadow: var(--sl-shadow-sm);
+    transform: translateX(2px);
+}
+
+.timeline-card-title {
+    font-weight: 600;
+    font-size: 0.95em;
+    margin-bottom: 4px;
+    color: var(--sc-text);
+}
+
+.timeline-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.78em;
+    color: var(--sc-text-muted);
+    margin-bottom: 4px;
+}
+
+.timeline-card-conflict {
+    font-size: 0.8em;
+    color: var(--sc-text-faint);
+    margin: 4px 0;
+    font-style: italic;
+}
+
+.timeline-card-footer {
+    display: flex;
+    gap: 12px;
+    font-size: 0.75em;
+    margin-top: 4px;
+}
+
+.timeline-card-status {
+    font-weight: 600;
+}
+
+.timeline-card-wc {
+    color: var(--sc-text-faint);
+}
+
+.timeline-card-chars {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.timeline-char-tag {
+    font-size: 0.72em;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: var(--background-secondary);
+    color: var(--sc-text-muted);
+}
+
+.inspector-arc-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.inspector-arc-checkbox,
+.inspector-arc-label {
+    cursor: pointer;
+}
+
+.inspector-arc-label {
+    font-weight: 600;
+    font-size: var(--font-ui-small);
+}
+
+.structure-number-input {
+    width: 60px;
+}
+
+/* ────────────────────────────────────────
+   Swimlane (multi-lane) timeline mode
+   ──────────────────────────────────────── */
+
+.swimlane-timeline {
+    overflow: auto;      /* scroll both axes */
+    -webkit-overflow-scrolling: touch;
+}
+
+.swimlane-grid {
+    display: grid;
+    gap: 0;
+    min-width: max-content;
+}
+
+/* Corner cell (top-left, "#" label) */
+.swimlane-corner {
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 4;
+    background: var(--background-primary);
+    font-weight: 700;
+    font-size: 0.78em;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 8px 4px;
+    border-bottom: 2px solid var(--background-modifier-border);
+    border-right: 1px solid var(--background-modifier-border);
+}
+
+/* Lane column headers (sticky) */
+.swimlane-lane-header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--background-secondary);
+    font-weight: 700;
+    font-size: 0.82em;
+    padding: 8px 10px;
+    text-align: center;
+    border-bottom: 2px solid var(--background-modifier-border);
+    border-right: 1px solid var(--sl-border-subtle);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.swimlane-lane-header:last-child {
+    border-right: none;
+}
+
+/* Act divider row — spans all columns */
+.swimlane-act-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--background-secondary);
+    border-top: 1px solid var(--background-modifier-border);
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+/* Sequence axis cell (left column per scene row) */
+.swimlane-seq-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding: 8px 8px 8px 4px;
+    gap: 2px;
+    border-right: 1px solid var(--background-modifier-border);
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--background-primary);
+    cursor: pointer;
+    border-radius: 0;
+    transition: background 0.15s;
+}
+
+.swimlane-seq-cell:hover {
+    background: var(--background-modifier-hover);
+}
+
+/* Lane cell (holds a scene card or is empty) */
+.swimlane-lane-cell {
+    min-height: 48px;
+    padding: 4px 6px;
+    border-right: 1px solid var(--sl-border-subtle);
+    border-bottom: 1px solid var(--sl-border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.swimlane-lane-cell:last-child {
+    border-right: none;
+}
+
+/* Dot wrap inside swimlane card */
+.swimlane-dot-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.swimlane-dot-wrap .timeline-dot {
+    margin-top: 0;
+}
+
+/* Swimlane card: inherits .timeline-card but with a smaller max-width */
+.swimlane-card {
+    max-width: none;
+}
+
+.swimlane-card.selected {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 1px;
+}
+
+/* Swimlane group-by dropdown */
+.story-line-swimlane-group-select {
+    font-size: 0.82em;
+    padding: 2px 6px;
+    border-radius: var(--sc-radius);
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-secondary);
+    color: var(--text-normal);
+}
+
+.story-line-zoom-level {
+    font-size: 0.8em;
+    color: var(--sc-text-muted);
+    min-width: 40px;
+    text-align: center;
+}
+
+/* ── Drag-to-pan cursors ── */
+.swimlane-timeline,
+.story-line-board,
+.plot-grid-scroll-area {
+    cursor: grab;
+}
+
+.swimlane-timeline.sl-panning,
+.story-line-board.sl-panning,
+.plot-grid-scroll-area.sl-panning {
+    cursor: grabbing;
+    user-select: none;
+}

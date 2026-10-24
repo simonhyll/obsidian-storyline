@@ -1,0 +1,24 @@
+{
+  "name": "@obsidian-storyline/critiquer",
+  "version": "1.0.0",
+  "description": "Book critique and audience resonance evaluation skill for Obsidian StoryLine",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "obsidian",
+    "storyline",
+    "critique",
+    "audience",
+    "evaluation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

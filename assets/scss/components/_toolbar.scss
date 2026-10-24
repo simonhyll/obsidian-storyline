@@ -1,0 +1,56 @@
+/* --- Toolbar --- */
+.story-line-toolbar {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--sc-card-border);
+    background: var(--background-primary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Issue #98 — when the toolbar is sticky inside a scroll container that has
+   any top padding (or Obsidian's view-content edge), a thin strip of scrolling
+   content could appear above the toolbar. This pseudo paints the same
+   background colour upward to cover that gap on the Codex/Character pages. */
+.story-line-toolbar::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 24px;
+    background: var(--background-primary);
+    pointer-events: none;
+}
+
+.story-line-view-title {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Title + project selector row */
+.story-line-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+/* User-opt-in: hide the Obsidian tab header ("StoryLine - Projectname")
+   above the StoryLine toolbar to save vertical space. Targets the
+   `.view-header` sibling of any StoryLine view container.
+   (Setting → "Hide title above view tabs", v1.10.17.) */
+body.sl-hide-toolbar-title .workspace-leaf-content[data-type^="story-line-"] > .view-header {
+    display: none;
+}
+/* Project name shown next to the StoryLine header */
+.story-line-project-name {
+    font-size: 0.95em;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-left: 6px;
+}

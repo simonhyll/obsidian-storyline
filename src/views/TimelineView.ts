@@ -1,0 +1,3512 @@
+/* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unused-vars -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
+import { openConfirmModal } from '../components/ConfirmModal';
+;
+;
+;
+import { SceneManager } from '../services/SceneManager';
+import { SceneCardComponent } from '../components/SceneCard';
+import { InspectorComponent } from '../components/Inspector';
+import { QuickAddModal } from '../components/QuickAddModal';
+import { ShiftDatesModal } from '../components/ShiftDatesModal';
+import { renderViewSwitcher } from '../components/ViewSwitcher';
+import { enableDragToPan } from '../components/DragToPan';
+import type SceneCardsPlugin from '../main';
+
+import { TIMELINE_VIEW_TYPE } from '../constants';
+import { applyMobileClass } from '../components/MobileAdapter';
+import { attachTooltip } from '../components/Tooltip';
+import type { SavedViewConfig, SavedViewMeta } from '../services/SavedViewService';
+import { TimelineFilterService, type TimelineFilterConfig, type EntityTypeFilter } from '../services/TimelineFilterService';
+import { ButtonComponent, DropdownComponent, ItemView, Menu, Modal, Notice, Setting, TFile, TextComponent, WorkspaceLeaf } from 'obsidian';
+import * as obsidian from 'obsidian';
+import type { TimelineMode } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import type { SceneStatus } from '../models/Scene';
+import { BUILTIN_BEAT_SHEETS, TIMELINE_MODES, TIMELINE_MODE_ICONS, TIMELINE_MODE_LABELS, formatSceneLength, getStatusOrder, resolveStatusCfg } from '../models/Scene';
+;
+;
+;
+import { getActDisplayLabel } from '../utils/actChapter';
+import { parseSceneLocations } from '../services/MetadataParser';
+import { deriveProjectFoldersFromFilePath, type StoryLineProject } from '../models/StoryLineProject';
+import type { Event } from '../models/Event';
+import type { TimeSpan, Timestamp } from '../models/TimeSpan';
+import { TimelineNavigationService } from '../services/TimelineNavigationService';
+
+/**
+ * Timeline ordering mode
+ */
+type TimelineOrder = 'reading' | 'chronological';
+
+/**
+ * Swimlane grouping options
+ */
+type SwimlaneGroupBy = 'pov' | 'character' | 'location' | 'plotline' | 'tag';
+
+/**
+ * Timeline View - shows scenes in chronological order with optional swimlanes
+ */
+export class TimelineView extends ItemView {
+    private plugin: SceneCardsPlugin;
+    private sceneManager: SceneManager;
+    private inspectorComponent: InspectorComponent | null = null;
+    private selectedScene: Scene | null = null;
+    /**
+     * Issue #237 — multi-selection in Timeline view. Stores file paths of
+     * scenes the user has ctrl/cmd-clicked. Drives the "Shift dates"
+     * context-menu action and the bulk action bar.
+     */
+    private selectedScenes: Set<string> = new Set();
+    private zoomLevel = 1;
+    private rootContainer: HTMLElement | null = null;
+    private _pendingRefresh: number | null = null;
+    private cardComponent: SceneCardComponent;
+    private _lastCacheVersion = -1;
+    /** When true, display multi-lane swimlane view instead of single-column */
+    private swimlaneMode = false;
+    /** How to group lanes in swimlane mode */
+    private swimlaneGroupBy: SwimlaneGroupBy = 'pov';
+    /** Whether to sort by reading order (sequence) or chronological order */
+    private timelineOrder: TimelineOrder = 'reading';
+    /** Book IDs selected for multi-book timeline. Empty means "active book only". */
+    private selectedBookIds: Set<string> = new Set();
+    /** Timeline navigation state is owned by this leaf, never shared across tabs. */
+    private readonly timelineNavigationService: TimelineNavigationService;
+    /** Selected book IDs belong to this active project's context. */
+    private selectionOwnerBookId: string | null = null;
+    /** Render generation counter for async cancellation */
+    private renderGeneration = 0;
+    /** Filter service for this timeline pane */
+    private readonly filterService: TimelineFilterService;
+    /** Current filter configuration (pane-local) */
+    private filterConfig: TimelineFilterConfig = {};
+    /** Popover element for the book selector dropdown */
+    private bookSelectorPopover: HTMLElement | null = null;
+    private bookSelectorButton: HTMLElement | null = null;
+    /** One document listener per view, removed when the view closes. */
+    private readonly onBookSelectorDocumentClick = (e: MouseEvent): void => {
+        const popover = this.bookSelectorPopover;
+        if (popover && !popover.contains(e.target as Node) &&
+            !this.bookSelectorButton?.contains(e.target as Node)) {
+            this.closeBookSelectorPopover();
+        }
+    };
+
+    constructor(leaf: WorkspaceLeaf, plugin: SceneCardsPlugin, sceneManager: SceneManager) {
+        super(leaf);
+        this.plugin = plugin;
+        this.sceneManager = sceneManager;
+        this.timelineNavigationService = new TimelineNavigationService(plugin.timeSpanService);
+        this.filterService = new TimelineFilterService(plugin.timeSpanService);
+        this.cardComponent = new SceneCardComponent(plugin);
+        // Restore persisted filter states from settings
+        this.timelineOrder = plugin.settings.timelineOrder === 'chronological' ? 'chronological' : 'reading';
+        this.swimlaneMode = plugin.settings.timelineSwimlaneMode ?? false;
+        this.swimlaneGroupBy = (plugin.settings.timelineSwimlaneGroupBy as SwimlaneGroupBy) ?? 'pov';
+    }
+
+    getViewType(): string {
+        return TIMELINE_VIEW_TYPE;
+    }
+
+    getDisplayText(): string {
+        const title = this.plugin?.sceneManager?.activeProject?.title;
+        return title ? `StoryLine - ${title}` : 'StoryLine';
+    }
+
+    getIcon(): string {
+        return 'clock';
+    }
+
+    async onOpen(): Promise<void> {
+        this.plugin.storyLeaf = this.leaf;
+        this.timelineOrder = this.plugin.settings.timelineOrder === 'chronological' ? 'chronological' : 'reading';
+        const container = this.containerEl.children[1] as HTMLElement;
+        container.empty();
+        container.addClass('story-line-timeline-container');
+        applyMobileClass(container);
+        this.rootContainer = container;
+
+        await this.sceneManager.initialize();
+        document.removeEventListener('click', this.onBookSelectorDocumentClick);
+        document.addEventListener('click', this.onBookSelectorDocumentClick);
+        this.renderView(container);
+    }
+
+    async onClose(): Promise<void> {
+        // The popover lives under document.body, outside the Obsidian leaf.
+        this.closeBookSelectorPopover();
+        this.bookSelectorButton = null;
+        document.removeEventListener('click', this.onBookSelectorDocumentClick);
+        this.renderGeneration++;
+    }
+
+    private isNoteScene(scene: Scene): boolean {
+        const value: unknown = (scene as Scene & { corkboardNote?: unknown }).corkboardNote;
+        if (value === true) return true;
+        if (value === false || value === undefined || value === null) return false;
+        if (typeof value === 'string') return (value as string).trim().toLowerCase() === 'true';
+        if (typeof value === 'number') return value === 1;
+        return false;
+    }
+
+    private renderView(container: HTMLElement): void {
+        // A new active Book starts a new Universe selection context. Never
+        // retain old selected Book IDs across project switches.
+        const activeBookId = this.sceneManager.activeProject?.bookId ?? null;
+        if (this.selectionOwnerBookId !== activeBookId) {
+            this.selectedBookIds.clear();
+            this.selectionOwnerBookId = activeBookId;
+        }
+        // Drop deleted/moved-away Book IDs from the selection on refresh.
+        const validBookIds = new Set(this.sceneManager.getProjects().map(p => p.bookId).filter((id): id is string => !!id));
+        for (const bookId of this.selectedBookIds) {
+            if (!validBookIds.has(bookId)) this.selectedBookIds.delete(bookId);
+        }
+
+        // Refresh destroys the old toolbar but not its document.body popover.
+        this.closeBookSelectorPopover();
+        this.bookSelectorButton = null;
+        container.empty();
+
+        // Toolbar
+        const toolbar = container.createDiv('story-line-toolbar');
+        const titleRow = toolbar.createDiv('story-line-title-row');
+        titleRow.createEl('h3', { cls: 'story-line-view-title', text: 'StoryLine' });
+        // project name shown in top-center only; no inline project selector here
+
+        // View switcher tabs
+        renderViewSwitcher(toolbar, TIMELINE_VIEW_TYPE, this.plugin, this.leaf);
+
+        const controls = toolbar.createDiv('story-line-toolbar-controls');
+
+        // Add scene button
+        const addBtn = controls.createEl('button', {
+            cls: 'mod-cta story-line-add-btn',
+            text: '+ new scene'
+        });
+        addBtn.addEventListener('click', () => this.openQuickAdd());
+
+        // Add Event button (next to New Scene)
+        const addEventBtn = controls.createEl('button', {
+            cls: 'story-line-add-btn',
+            text: '+ New Event'
+        });
+        addEventBtn.addEventListener('click', async () => {
+            const eventsFolder = this.sceneManager.getBookEventsFolder();
+            if (!eventsFolder) {
+                new Notice('No events folder found for the active project.');
+                return;
+            }
+            try {
+                await this.plugin.openCreateEventModal(eventsFolder);
+                // Refresh timeline after creating an event
+                this.refresh();
+            } catch {
+                // ignore
+            }
+        });
+
+        // Book selector for multi-book timeline
+        this.renderBookSelector(controls);
+
+        // Add acts/chapters button
+        const structBtn = controls.createEl('button', {
+            cls: 'clickable-icon',
+        });
+        obsidian.setIcon(structBtn, 'columns-3');
+        attachTooltip(structBtn, 'Add acts or chapters');
+        structBtn.addEventListener('click', () => this.openStructureModal());
+
+        // Swimlane toggle
+        const swimToggle = controls.createEl('button', {
+            cls: `clickable-icon${this.swimlaneMode ? ' is-active' : ''}`,
+        });
+        obsidian.setIcon(swimToggle, 'columns-2');
+        attachTooltip(swimToggle, this.swimlaneMode ? 'Switch to linear' : 'Switch to swimlanes');
+        swimToggle.addEventListener('click', () => {
+            this.swimlaneMode = !this.swimlaneMode;
+            this.plugin.settings.timelineSwimlaneMode = this.swimlaneMode;
+            void this.plugin.saveSettings();
+            this.refresh();
+        });
+
+        // Reading order / Chronological order toggle
+        const orderSelect = controls.createEl('select', {
+            cls: 'dropdown story-line-order-select',
+            attr: { 'aria-label': 'Scene ordering' },
+        });
+        orderSelect.addEventListener('keydown', (e: KeyboardEvent) => e.stopPropagation());
+        const orderOptions: { value: TimelineOrder; label: string }[] = [
+            { value: 'reading', label: 'Reading Order' },
+            { value: 'chronological', label: 'Chronological Order' },
+        ];
+        for (const opt of orderOptions) {
+            const el = orderSelect.createEl('option', { text: opt.label });
+            el.value = opt.value;
+            if (opt.value === this.timelineOrder) el.selected = true;
+        }
+        orderSelect.addEventListener('change', () => {
+            this.timelineOrder = orderSelect.value as TimelineOrder;
+            this.plugin.settings.timelineOrder = this.timelineOrder;
+            void this.plugin.saveSettings();
+            this.refresh();
+        });
+
+        // Swimlane group-by dropdown (only visible in swimlane mode)
+        if (this.swimlaneMode) {
+            const groupSelect = controls.createEl('select', {
+                cls: 'dropdown story-line-swimlane-group-select',
+                attr: { 'aria-label': 'Group lanes by' },
+            });
+            groupSelect.addEventListener('keydown', (e: KeyboardEvent) => e.stopPropagation());
+            const options: { value: SwimlaneGroupBy; label: string }[] = [
+                { value: 'pov', label: 'By POV' },
+                { value: 'character', label: 'By Character' },
+                { value: 'location', label: 'By Location' },
+                { value: 'plotline', label: 'By Plotline' },
+                { value: 'tag', label: 'By Tag' },
+            ];
+            for (const opt of options) {
+                const el = groupSelect.createEl('option', { text: opt.label });
+                el.value = opt.value;
+                if (opt.value === this.swimlaneGroupBy) el.selected = true;
+            }
+            groupSelect.addEventListener('change', () => {
+                this.swimlaneGroupBy = groupSelect.value as SwimlaneGroupBy;
+                this.plugin.settings.timelineSwimlaneGroupBy = this.swimlaneGroupBy;
+                void this.plugin.saveSettings();
+                this.refresh();
+            });
+        }
+
+        // Zoom controls
+        const zoomOut = controls.createEl('button', {
+            cls: 'clickable-icon',
+            text: '−'
+        });
+        attachTooltip(zoomOut, 'Zoom out');
+        zoomOut.addEventListener('click', () => {
+            this.zoomLevel = Math.max(0.5, this.zoomLevel - 0.25);
+            this.refreshTimeline(container);
+        });
+
+        controls.createSpan({
+            cls: 'story-line-zoom-level',
+            text: `${Math.round(this.zoomLevel * 100)}%`
+        });
+
+        const zoomIn = controls.createEl('button', {
+            cls: 'clickable-icon',
+            text: '+'
+        });
+        attachTooltip(zoomIn, 'Zoom in');
+        zoomIn.addEventListener('click', () => {
+            this.zoomLevel = Math.min(3, this.zoomLevel + 0.25);
+            this.refreshTimeline(container);
+        });
+
+        // Time navigation controls
+        this.renderTimeNavigation(controls);
+
+        // Saved Views button
+        const savedViewsBtn = controls.createEl('button', {
+            cls: 'clickable-icon',
+        });
+        obsidian.setIcon(savedViewsBtn, 'save');
+        attachTooltip(savedViewsBtn, 'Saved Views');
+        savedViewsBtn.addEventListener('click', (e: MouseEvent) => {
+            void this.openSavedViewsMenu(savedViewsBtn, e);
+        });
+
+        // Filter button
+        const filterBtn = controls.createEl('button', {
+            cls: `clickable-icon${this.filterService.isFilterActive(this.filterConfig) ? ' is-active' : ''}`,
+        });
+        obsidian.setIcon(filterBtn, 'filter');
+        attachTooltip(filterBtn, 'Filters');
+        filterBtn.addEventListener('click', (e: MouseEvent) => {
+            void this.openFilterMenu(filterBtn, e);
+        });
+
+        // Refresh button
+        const refreshBtn = controls.createEl('button', {
+            cls: 'clickable-icon',
+        });
+        obsidian.setIcon(refreshBtn, 'refresh-cw');
+        attachTooltip(refreshBtn, 'Refresh');
+        refreshBtn.addEventListener('click', async () => {
+            await this.sceneManager.initialize();
+            this.refresh();
+        });
+
+        // Main content area (timeline + inspector)
+        const mainArea = container.createDiv('story-line-main-area');
+
+        // Timeline content (async for multi-book support)
+        if (this.swimlaneMode) {
+            void this.renderSwimlaneTimeline(mainArea);
+        } else {
+            void this.renderTimelineAsync(mainArea);
+        }
+
+        // Inspector sidebar
+        const inspectorEl = mainArea.createDiv('story-line-inspector-panel');
+        inspectorEl.setCssStyles({ display: 'none' });
+        this.inspectorComponent = new InspectorComponent(
+            inspectorEl,
+            this.plugin,
+            this.sceneManager,
+            {
+                onEdit: (scene) => this.openScene(scene),
+                onDelete: (scene) => this.deleteScene(scene),
+                onRefresh: () => this.refresh(),
+                onStatusChange: async (scene, status) => {
+                    await this.sceneManager.updateScene(scene.filePath, { status });
+                    this.refresh();
+                },
+            }
+        );
+    }
+
+    private async renderTimelineAsync(container: HTMLElement): Promise<void> {
+        // Render generation token — increment to cancel stale renders
+        const generation = ++this.renderGeneration;
+
+        // Remove old timeline if exists
+        const existing = container.querySelector('.story-line-timeline');
+        if (existing) existing.remove();
+
+        const timelineEl = container.createDiv('story-line-timeline');
+
+        // Load scenes (single or multi-book)
+        const rawScenes = await this.getTimelineScenes();
+
+        // Load Events — universe-wide for multi-book, cached for single-book
+        const rawEvents = await this.getTimelineEvents();
+
+        // Cancel if a newer render started while we were loading
+        if (this.renderGeneration !== generation) return;
+
+        // Apply filters
+        const context = this.buildFilterContext();
+        const { scenes, events } = this.filterService.applyFilters(rawScenes, rawEvents, this.filterConfig, context);
+
+        // Update navigation service with filtered items
+        this.timelineNavigationService.updateItems(scenes, events);
+        this.updateTimeNavigationDisplay();
+
+        // In multi-book reading order, force chronological
+        const effectiveOrder = this.isMultiBookMode() ? 'chronological' : this.timelineOrder;
+
+        // Precompute date/time validation flags for each scene index so rendering is consistent
+        // Scenes with non-linear timeline modes (flashback, dream, mythic, etc.) are exempt from
+        // date-order warnings — but are still rendered with their mode badge.
+        const EXEMPT_FROM_DATE_ORDER_SET = new Set<string | undefined>([
+            'flashback', 'flash_forward', 'dream', 'mythic', 'circular', 'simultaneous',
+        ]);
+        const dateTs = scenes.map(s => this.parseSceneDateTimestamp(s));
+        const timeTs = scenes.map(s => this.parseSceneTimeTimestamp(s));
+        const dateInvalidFlags = scenes.map((s, idx) => {
+            if (EXEMPT_FROM_DATE_ORDER_SET.has(s.timeline_mode)) return false;
+            const prev = idx > 0 ? dateTs[idx - 1] : null;
+            const curr = dateTs[idx];
+            const next = idx < scenes.length - 1 ? dateTs[idx + 1] : null;
+            // Also exempt if the adjacent scene is exempt
+            if (prev !== null && curr !== null && prev > curr) {
+                if (!EXEMPT_FROM_DATE_ORDER_SET.has(scenes[idx - 1]?.timeline_mode)) return true;
+            }
+            if (next !== null && curr !== null && curr > next) {
+                if (!EXEMPT_FROM_DATE_ORDER_SET.has(scenes[idx + 1]?.timeline_mode)) return true;
+            }
+            return false;
+        });
+        const timeInvalidFlags = scenes.map((s, idx) => {
+            if (EXEMPT_FROM_DATE_ORDER_SET.has(s.timeline_mode)) return false;
+            const prevDate = idx > 0 ? dateTs[idx - 1] : null;
+            const nextDate = idx < scenes.length - 1 ? dateTs[idx + 1] : null;
+            const prevTime = idx > 0 ? timeTs[idx - 1] : null;
+            const currTime = timeTs[idx];
+            const nextTime = idx < scenes.length - 1 ? timeTs[idx + 1] : null;
+
+            let invalid = false;
+            if (prevTime !== null && currTime !== null) {
+                if (!EXEMPT_FROM_DATE_ORDER_SET.has(scenes[idx - 1]?.timeline_mode)) {
+                    const datesEqual = (prevDate === null && dateTs[idx] === null) || (prevDate !== null && dateTs[idx] !== null && prevDate === dateTs[idx]);
+                    if (datesEqual && prevTime > currTime) invalid = true;
+                }
+            }
+            if (nextTime !== null && currTime !== null) {
+                if (!EXEMPT_FROM_DATE_ORDER_SET.has(scenes[idx + 1]?.timeline_mode)) {
+                    const datesEqual = (nextDate === null && dateTs[idx] === null) || (nextDate !== null && dateTs[idx] !== null && nextDate === dateTs[idx]);
+                    if (datesEqual && currTime > nextTime) invalid = true;
+                }
+            }
+            return invalid;
+        });
+
+        // Also get defined acts so we can show empty act dividers
+        const definedActs = this.sceneManager.getDefinedActs();
+        const actsWithScenes = new Set<number>();
+        for (const s of scenes) {
+            if (s.act !== undefined) actsWithScenes.add(Number(s.act));
+        }
+
+        if (scenes.length === 0 && definedActs.length === 0 && events.length === 0) {
+            const empty = timelineEl.createDiv('story-line-empty');
+            if (this.filterService.isFilterActive(this.filterConfig)) {
+                empty.createEl('p', { text: 'No scenes or events match the current filters.' });
+                empty.createEl('button', {
+                    text: 'Clear filters',
+                    attr: { style: 'margin-top: 8px;' }
+                }).addEventListener('click', () => {
+                    this.filterConfig = {};
+                    this.refresh();
+                });
+            } else {
+                empty.createEl('p', { text: 'No scenes or events found.' });
+            }
+            empty.createEl('p', { text: 'Click "+ new scene" to create your first scene, or "+ New Event" to add a canonical event.' });
+            return;
+        }
+
+        // Multi-book mode indicator
+        const isMultiBook = this.isMultiBookMode();
+
+        // ── Temporal ruler (horizontal time axis) ──
+        this.renderTemporalRuler(timelineEl, scenes, events);
+
+        // ── Vertical timeline with scene cards ──
+        const track = timelineEl.createDiv('timeline-track');
+
+
+        // For drag & drop
+        let dragIndex: number | null = null;
+        let dropIndex: number | null = null;
+        let autoScrollRAF: number | null = null;
+        let lastDragClientY = 0;
+
+        // Auto-scroll when dragging near viewport edges
+        const AUTO_SCROLL_ZONE = this.plugin.settings.timelineDragScrollZone ?? 60; // px from edge
+        const AUTO_SCROLL_SPEED = this.plugin.settings.timelineDragScrollSpeed ?? 8; // px per frame
+        const startAutoScroll = (clientY: number) => {
+            lastDragClientY = clientY;
+            if (autoScrollRAF) return; // already running
+            const scrollEl = track.closest('.story-line-main-area') || track.parentElement;
+            if (!scrollEl) return;
+            const loop = () => {
+                const rect = scrollEl.getBoundingClientRect();
+                if (lastDragClientY < rect.top + AUTO_SCROLL_ZONE) {
+                    scrollEl.scrollTop -= AUTO_SCROLL_SPEED;
+                } else if (lastDragClientY > rect.bottom - AUTO_SCROLL_ZONE) {
+                    scrollEl.scrollTop += AUTO_SCROLL_SPEED;
+                } else {
+                    autoScrollRAF = null;
+                    return;
+                }
+                autoScrollRAF = window.requestAnimationFrame(loop);
+            };
+            autoScrollRAF = window.requestAnimationFrame(loop);
+        };
+        const stopAutoScroll = () => {
+            if (autoScrollRAF) { cancelAnimationFrame(autoScrollRAF); autoScrollRAF = null; }
+        };
+
+        // Attach auto-scroll helpers to the main-area element so entries can call them
+        const mainArea = track.closest('.story-line-main-area');
+        if (mainArea) {
+            (mainArea as unknown as Record<string, unknown>)._slAutoScroll = startAutoScroll;
+            (mainArea as unknown as Record<string, unknown>)._slStopAutoScroll = stopAutoScroll;
+        }
+
+        // Store dropIndex on the track so drop handlers in child entries can read it
+        (track as unknown as Record<string, unknown>)._slDropIndex = null;
+
+        const refreshDropIndicators = () => {
+            const entries = track.querySelectorAll('.timeline-entry');
+            entries.forEach((el, idx) => {
+                el.classList.toggle('drop-above', dropIndex === idx);
+                el.classList.toggle('drop-below', dropIndex === idx + 1);
+            });
+        };
+
+        const handleDrop = async (fromIdx: number, toIdx: number) => {
+            // Multi-book scenes have different owning projects. The existing
+            // reorder operation writes global sequence values through the
+            // active book manager; never apply it across book boundaries.
+            if (this.isMultiBookMode()) return;
+            if (fromIdx === toIdx || fromIdx === toIdx - 1) return;
+
+            // Save scroll position to restore after refresh
+            const scrollEl = track.closest('.story-line-main-area') || track.parentElement;
+            const savedScroll = scrollEl ? scrollEl.scrollTop : 0;
+
+            const moved = scenes.splice(fromIdx, 1)[0];
+            const insertAt = toIdx > fromIdx ? toIdx - 1 : toIdx;
+            scenes.splice(insertAt, 0, moved);
+
+            if (this.timelineOrder === 'chronological') {
+                // Chronological order is a single global counter — flat 1..N is correct.
+                for (let i = 0; i < scenes.length; i++) {
+                    await this.sceneManager.updateScene(
+                        scenes[i].filePath,
+                        { chronologicalOrder: i + 1 } as Partial<Scene>,
+                    );
+                }
+            } else {
+                // #118: sequence is a single global counter. Adopt the
+                // neighbour's act/chapter for the moved scene so it lands
+                // in the right group, then assign a fractional sequence
+                // that positions it next to a neighbour, and finally run
+                // a global flat resequence 1..N. `chapter`/`act` of other
+                // scenes are preserved.
+                const neighbour = scenes[insertAt - 1] ?? scenes[insertAt + 1] ?? null;
+                const sceneUpdates: Partial<Scene> = {};
+                if (neighbour) {
+                    if (moved.act !== neighbour.act) sceneUpdates.act = neighbour.act;
+                    if (moved.chapter !== neighbour.chapter) sceneUpdates.chapter = neighbour.chapter;
+                }
+                const target = scenes[insertAt + 1] ?? scenes[insertAt - 1] ?? null;
+                if (target && target !== moved) {
+                    const targetSeq = target.sequence ?? 0;
+                    const movedFirst = scenes.indexOf(moved) < scenes.indexOf(target);
+                    sceneUpdates.sequence = movedFirst ? targetSeq - 0.5 : targetSeq + 0.5;
+                }
+                if (Object.keys(sceneUpdates).length > 0) {
+                    await this.sceneManager.updateScene(moved.filePath, sceneUpdates);
+                }
+                await this.sceneManager.globalResequence();
+            }
+            // refresh() handles scroll save/restore — no need for a
+            // competing rAF here (the duplicate rAF caused a race that
+            // left scroll at 0 for large lists, issue: drag-drop scroll).
+            this.refresh();
+        };
+
+        // Build a combined list: scenes + empty act placeholders
+        // Group scenes by act for interleaving empty acts
+        const scenesByAct = new Map<number, Scene[]>();
+        const noActScenes: Scene[] = [];
+        for (const s of scenes) {
+            if (s.act !== undefined) {
+                const actNum = Number(s.act);
+                if (!scenesByAct.has(actNum)) scenesByAct.set(actNum, []);
+                scenesByAct.get(actNum)!.push(s);
+            } else {
+                noActScenes.push(s);
+            }
+        }
+
+        // Merge all act numbers (from scenes + defined)
+        const allActs = new Set([...definedActs, ...actsWithScenes]);
+        const sortedActs = Array.from(allActs).sort((a, b) => a - b);
+
+        // Render scenes in sequence order and insert act dividers when act changes.
+        // For large projects (40+ scenes), use progressive/chunked rendering to avoid
+        // blocking the main thread with 1500+ DOM nodes in a single frame.
+        type TLItem =
+            | { kind: 'divider'; actLabel: string; actNum: number | undefined }
+            | { kind: 'scene'; scene: Scene; globalIdx: number; dateInvalid: boolean; timeInvalid: boolean }
+            | { kind: 'event'; event: Event }
+            | { kind: 'empty-act'; actLabel: string; actNum: number };
+
+        const tlItems: TLItem[] = [];
+        if (effectiveOrder === 'chronological') {
+            // Chronologically sort Scenes even when the timeline contains no Events.
+            this.buildChronologicalTimelineItems(tlItems, scenes, events, dateInvalidFlags, timeInvalidFlags, definedActs, actsWithScenes, sortedActs);
+        } else {
+            // Reading order mode: scenes first, then events at the end
+            // In multi-book mode, reading order is not meaningful — show warning
+            if (isMultiBook) {
+                const warning = track.createDiv('timeline-multi-book-warning');
+                warning.createEl('p', { text: 'Multiple books selected — showing in Chronological Order. Reading Order is meaningful for a single book only.' });
+            }
+            let lastRenderedAct: number | undefined = undefined;
+            for (let globalIdx = 0; globalIdx < scenes.length; globalIdx++) {
+                const scene = scenes[globalIdx];
+                const currentAct = scene.act !== undefined ? Number(scene.act) : undefined;
+                if (currentAct !== lastRenderedAct) {
+                    const beatLabel = currentAct !== undefined ? this.sceneManager.getActLabel(currentAct) : undefined;
+                    const cleanBeat = beatLabel?.replace(/^(Act|Prologue|Epilogue)\s*\d*\s*[—:]\s*/i, '');
+                    const actDisplay = getActDisplayLabel(currentAct);
+                    const actLabel = currentAct !== undefined
+                        ? (cleanBeat ? `${actDisplay} — ${cleanBeat}` : actDisplay)
+                        : 'No Act';
+                    tlItems.push({ kind: 'divider', actLabel, actNum: currentAct });
+                    lastRenderedAct = currentAct;
+                }
+                tlItems.push({ kind: 'scene', scene, globalIdx, dateInvalid: dateInvalidFlags[globalIdx], timeInvalid: timeInvalidFlags[globalIdx] });
+            }
+
+            // Add empty-act placeholders for defined acts with no scenes
+            for (const actNum of sortedActs) {
+                if (!actsWithScenes.has(Number(actNum))) {
+                    const beatLabel = this.sceneManager.getActLabel(actNum);
+                    const cleanBeat = beatLabel?.replace(/^(Act|Prologue|Epilogue)\s*\d*\s*[—:]\s*/i, '');
+                    const actDisplay = getActDisplayLabel(actNum);
+                    const actLabel = cleanBeat ? `${actDisplay} — ${cleanBeat}` : actDisplay;
+                    tlItems.push({ kind: 'empty-act', actLabel, actNum });
+                }
+            }
+
+            // In reading order, show Events as contextual markers after scenes.
+            // They appear as a reference rail, not as a separate appended section.
+            if (events.length > 0) {
+                // Sort events by time for the reference rail
+                const sortedEvents = this.sortEventsByTime(events);
+                for (const event of sortedEvents) {
+                    tlItems.push({ kind: 'event', event });
+                }
+            }
+        }
+
+        const renderTLItem = (item: TLItem) => {
+            if (item.kind === 'divider') {
+                const divider = track.createDiv('timeline-act-divider');
+                divider.createSpan({ cls: 'timeline-act-label', text: item.actLabel });
+                if (item.actNum !== undefined) {
+                    const addInAct = divider.createEl('button', {
+                        cls: 'timeline-act-add-btn clickable-icon',
+                        attr: { 'aria-label': `Add scene to ${item.actLabel}` }
+                    });
+                    obsidian.setIcon(addInAct, 'plus');
+                    const actForClosure = item.actNum;
+                    addInAct.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.openQuickAdd(actForClosure);
+                    });
+                }
+            } else if (item.kind === 'event') {
+                this.renderTimelineEvent(track, item.event);
+            } else if (item.kind === 'scene') {
+                const bookTitle = isMultiBook ? this.getSceneBookTitle(item.scene) : null;
+                this.renderTimelineEntry(track, item.scene, item.globalIdx, scenes, dragIndex, dropIndex, refreshDropIndicators, handleDrop, (di) => { dragIndex = di; }, (di) => { dropIndex = di; (track as unknown as Record<string, unknown>)._slDropIndex = di; }, item.dateInvalid, item.timeInvalid, bookTitle);
+            } else {
+                // empty-act placeholder
+                const divider = track.createDiv('timeline-act-divider');
+                divider.createSpan({ cls: 'timeline-act-label', text: item.actLabel });
+                const addInAct = divider.createEl('button', {
+                    cls: 'timeline-act-add-btn clickable-icon',
+                    attr: { 'aria-label': `Add scene to ${item.actLabel}` }
+                });
+                obsidian.setIcon(addInAct, 'plus');
+                const actForClosure = item.actNum;
+                addInAct.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.openQuickAdd(actForClosure);
+                });
+                const emptyEntry = track.createDiv('timeline-entry timeline-entry-empty');
+                const emptyCard = emptyEntry.createDiv('timeline-entry-card');
+                const card = emptyCard.createDiv('timeline-card timeline-card-empty');
+                card.createDiv({ cls: 'timeline-card-title', text: `No scenes in ${item.actLabel}` });
+                card.createEl('p', { cls: 'timeline-card-hint', text: 'Click + to add a scene' });
+                card.addEventListener('click', () => this.openQuickAdd(actForClosure));
+            }
+        };
+
+        // Progressive rendering: render first batch immediately, schedule rest
+        const INITIAL_BATCH = 20;
+        const CHUNK_SIZE = 10;
+        const total = tlItems.length;
+
+        if (total <= INITIAL_BATCH) {
+            // Small project — render everything synchronously
+            for (const item of tlItems) renderTLItem(item);
+        } else {
+            // Large project — chunked rendering
+            for (let i = 0; i < INITIAL_BATCH; i++) renderTLItem(tlItems[i]);
+
+            let cursor = INITIAL_BATCH;
+            const scheduleChunk = () => {
+                if (cursor >= total || !track.isConnected) return;
+                window.requestAnimationFrame(() => {
+                    if (!track.isConnected) return;
+                    const end = Math.min(cursor + CHUNK_SIZE, total);
+                    for (let i = cursor; i < end; i++) renderTLItem(tlItems[i]);
+                    cursor = end;
+                    if (cursor < total) scheduleChunk();
+                });
+            };
+            scheduleChunk();
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Swimlane (multi-lane) renderer
+    // ────────────────────────────────────────────────────────────
+
+    /**
+     * Render the swimlane timeline: multiple vertical lanes side-by-side,
+     * each with the same dot-line-card look as the linear mode.
+     */
+    private async renderSwimlaneTimeline(container: HTMLElement): Promise<void> {
+        // Render generation token — increment to cancel stale renders
+        const generation = ++this.renderGeneration;
+
+        // Remove old timeline if exists
+        const existing = container.querySelector('.story-line-timeline');
+        if (existing) existing.remove();
+
+        const timelineEl = container.createDiv('story-line-timeline swimlane-timeline');
+        enableDragToPan(timelineEl);
+
+        // Use multi-book scene/event projection, same as linear mode
+        const rawScenes = await this.getTimelineScenes();
+        const rawEvents = await this.getTimelineEvents();
+
+        // Cancel if a newer render started while we were loading
+        if (this.renderGeneration !== generation) return;
+
+        // Apply filters
+        const context = this.buildFilterContext();
+        const { scenes, events } = this.filterService.applyFilters(rawScenes, rawEvents, this.filterConfig, context);
+
+        // Update navigation service with filtered items
+        this.timelineNavigationService.updateItems(scenes, events);
+        this.updateTimeNavigationDisplay();
+
+        if (scenes.length === 0 && events.length === 0) {
+            const empty = timelineEl.createDiv('story-line-empty');
+            if (this.filterService.isFilterActive(this.filterConfig)) {
+                empty.createEl('p', { text: 'No scenes or events match the current filters.' });
+                empty.createEl('button', {
+                    text: 'Clear filters',
+                    attr: { style: 'margin-top: 8px;' }
+                }).addEventListener('click', () => {
+                    this.filterConfig = {};
+                    this.refresh();
+                });
+            } else {
+                empty.createEl('p', { text: 'No scenes or events found.' });
+            }
+            empty.createEl('p', { text: 'Click "+ new scene" to create your first scene, or "+ New Event" to add a canonical event.' });
+            return;
+        }
+
+        // ── Build shared chronological projection ──
+        // Combine scenes and events into one timeline sorted by TimeSpan.
+        // This is the same projection used by the linear timeline mode.
+        const projection = this.buildChronologicalProjection(scenes, events);
+
+        // ── Determine lane keys ──
+        const isMultiBook = this.isMultiBookMode();
+        let laneKeys: string[];
+
+        if (isMultiBook) {
+            // Lane identity must be the stable book UUID, not a Scene file path
+            // or Book title (different Books may share the same title).
+            // Include selected Books with no Scenes so their lanes stay visible.
+            laneKeys = Array.from(this.selectedBookIds).filter(
+                bookId => this.sceneManager.getProjectById(bookId) !== null,
+            );
+        } else {
+            // Single-book mode: use POV/Character/Location grouping
+            const laneKeysSet = new Set<string>();
+            for (const scene of scenes) {
+                const keys = this.getSceneLaneKeys(scene);
+                for (const k of keys) laneKeysSet.add(k);
+            }
+            laneKeys = Array.from(laneKeysSet).sort();
+            if (laneKeys.length === 0) laneKeys.push('(none)');
+        }
+
+        // ── Build the grid container ──
+        const grid = timelineEl.createDiv('swimlane-grid');
+        const colTemplate = `80px repeat(${laneKeys.length}, minmax(180px, 1fr))`;
+        grid.setCssStyles({ gridTemplateColumns: colTemplate });
+
+        // ── Sticky header row ──
+        const corner = grid.createDiv('swimlane-corner');
+        corner.textContent = '#';
+        for (const lane of laneKeys) {
+            const header = grid.createDiv('swimlane-lane-header');
+            const laneLabel = isMultiBook
+                ? (this.sceneManager.getProjectById(lane)?.title || lane)
+                : lane;
+            header.textContent = laneLabel;
+            header.setAttribute('title', laneLabel);
+        }
+
+        // ── Render each item in chronological order ──
+        for (const item of projection) {
+            if (item.kind === 'scene') {
+                this.renderSwimlaneSceneRow(grid, item.scene, laneKeys, isMultiBook);
+            } else if (item.kind === 'event') {
+                this.renderSwimlaneEventRow(grid, item.event, laneKeys);
+            }
+        }
+    }
+
+    /**
+     * Render time navigation controls in the toolbar.
+     */
+    private renderTimeNavigation(controls: HTMLElement): void {
+        const navContainer = controls.createDiv('story-line-time-nav');
+
+        // Previous item button
+        const prevBtn = navContainer.createEl('button', {
+            cls: 'clickable-icon',
+        });
+        obsidian.setIcon(prevBtn, 'chevron-left');
+        attachTooltip(prevBtn, 'Previous item');
+        prevBtn.addEventListener('click', () => {
+            const item = this.timelineNavigationService.navigatePrevious();
+            if (item) {
+                this.scrollToNavigationItem(item);
+                this.updateTimeNavigationDisplay();
+            }
+        });
+
+        // Jump to date input
+        const jumpContainer = navContainer.createDiv('story-line-jump-to-date');
+        const yearInput = jumpContainer.createEl('input', {
+            type: 'number',
+            attr: { placeholder: 'Year', 'aria-label': 'Jump to year' },
+            cls: 'story-line-year-input',
+        });
+        yearInput.addEventListener('keydown', (e: KeyboardEvent) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const year = parseInt(yearInput.value, 10);
+                if (Number.isSafeInteger(year)) {
+                    this.timelineNavigationService.jumpToDate(year);
+                    this.updateTimeNavigationDisplay();
+                    // An empty year has no precise DOM position until the
+                    // temporal ruler exists. Do not fake an exact jump.
+                }
+            }
+        });
+
+        // Next item button
+        const nextBtn = navContainer.createEl('button', {
+            cls: 'clickable-icon',
+        });
+        obsidian.setIcon(nextBtn, 'chevron-right');
+        attachTooltip(nextBtn, 'Next item');
+        nextBtn.addEventListener('click', () => {
+            const item = this.timelineNavigationService.navigateNext();
+            if (item) {
+                this.scrollToNavigationItem(item);
+                this.updateTimeNavigationDisplay();
+            }
+        });
+
+        // Current time period display
+        const periodDisplay = navContainer.createSpan({
+            cls: 'story-line-time-period',
+            text: '',
+        });
+        periodDisplay.setAttr('title', 'Indexed time range and selected year');
+        this.updateTimeNavigationDisplay();
+    }
+
+    /** Update navigation labels after async content is loaded or a date changes. */
+    private updateTimeNavigationDisplay(): void {
+        const root = this.rootContainer;
+        if (!root) return;
+        const period = root.querySelector('.story-line-time-period') as HTMLElement | null;
+        const yearInput = root.querySelector('.story-line-year-input') as HTMLInputElement | null;
+        const state = this.timelineNavigationService.getState();
+        if (period) {
+            const range = state.visibleRange;
+            const rangeText = range ? `Items: ${range.start.year}–${range.end.year}` : 'No dated items';
+            period.setText(state.selectedDate
+                ? `Selected: ${state.selectedDate.year} · ${rangeText}`
+                : rangeText);
+        }
+        if (yearInput && state.selectedDate) {
+            yearInput.value = String(state.selectedDate.year);
+        }
+    }
+
+    /**
+     * Scroll to a rendered Scene or Event without reloading the whole view,
+     * changing the active Book or resetting the scroll position.
+     */
+    private scrollToNavigationItem(item: { scene?: Scene; event?: Event }): void {
+        if (!this.rootContainer) return;
+        const target = item.scene
+            ? this.rootContainer.querySelector(`[data-path="${CSS.escape(item.scene.filePath)}"]`)
+            : item.event
+                ? this.rootContainer.querySelector(`[data-event-id="${CSS.escape(item.event.id)}"]`)
+                : null;
+        if (target instanceof HTMLElement) {
+            target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+    }
+
+    /**
+     * Render the horizontal temporal ruler above the timeline track.
+     * Clicking a marker jumps to that year; clicking between markers opens
+     * the creation menu with the date prefilled.
+     */
+    private renderTemporalRuler(timelineEl: HTMLElement, scenes: Scene[], events: Event[]): void {
+        const markers = this.timelineNavigationService.getTimeMarkers();
+        if (markers.length === 0) return;
+
+        const visibleRange = this.timelineNavigationService.getState().visibleRange;
+        if (!visibleRange) return;
+
+        const ruler = timelineEl.createDiv('timeline-temporal-ruler');
+
+        const rangeStart = visibleRange.start.year;
+        const rangeEnd = visibleRange.end.year;
+        const rangeSpan = rangeEnd - rangeStart;
+
+        for (const marker of markers) {
+            // Calculate position as fraction of the visible range
+            const fraction = rangeSpan > 0 ? (marker.timestamp.year - rangeStart) / rangeSpan : 0.5;
+            const percent = Math.max(0, Math.min(100, fraction * 100));
+
+            const markerEl = ruler.createDiv('timeline-ruler-marker');
+            markerEl.setCssStyles({ left: `${percent}%` });
+            if (marker.isMajor) markerEl.addClass('is-major');
+
+            const label = markerEl.createSpan('timeline-ruler-label');
+            label.setText(marker.label);
+
+            // Click handler: jump to the marker's date
+            markerEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.timelineNavigationService.jumpToDate(
+                    marker.timestamp.year,
+                    marker.timestamp.month,
+                    marker.timestamp.day
+                );
+                this.updateTimeNavigationDisplay();
+            });
+        }
+
+        // Click on empty space in the ruler to create Scene/Event at that date
+        ruler.addEventListener('click', (e: MouseEvent) => {
+            const rulerRect = ruler.getBoundingClientRect();
+            const fraction = (e.clientX - rulerRect.left) / rulerRect.width;
+            const timestamp = this.timelineNavigationService.getTimestampAtPosition(fraction);
+            if (timestamp) {
+                this.showTemporalCreationMenu(e, timestamp);
+            }
+        });
+    }
+
+    /**
+     * Show a context menu for creating a Scene or Event at the clicked date.
+     */
+    private showTemporalCreationMenu(e: MouseEvent, timestamp: Timestamp): void {
+        const menu = new Menu();
+        // Creation must use THIS click's timestamp, not a previously selected year.
+        const selectedDate = timestamp;
+        this.timelineNavigationService.setSelectedDate(selectedDate);
+
+        menu.addItem(item => {
+            item.setTitle(`Create scene in active Book on ${selectedDate.year}`)
+                .setIcon('file')
+                .onClick(() => {
+                    // Cross-book creation needs explicit ownership selection.
+                    if (this.isMultiBookMode()) {
+                        new Notice('To create a Scene, switch to Active Book only first.');
+                        return;
+                    }
+                    this.openQuickAddWithDate(selectedDate);
+                });
+        });
+
+        menu.addItem(item => {
+            item.setTitle(`Create Book-level Event on ${selectedDate.year}`)
+                .setIcon('calendar')
+                .onClick(async () => {
+                    const eventsFolder = this.sceneManager.getBookEventsFolder();
+                    if (eventsFolder) {
+                        await this.plugin.openCreateEventModal(eventsFolder, selectedDate);
+                        this.refresh();
+                    }
+                });
+        });
+
+        menu.showAtMouseEvent(e);
+    }
+
+    /**
+     * Open the Quick Add modal with the date prefilled from the temporal ruler.
+     */
+    private openQuickAddWithDate(timestamp: Timestamp): void {
+        // Preserve year/month precision and the original calendar. Never
+        // invent January 1 for a year-only timestamp.
+        const timeSpan: TimeSpan = { kind: 'instant', instant: { ...timestamp } };
+        const storyDate = timestamp.calendar === 'gregorian' && timestamp.month !== undefined && timestamp.day !== undefined
+            ? `${timestamp.year}-${String(timestamp.month).padStart(2, '0')}-${String(timestamp.day).padStart(2, '0')}`
+            : undefined;
+        const modal = new QuickAddModal(
+            this.app,
+            this.plugin,
+            this.sceneManager,
+            async (sceneData, openAfter) => {
+                // Prefill the date from the temporal ruler
+                sceneData.timeSpan = timeSpan;
+                if (storyDate) sceneData.storyDate = storyDate;
+                else delete sceneData.storyDate;
+                const file = await this.sceneManager.createScene(sceneData);
+                this.refresh();
+                const scrollToNew = () => {
+                    const newEntry = this.rootContainer?.querySelector(
+                        `[data-path="${CSS.escape(file.path)}"]`
+                    );
+                    if (newEntry) {
+                        newEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                };
+                window.requestAnimationFrame(scrollToNew);
+                window.setTimeout(scrollToNew, 50);
+                if (openAfter) {
+                    void this.app.workspace.getLeaf('tab').openFile(file, { state: { mode: 'source', source: false } });
+                }
+            },
+            { storyDate, timeSpan }
+        );
+        modal.open();
+    }
+
+    /**
+     * Build a shared chronological projection of scenes and events.
+     * Returns items sorted by TimeSpan, with unknown/undated items at the end.
+     * This is the canonical projection used by both linear and swimlane modes.
+     */
+    private buildChronologicalProjection(scenes: Scene[], events: Event[]): Array<
+        | { kind: 'scene'; scene: Scene }
+        | { kind: 'event'; event: Event }
+    > {
+        interface SortableItem {
+            timestamp: Timestamp | null;
+            calendar: string | undefined;
+            scene?: Scene;
+            event?: Event;
+        }
+        const sortable: SortableItem[] = [];
+
+        // Add scenes — normalize legacy dates via TimeSpanService
+        for (const scene of scenes) {
+            const ts = this.getSceneSortTimestamp(scene);
+            sortable.push({ timestamp: ts, calendar: ts?.calendar, scene });
+        }
+
+        // Add events — use TimeSpan directly
+        for (const event of events) {
+            const ts = event.timeSpan
+                ? this.plugin.timeSpanService.getEarliestPoint(event.timeSpan)
+                : null;
+            sortable.push({ timestamp: ts, calendar: ts?.calendar, event });
+        }
+
+        // Sort using unified TimeSpan-based comparison
+        sortable.sort((a, b) => {
+            const cmp = this.compareTimelineItems(a.timestamp, a.calendar, b.timestamp, b.calendar);
+            if (cmp !== 0) return cmp;
+            // Same date — scenes before events for stability
+            if (a.scene && b.event) return -1;
+            if (a.event && b.scene) return 1;
+            return 0;
+        });
+
+        // Convert to projection items
+        const projection: Array<{ kind: 'scene'; scene: Scene } | { kind: 'event'; event: Event }> = [];
+        for (const item of sortable) {
+            if (item.scene) {
+                projection.push({ kind: 'scene', scene: item.scene });
+            }
+            if (item.event) {
+                projection.push({ kind: 'event', event: item.event });
+            }
+        }
+
+        return projection;
+    }
+
+    /**
+     * Render a single scene row in the swimlane grid.
+     */
+    private renderSwimlaneSceneRow(grid: HTMLElement, scene: Scene, laneKeys: string[], isMultiBook: boolean): void {
+        const act = scene.act !== undefined ? String(scene.act).padStart(2, '0') : '??';
+        const seq = scene.sequence !== undefined ? String(scene.sequence).padStart(2, '0') : '??';
+        const chronoSeq = scene.chronologicalOrder !== undefined ? String(scene.chronologicalOrder).padStart(2, '0') : null;
+
+        // Sequence axis cell
+        const seqCell = grid.createDiv('swimlane-seq-cell');
+        seqCell.classList.add('timeline-seq-clickable');
+        seqCell.createSpan({ cls: 'timeline-seq-badge', text: `${act}-${seq}` });
+        if (chronoSeq !== null && scene.chronologicalOrder !== scene.sequence) {
+            const chronoBadge = seqCell.createSpan({ cls: 'timeline-chrono-badge', text: `C${chronoSeq}` });
+            chronoBadge.setAttribute('title', `Chronological order: ${chronoSeq}`);
+        }
+        const timeSpan = this.getSceneTimeSpan(scene);
+        if (timeSpan) {
+            seqCell.createSpan({ cls: 'timeline-date-badge', text: this.plugin.timeSpanService.format(timeSpan) });
+        } else if (scene.storyDate) {
+            seqCell.createSpan({ cls: 'timeline-date-badge', text: scene.storyDate });
+        }
+        if (scene.storyTime) {
+            seqCell.createSpan({ cls: 'timeline-time-badge', text: scene.storyTime });
+        }
+        seqCell.setAttribute('title', 'Click to edit date/time');
+        seqCell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openTimeEditModal(scene);
+        });
+
+        // Determine which lane(s) this scene belongs to
+        const sceneLaneKeys = isMultiBook
+            ? [this.getSceneBookProject(scene)?.bookId || '(unknown)']
+            : this.getSceneLaneKeys(scene);
+        const sceneKeySet = new Set(sceneLaneKeys);
+
+        // Render one cell per lane
+        for (const lane of laneKeys) {
+            const cell = grid.createDiv('swimlane-lane-cell');
+            if (sceneKeySet.has(lane)) {
+                this.renderSwimlaneCard(cell, scene);
+            }
+            // else: empty cell — visual gap
+        }
+    }
+
+    /**
+     * Render a single event row in the swimlane grid.
+     * Events appear as shared reference markers across all lanes.
+     */
+    private renderSwimlaneEventRow(grid: HTMLElement, event: Event, laneKeys: string[]): void {
+        // Sequence axis cell with event date
+        const seqCell = grid.createDiv('swimlane-seq-cell');
+        seqCell.classList.add('swimlane-event-seq');
+        if (event.timeSpan) {
+            const badge = seqCell.createSpan({ cls: 'timeline-date-badge' });
+            badge.setText(this.plugin.timeSpanService.format(event.timeSpan));
+            if (event.timeSpan.kind === 'uncertain') badge.addClass('timeline-date-uncertain');
+            else if (event.timeSpan.kind === 'unknown') badge.addClass('timeline-date-unknown');
+        } else {
+            seqCell.createSpan({ cls: 'timeline-date-badge timeline-date-unknown', text: 'Undated' });
+        }
+
+        // One event marker spans every Book lane; no duplicate cards.
+        const cell = grid.createDiv('swimlane-lane-cell swimlane-event-shared');
+        cell.setCssStyles({ gridColumn: '2 / -1' });
+        this.renderSwimlaneEventCard(cell, event);
+    }
+
+    /**
+     * Get the lane key(s) this scene belongs to, based on current swimlaneGroupBy.
+     */
+    private getSceneLaneKeys(scene: Scene): string[] {
+        switch (this.swimlaneGroupBy) {
+            case 'pov':
+                return [scene.pov || '(no POV)'];
+            case 'character':
+                if (scene.characters && scene.characters.length > 0) return this.cleanLaneKeys(scene.characters);
+                return ['(no character)'];
+            case 'location':
+                return parseSceneLocations(scene.location).length > 0
+                    ? parseSceneLocations(scene.location)
+                    : ['(no location)'];
+            case 'plotline':
+            case 'tag':
+                if (scene.tags && scene.tags.length > 0) return this.cleanLaneKeys(scene.tags);
+                return [this.swimlaneGroupBy === 'tag' ? '(no tag)' : '(no plotline)'];
+            default:
+                return ['(none)'];
+        }
+    }
+
+    private cleanLaneKeys(values: string[]): string[] {
+        const seen = new Set<string>();
+        for (const value of values) {
+            const trimmed = String(value || '').trim();
+            if (trimmed) seen.add(trimmed);
+        }
+        return Array.from(seen);
+    }
+
+    /**
+     * Sort Events by TimeSpan for chronological display.
+     * Events without temporal info are placed at the end.
+     */
+    private sortEventsByTime(events: Event[]): Event[] {
+        const tsService = this.plugin.timeSpanService;
+        return [...events].sort((a, b) => {
+            const aPoint = a.timeSpan ? tsService.getEarliestPoint?.(a.timeSpan) : null;
+            const bPoint = b.timeSpan ? tsService.getEarliestPoint?.(b.timeSpan) : null;
+            if (!aPoint && !bPoint) return 0;
+            if (!aPoint) return 1;
+            if (!bPoint) return -1;
+            return tsService.compareTimestamps?.(aPoint, bPoint) ?? 0;
+        });
+    }
+
+    /**
+     * Render a compact Event marker inside a swimlane cell.
+     */
+    private renderSwimlaneEventCard(cell: HTMLElement, event: Event): void {
+        const card = cell.createDiv('timeline-card swimlane-card swimlane-event-card');
+        card.dataset.eventId = event.id;
+
+        // Event icon
+        const iconSpan = card.createSpan({ cls: 'timeline-event-icon' });
+        obsidian.setIcon(iconSpan, 'calendar');
+
+        card.createDiv({ cls: 'timeline-card-title', text: event.name || 'Untitled Event' });
+
+        // TimeSpan
+        if (event.timeSpan) {
+            const timeBadge = card.createDiv({ cls: 'timeline-card-meta' });
+            const timeText = timeBadge.createSpan({ cls: 'timeline-date-badge' });
+            timeText.setText(this.plugin.timeSpanService.format(event.timeSpan));
+            if (event.timeSpan.kind === 'uncertain') {
+                timeText.addClass('timeline-date-uncertain');
+            } else if (event.timeSpan.kind === 'unknown') {
+                timeText.addClass('timeline-date-unknown');
+            }
+        }
+
+        // Click to edit
+        card.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openEditEvent(event);
+        });
+    }
+
+    /**
+     * Render a compact scene card inside a swimlane cell.
+     * Uses the same visual language as the linear timeline cards.
+     */
+    private renderSwimlaneCard(cell: HTMLElement, scene: Scene): void {
+        // Dot (status indicator)
+        const dotWrap = cell.createDiv('swimlane-dot-wrap');
+        const dot = dotWrap.createDiv('timeline-dot');
+        dot.setAttribute('data-status', scene.status || 'idea');
+
+        // Card
+        const card = cell.createDiv('timeline-card swimlane-card');
+        if (this.selectedScene?.filePath === scene.filePath) {
+            card.addClass('selected');
+        }
+        card.dataset.path = scene.filePath;
+
+        card.createDiv({ cls: 'timeline-card-title', text: scene.title || 'Untitled' });
+
+        // Timeline mode badge (for non-linear scenes)
+        const slMode = scene.timeline_mode || 'linear';
+        if (slMode !== 'linear') {
+            const modeBadge = card.createDiv({ cls: `timeline-mode-badge timeline-mode-${slMode}` });
+            const modeIcon = modeBadge.createSpan();
+            obsidian.setIcon(modeIcon, TIMELINE_MODE_ICONS[slMode] || 'clock');
+            modeBadge.createSpan({ text: ` ${TIMELINE_MODE_LABELS[slMode]}` });
+            if (scene.timeline_strand) {
+                modeBadge.createSpan({ cls: 'timeline-strand-label', text: ` · ${scene.timeline_strand}` });
+            }
+        }
+
+        const meta = card.createDiv('timeline-card-meta');
+        // Show the field that is NOT the grouping field (avoid redundancy)
+        if (this.swimlaneGroupBy !== 'pov' && scene.pov) {
+            meta.createSpan({ cls: 'timeline-card-pov', text: `POV: ${scene.pov}` });
+        }
+        if (this.swimlaneGroupBy !== 'character' && scene.characters?.length) {
+            meta.createSpan({ cls: 'timeline-card-pov', text: scene.characters.join(', ') });
+        }
+        const sceneLocations = parseSceneLocations(scene.location);
+        if (this.swimlaneGroupBy !== 'location' && sceneLocations.length > 0) {
+            const locSpan = meta.createSpan({ cls: 'timeline-card-location' });
+            obsidian.setIcon(locSpan, 'map-pin');
+            locSpan.appendText(' ' + sceneLocations.join(', '));
+        }
+        if (this.swimlaneGroupBy !== 'plotline' && this.swimlaneGroupBy !== 'tag' && scene.tags?.length) {
+            meta.createSpan({ cls: 'timeline-card-pov', text: scene.tags.join(', ') });
+        }
+
+        // Status + word count footer
+        const footer = card.createDiv('timeline-card-footer');
+        const statusCfg = resolveStatusCfg(scene.status || 'idea');
+        const statusBadge = footer.createSpan({ cls: 'timeline-card-status', text: statusCfg.label });
+        statusBadge.setCssStyles({ color: statusCfg.color });
+
+        if (scene.wordcount || scene.charcount) {
+            const unit = this.plugin.settings.countUnit === 'chars' ? 'chars' : 'words';
+            footer.createSpan({ cls: 'timeline-card-wc', text: formatSceneLength(scene, unit) });
+        }
+
+        // Click / double-click / context menu
+        card.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.selectScene(scene, e);
+        });
+        card.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            this.openScene(scene);
+        });
+        card.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.showContextMenu(scene, e);
+        });
+
+        card.setCssStyles({
+            transform: `scale(${this.zoomLevel})`,
+            transformOrigin: 'left top',
+        });
+    }
+
+    /**
+     * Render a single timeline entry (scene card on the timeline)
+     */
+    private renderTimelineEntry(
+        track: HTMLElement,
+        scene: Scene,
+        i: number,
+        _scenes: Scene[],
+        _dragIndex: number | null,
+        _dropIndex: number | null,
+        refreshDropIndicators: () => void,
+        handleDrop: (from: number, to: number) => Promise<void>,
+        setDragIndex: (v: number | null) => void,
+        setDropIndex: (v: number | null) => void,
+        dateInvalid: boolean,
+        timeInvalid: boolean,
+        bookTitle?: string | null,
+    ): void {
+        const entry = track.createDiv('timeline-entry');
+        // Reordering is only supported for the active book. Multi-book
+        // timelines are chronological references, not a shared manuscript.
+        entry.setAttr('draggable', !this.isMultiBookMode() ? 'true' : 'false');
+        entry.dataset.idx = String(i);
+        entry.dataset.path = scene.filePath;
+
+        // Highlight if selected
+        if (this.selectedScene?.filePath === scene.filePath) {
+            entry.addClass('selected');
+        }
+
+        // Drag events
+        entry.addEventListener('dragstart', (e) => {
+            setDragIndex(i);
+            entry.classList.add('dragging');
+            e.dataTransfer?.setData('text/plain', String(i));
+            e.dataTransfer?.setDragImage(entry, 20, 20);
+        });
+        entry.addEventListener('dragend', () => {
+            setDragIndex(null);
+            setDropIndex(null);
+            entry.classList.remove('dragging');
+            refreshDropIndicators();
+            // Stop auto-scroll on drag end
+            (entry.closest('.story-line-main-area') as unknown as { _slStopAutoScroll?: () => void } | null)?._slStopAutoScroll?.();
+        });
+        entry.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const rect = entry.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            const computed = (e.clientY < midY) ? i : i + 1;
+            setDropIndex(computed);
+            refreshDropIndicators();
+            // Auto-scroll near edges
+            (entry.closest('.story-line-main-area') as unknown as { _slAutoScroll?: (y: number) => void } | null)?._slAutoScroll?.(e.clientY);
+        });
+        entry.addEventListener('dragleave', () => {
+            setDropIndex(null);
+            refreshDropIndicators();
+        });
+        entry.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            // Stop auto-scroll
+            (entry.closest('.story-line-main-area') as unknown as { _slStopAutoScroll?: () => void } | null)?._slStopAutoScroll?.();
+            const fromStr = e.dataTransfer?.getData('text/plain');
+            if (fromStr !== undefined && fromStr !== null) {
+                const from = Number(fromStr);
+                // Use the computed dropIndex (midpoint-aware) instead of entry index
+                const actualDrop = ((entry.closest('.timeline-track') as unknown as { _slDropIndex?: number } | null)?._slDropIndex) ?? i;
+                await handleDrop(from, actualDrop);
+            }
+        });
+
+        // Left column: sequence badge + date/time (clickable to edit)
+        const seqCol = entry.createDiv('timeline-entry-seq');
+        seqCol.classList.add('timeline-seq-clickable');
+        const act = scene.act !== undefined ? String(scene.act).padStart(2, '0') : '??';
+        const seq = scene.sequence !== undefined ? String(scene.sequence).padStart(2, '0') : '??';
+        const chronoSeq = scene.chronologicalOrder !== undefined ? String(scene.chronologicalOrder).padStart(2, '0') : null;
+
+        seqCol.createSpan({ cls: 'timeline-seq-badge', text: `${act}-${seq}` });
+
+        // Show chronological order badge when it differs from reading order
+        if (chronoSeq !== null && scene.chronologicalOrder !== scene.sequence) {
+            const chronoBadge = seqCol.createSpan({ cls: 'timeline-chrono-badge', text: `C${chronoSeq}` });
+            chronoBadge.setAttribute('title', `Chronological order: ${chronoSeq}`);
+        }
+
+        const dateBadge = scene.storyDate ? seqCol.createSpan({ cls: 'timeline-date-badge', text: scene.storyDate }) : null;
+        const timeBadge = scene.storyTime ? seqCol.createSpan({ cls: 'timeline-time-badge', text: scene.storyTime }) : null;
+        if (!scene.storyDate && !scene.storyTime) {
+            const addHint = seqCol.createSpan({ cls: 'timeline-add-time-hint' });
+            obsidian.setIcon(addHint, 'clock');
+        }
+
+        seqCol.setAttribute('title', 'Click to edit date/time');
+        seqCol.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openTimeEditModal(scene);
+        });
+
+        // Center: dot + line
+        const dotCol = entry.createDiv('timeline-entry-dot-col');
+        const dot = dotCol.createDiv('timeline-dot');
+        dot.setAttribute('data-status', scene.status || 'idea');
+
+        // Right column: card
+        const cardCol = entry.createDiv('timeline-entry-card');
+        const card = cardCol.createDiv('timeline-card');
+
+        // Apply custom scene color as background tint
+        if (scene.color && /^#[0-9a-fA-F]{6}$/.test(scene.color)) {
+            card.addClass('sl-scene-colored');
+            card.style.setProperty('--sl-scene-bg', scene.color);
+        }
+
+        card.createDiv({ cls: 'timeline-card-title', text: scene.title || 'Untitled' });
+
+        // Book title badge in multi-book mode
+        if (bookTitle) {
+            const bookBadge = card.createDiv({ cls: 'timeline-card-book-badge', text: bookTitle });
+        }
+
+        // Timeline mode badge (for non-linear scenes)
+        const tlMode = scene.timeline_mode || 'linear';
+        if (tlMode !== 'linear') {
+            const modeBadge = card.createDiv({ cls: `timeline-mode-badge timeline-mode-${tlMode}` });
+            const modeIcon = modeBadge.createSpan();
+            obsidian.setIcon(modeIcon, TIMELINE_MODE_ICONS[tlMode] || 'clock');
+            modeBadge.createSpan({ text: ` ${TIMELINE_MODE_LABELS[tlMode]}` });
+            if (scene.timeline_strand) {
+                modeBadge.createSpan({ cls: 'timeline-strand-label', text: ` · ${scene.timeline_strand}` });
+            }
+        }
+
+        const meta = card.createDiv('timeline-card-meta');
+        if (scene.pov) {
+            meta.createSpan({ cls: 'timeline-card-pov', text: `POV: ${scene.pov}` });
+        }
+        const sceneLocations = parseSceneLocations(scene.location);
+        if (sceneLocations.length > 0) {
+            const locSpan = meta.createSpan({ cls: 'timeline-card-location' });
+            obsidian.setIcon(locSpan, 'map-pin');
+            locSpan.appendText(' ' + sceneLocations.join(', '));
+        }
+        if (scene.timeline) {
+            const timeSpan = meta.createSpan({ cls: 'timeline-card-time' });
+            obsidian.setIcon(timeSpan, 'calendar-days');
+            timeSpan.appendText(' ' + scene.timeline);
+        }
+        if (scene.storyDate || scene.storyTime) {
+            const dateSpan = meta.createSpan({ cls: 'timeline-card-time' });
+            obsidian.setIcon(dateSpan, 'calendar-days');
+            dateSpan.appendText(' ' + `${scene.storyDate || ''} ${scene.storyTime || ''}`.trim());
+        }
+
+        if (dateInvalid && dateBadge) {
+            dateBadge.addClass('timeline-date-invalid');
+            dateBadge.setAttr('title', 'Date out of order');
+        }
+        if (timeInvalid && timeBadge) {
+            timeBadge.addClass('timeline-time-invalid');
+            timeBadge.setAttr('title', 'Time out of order');
+        }
+
+        if (scene.conflict) {
+            card.createDiv({
+                cls: 'timeline-card-conflict',
+                text: scene.conflict.length > 100
+                    ? scene.conflict.substring(0, 100) + '...'
+                    : scene.conflict
+            });
+        }
+
+        // Status + word count footer
+        const footer = card.createDiv('timeline-card-footer');
+        const statusCfg = resolveStatusCfg(scene.status || 'idea');
+        const statusBadge = footer.createSpan({
+            cls: 'timeline-card-status',
+            text: statusCfg.label,
+        });
+        statusBadge.setCssStyles({ color: statusCfg.color });
+
+        if (scene.wordcount || scene.charcount) {
+            const unit = this.plugin.settings.countUnit === 'chars' ? 'chars' : 'words';
+            footer.createSpan({
+                cls: 'timeline-card-wc',
+                text: formatSceneLength(scene, unit),
+            });
+        }
+
+        // Characters
+        if (scene.characters?.length) {
+            const chars = card.createDiv('timeline-card-chars');
+            scene.characters.forEach(c => {
+                chars.createSpan({ cls: 'timeline-char-tag', text: c });
+            });
+        }
+
+        // Click to select (show inspector), double-click to open
+        card.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.selectScene(scene, e);
+        });
+        card.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            this.openScene(scene);
+        });
+
+        // Right-click context menu
+        card.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.showContextMenu(scene, e);
+        });
+
+        card.setCssStyles({
+            transform: `scale(${this.zoomLevel})`,
+            transformOrigin: 'left center',
+        });
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Event rendering helpers
+    // ────────────────────────────────────────────────────────────
+
+    /**
+     * Render a single Event as a horizontal timeline marker.
+     * Format:
+     *   DATE  Event Title
+     *   ─────────────────────
+     *   Description...
+     * Events are non-draggable and visually distinct from Scene cards.
+     *
+     * IMPORTANT: .timeline-entry uses display:flex (row). To keep the Event
+     * marker vertically stacked, we insert the three required flex children
+     * (.timeline-entry-seq, .timeline-entry-dot-col, .timeline-entry-card)
+     * so the entry participates in the same layout as Scenes, with all Event
+     * content inside a single vertical column (.timeline-event-content).
+     */
+    private renderTimelineEvent(track: HTMLElement, event: Event): void {
+        const entry = track.createDiv('timeline-entry timeline-entry-event-marker');
+        entry.dataset.path = event.filePath;
+        entry.dataset.eventId = event.id;
+
+        // Left column (required by .timeline-entry flex layout)
+        const seqCol = entry.createDiv('timeline-entry-seq');
+        // Format the date for the left column badge
+        const dateText = event.timeSpan
+            ? this.plugin.timeSpanService.format(event.timeSpan)
+            : '?';
+        const dateBadge = seqCol.createSpan({
+            cls: 'timeline-date-badge',
+            text: dateText
+        });
+        if (event.timeSpan) {
+            if (event.timeSpan.kind === 'uncertain') {
+                dateBadge.addClass('timeline-date-uncertain');
+                dateBadge.setAttr('title', 'Uncertain date');
+            } else if (event.timeSpan.kind === 'unknown') {
+                dateBadge.addClass('timeline-date-unknown');
+                dateBadge.setAttr('title', 'Unknown date');
+            }
+        }
+
+        // Center dot column (required by .timeline-entry flex layout)
+        const dotCol = entry.createDiv('timeline-entry-dot-col');
+        const dot = dotCol.createDiv('timeline-dot timeline-dot-event');
+
+        // Right column: vertical Event content
+        const cardCol = entry.createDiv('timeline-entry-card');
+        const content = cardCol.createDiv('timeline-event-content');
+
+        // Top row: event title
+        const topRow = content.createDiv('timeline-event-top');
+        const titleSpan = topRow.createSpan({
+            cls: 'timeline-event-title',
+            text: event.name || 'Untitled Event'
+        });
+
+        // Horizontal marker line
+        content.createDiv('timeline-event-marker-line');
+
+        // Bottom: description
+        if (event.description) {
+            const desc = content.createDiv('timeline-event-description');
+            desc.setText(event.description);
+        }
+
+        // Click to edit the event
+        entry.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openEditEvent(event);
+        });
+
+        entry.setCssStyles({
+            transform: `scale(${this.zoomLevel})`,
+            transformOrigin: 'left center',
+        });
+    }
+
+    /**
+     * Open the Event editor modal for an existing Event.
+     */
+    private async openEditEvent(event: Event): Promise<void> {
+        try {
+            await this.plugin.openEditEventModal(event);
+            // Refresh timeline after editing
+            this.refresh();
+        } catch {
+            // ignore
+        }
+    }
+
+    /**
+     * Build chronologically sorted timeline items for linear mode.
+     * Delegates temporal ordering to the shared buildChronologicalProjection()
+     * so linear and swimlane modes use identical sorting.
+     * Adds act dividers and empty-act placeholders on top of the projection.
+     */
+    private buildChronologicalTimelineItems(
+        tlItems: Array<
+            | { kind: 'divider'; actLabel: string; actNum: number | undefined }
+            | { kind: 'scene'; scene: Scene; globalIdx: number; dateInvalid: boolean; timeInvalid: boolean }
+            | { kind: 'event'; event: Event }
+            | { kind: 'empty-act'; actLabel: string; actNum: number }
+        >,
+        scenes: Scene[],
+        events: Event[],
+        dateInvalidFlags: boolean[],
+        timeInvalidFlags: boolean[],
+        definedActs: number[],
+        actsWithScenes: Set<number>,
+        sortedActs: number[]
+    ): void {
+        // Use the shared chronological projection for sorting
+        const projection = this.buildChronologicalProjection(scenes, events);
+
+        // Map scenes to their original indices for dateInvalid/timeInvalid flags
+        const sceneIdxMap = new Map<Scene, number>();
+        for (let i = 0; i < scenes.length; i++) {
+            sceneIdxMap.set(scenes[i], i);
+        }
+
+        // Render items on the shared axis with act dividers
+        let lastRenderedAct: number | undefined = undefined;
+
+        for (const item of projection) {
+            if (item.kind === 'scene') {
+                const scene = item.scene;
+                const currentAct = scene.act !== undefined ? Number(scene.act) : undefined;
+                if (currentAct !== lastRenderedAct) {
+                    const beatLabel = currentAct !== undefined ? this.sceneManager.getActLabel(currentAct) : undefined;
+                    const cleanBeat = beatLabel?.replace(/^(Act|Prologue|Epilogue)\s*\d*\s*[—:]\s*/i, '');
+                    const actDisplay = getActDisplayLabel(currentAct);
+                    const actLabel = currentAct !== undefined
+                        ? (cleanBeat ? `${actDisplay} — ${cleanBeat}` : actDisplay)
+                        : 'No Act';
+                    tlItems.push({ kind: 'divider', actLabel, actNum: currentAct });
+                    lastRenderedAct = currentAct;
+                }
+                const globalIdx = sceneIdxMap.get(scene) ?? 0;
+                tlItems.push({
+                    kind: 'scene',
+                    scene,
+                    globalIdx,
+                    dateInvalid: dateInvalidFlags[globalIdx] ?? false,
+                    timeInvalid: timeInvalidFlags[globalIdx] ?? false,
+                });
+            } else if (item.kind === 'event') {
+                tlItems.push({ kind: 'event', event: item.event });
+            }
+        }
+
+        // Add empty-act placeholders
+        for (const actNum of sortedActs) {
+            if (!actsWithScenes.has(Number(actNum))) {
+                const beatLabel = this.sceneManager.getActLabel(actNum);
+                const cleanBeat = beatLabel?.replace(/^(Act|Prologue|Epilogue)\s*\d*\s*[—:]\s*/i, '');
+                const actDisplay = getActDisplayLabel(actNum);
+                const actLabel = cleanBeat ? `${actDisplay} — ${cleanBeat}` : actDisplay;
+                tlItems.push({ kind: 'empty-act', actLabel, actNum });
+            }
+        }
+    }
+
+    /**
+     * Convert a Timestamp to a sortable numeric value.
+     * Uses a simple year/month/day linearization for comparison.
+     * Supports negative years (BC dates) and very large year values.
+     */
+    private timestampToSortable(ts: Timestamp): number {
+        const y = ts.year ?? 0;
+        const m = ts.month ?? 1;
+        const d = ts.day ?? 1;
+        const h = ts.hour ?? 0;
+        const min = ts.minute ?? 0;
+        // Linearize: year * 100000000 + month * 1000000 + day * 10000 + hour * 100 + minute
+        return y * 100000000 + m * 1000000 + d * 10000 + h * 100 + min;
+    }
+
+    /**
+     * Get a TimeSpan for a Scene, normalizing legacy storyDate/storyTime in-memory.
+     * Does NOT modify the Scene's source file.
+     */
+    private getSceneTimeSpan(scene: Scene): TimeSpan | null {
+        // Prefer TimeSpan if available
+        if (scene.timeSpan) return scene.timeSpan;
+        // Fall back to legacy storyDate/storyTime
+        return this.plugin.timeSpanService.convertLegacyToTimeSpan(scene.storyDate, scene.storyTime);
+    }
+
+    /**
+     * Get a sortable Timestamp for a Scene, using TimeSpanService for unified comparison.
+     * Returns null if the Scene has no temporal information.
+     */
+    private getSceneSortTimestamp(scene: Scene): Timestamp | null {
+        const ts = this.getSceneTimeSpan(scene);
+        if (!ts) return null;
+        return this.plugin.timeSpanService.getEarliestPoint(ts);
+    }
+
+    /**
+     * Compare two Timeline items (Scene or Event) by their temporal placement.
+     * Uses TimeSpanService for calendar-aware comparison.
+     * Items without temporal info sort last.
+     */
+    private compareTimelineItems(
+        aTime: Timestamp | null,
+        aCalendar: string | undefined,
+        bTime: Timestamp | null,
+        bCalendar: string | undefined,
+    ): number {
+        // Both null → stable order
+        if (!aTime && !bTime) return 0;
+        // Null sorts last
+        if (!aTime) return 1;
+        if (!bTime) return -1;
+        // Different calendars → cannot compare, sort by calendar name for stability
+        if (aCalendar && bCalendar && aCalendar !== bCalendar) {
+            return aCalendar.localeCompare(bCalendar);
+        }
+        // Same calendar (or both Gregorian) → compare timestamps
+        return this.plugin.timeSpanService.compareTimestamps(aTime, bTime);
+    }
+
+    /**
+     * Parse date-only component into a Timestamp for date validation flags.
+     * Returns null if unavailable. Used only for date-order warning flags.
+     */
+    private parseSceneDateTimestamp(scene: Scene): number | null {
+        try {
+            const datePart = scene.storyDate?.trim();
+            if (datePart) {
+                const parsed = Date.parse(datePart);
+                if (!isNaN(parsed)) return new Date(new Date(parsed).toDateString()).getTime();
+                const dayMatch = datePart.match(/dag\s*(\d+)/i) || (scene.timeline || '').match(/dag\s*(\d+)/i);
+                if (dayMatch) {
+                    const dayNum = parseInt(dayMatch[1], 10);
+                    if (!isNaN(dayNum)) return dayNum * 24 * 60 * 60 * 1000;
+                }
+            }
+        } catch (e) {
+            // ignore
+        }
+        return null;
+    }
+
+    /**
+     * Parse time-only component into milliseconds-since-midnight. Returns null if unavailable.
+     */
+    private parseSceneTimeTimestamp(scene: Scene): number | null {
+        try {
+            let timePart = scene.storyTime?.trim();
+            if (timePart) {
+                // Normalize common separators (accept '11:20' and '11.20')
+                timePart = timePart.replace(/\./g, ':');
+                // Accept HH:MM or HH:MM:SS
+                const m = timePart.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+                if (m) {
+                    const h = parseInt(m[1], 10);
+                    const mm = parseInt(m[2], 10);
+                    const ss = m[3] ? parseInt(m[3], 10) : 0;
+                    if (!isNaN(h) && !isNaN(mm)) {
+                        const val = (h * 3600 + mm * 60 + ss) * 1000;
+                        
+                        return val;
+                    }
+                }
+                // Try parsing as Date on epoch day
+                const parsed = Date.parse('1970-01-01 ' + timePart);
+                if (!isNaN(parsed)) {
+                    
+                    return parsed;
+                }
+            }
+        } catch (e) {
+            // ignore
+        }
+        return null;
+    }
+    /**
+     * Select a scene and show it in the inspector
+     */
+    private selectScene(scene: Scene, event?: MouseEvent): void {
+        const isMultiSelect = event && (event.ctrlKey || event.metaKey);
+
+        if (isMultiSelect) {
+            // Toggle this scene in multi-selection
+            if (this.selectedScenes.has(scene.filePath)) {
+                this.selectedScenes.delete(scene.filePath);
+                const entry = this.rootContainer?.querySelector(`[data-path="${CSS.escape(scene.filePath)}"]`);
+                if (entry) entry.removeClass('selected');
+            } else {
+                this.selectedScenes.add(scene.filePath);
+                const entry = this.rootContainer?.querySelector(`[data-path="${CSS.escape(scene.filePath)}"]`);
+                if (entry) entry.addClass('selected');
+            }
+            this.selectedScene = scene;
+        } else {
+            // Single select — clear multi-selection
+            this.selectedScenes.clear();
+            this.rootContainer?.querySelectorAll('.timeline-entry.selected').forEach(el => {
+                el.removeClass('selected');
+            });
+
+            this.selectedScene = scene;
+            this.selectedScenes.add(scene.filePath);
+
+            // Highlight selected entry
+            const entry = this.rootContainer?.querySelector(`[data-path="${CSS.escape(scene.filePath)}"]`);
+            if (entry) entry.addClass('selected');
+        }
+
+        // Show inspector for last clicked scene
+        if (this.plugin.isSceneInspectorOpen()) {
+            this.inspectorComponent?.hide();
+            this.app.workspace.trigger('storyline:scene-focus', scene.filePath);
+        } else {
+            this.inspectorComponent?.show(scene);
+        }
+    }
+
+    /**
+     * Show context menu for a scene
+     */
+    private showContextMenu(scene: Scene, event: MouseEvent): void {
+        // Issue #237 — ensure the right-clicked scene is part of the
+        // multi-selection so the "Shift dates" action always includes it.
+        // If the user right-clicks a scene that isn't selected, we treat
+        // the right-click as a fresh single selection (mirroring Kanban).
+        if (!this.selectedScenes.has(scene.filePath)) {
+            this.selectScene(scene);
+        }
+
+        const menu = new Menu();
+
+        menu.addItem(item => {
+            item.setTitle('Edit scene')
+                .setIcon('pencil')
+                .onClick(() => this.openScene(scene));
+        });
+
+        menu.addItem(item => {
+            item.setTitle('Edit date/time')
+                .setIcon('clock')
+                .onClick(() => this.openTimeEditModal(scene));
+        });
+
+        // Issue #237 — bulk date/time shift across multiple selected scenes.
+        // Only shown when more than one scene is selected (ctrl/cmd-click).
+        // The right-clicked scene is implicitly included in the selection
+        // if it isn't already, so the action always has a sensible anchor.
+        // In multi-book mode, shift dates is disabled: selected scenes may
+        // belong to different books with different act/chapter structures.
+        if (this.selectedScenes.size > 1 && !this.isMultiBookMode()) {
+            menu.addItem(item => {
+                item.setTitle(`Shift dates (${this.selectedScenes.size} scenes)…`)
+                    .setIcon('calendar-range')
+                    .onClick(() => this.openShiftDatesModal());
+            });
+        }
+
+        // Scene color picker
+        menu.addItem(item => {
+            item.setTitle(scene.color ? 'Change Color' : 'Set Color')
+                .setIcon('palette')
+                .onClick(() => {
+                    SceneCardComponent.openColorPicker(this.app, scene, this.sceneManager, () => this.refresh());
+                });
+        });
+
+        // Duplicate is unsafe in multi-book mode: it uses the active book's
+        // scene folder, which may differ from the scene's owning book.
+        if (!this.isMultiBookMode()) {
+            menu.addItem(item => {
+                item.setTitle('Duplicate scene')
+                    .setIcon('copy')
+                    .onClick(async () => {
+                        await this.sceneManager.duplicateScene(scene.filePath);
+                        this.refresh();
+                    });
+            });
+        }
+
+        menu.addSeparator();
+
+        // Status submenu
+        const statuses = getStatusOrder();
+        statuses.forEach(status => {
+            menu.addItem(item => {
+                item.setTitle(`Status: ${resolveStatusCfg(status).label}`)
+                    .setChecked(scene.status === status)
+                    .onClick(async () => {
+                        await this.sceneManager.updateScene(scene.filePath, { status });
+                        this.refresh();
+                    });
+            });
+        });
+
+        menu.addSeparator();
+
+        menu.addItem(item => {
+            item.setTitle('Delete scene')
+                .setIcon('trash')
+                .onClick(async () => {
+                    openConfirmModal(this.app, {
+                        title: 'Delete Scene',
+                        message: `Delete scene "${scene.title || 'Untitled'}"?`,
+                        confirmLabel: 'Delete',
+                        onConfirm: () => this.deleteScene(scene),
+                    });
+                });
+        });
+
+        menu.showAtMouseEvent(event);
+    }
+
+    /**
+     * Delete a scene
+     */
+    private async deleteScene(scene: Scene): Promise<void> {
+        await this.sceneManager.deleteScene(scene.filePath);
+        if (this.selectedScene?.filePath === scene.filePath) {
+            this.selectedScene = null;
+            this.inspectorComponent?.hide();
+        }
+        this.refresh();
+    }
+
+    /**
+     * Open the Quick Add modal, optionally pre-setting the act
+     */
+    private openQuickAdd(presetAct?: number): void {
+        const modal = new QuickAddModal(
+            this.app,
+            this.plugin,
+            this.sceneManager,
+            async (sceneData, openAfter) => {
+                if (presetAct !== undefined) {
+                    sceneData.act = presetAct;
+                }
+                const file = await this.sceneManager.createScene(sceneData);
+                this.refresh();
+                // Scroll to the newly created scene card. With 100+ scenes
+                // the rebuilt DOM may not be laid out within a single frame,
+                // so retry after a short timeout as well.
+                const scrollToNew = () => {
+                    const newEntry = this.rootContainer?.querySelector(
+                        `[data-path="${CSS.escape(file.path)}"]`
+                    );
+                    if (newEntry) {
+                        newEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                };
+                window.requestAnimationFrame(scrollToNew);
+                window.setTimeout(scrollToNew, 50);
+                if (openAfter) {
+                    await this.app.workspace.getLeaf('tab').openFile(file, { state: { mode: 'source', source: false } });
+                }
+            }
+        );
+        modal.open();
+    }
+
+    /**
+     * Open the structure modal to add/remove acts, chapters, and apply beat sheet templates
+     */
+    private openStructureModal(): void {
+        const modal = new Modal(this.app);
+        modal.titleEl.setText('Manage story structure');
+
+        const { contentEl } = modal;
+
+        // ── Beat Sheet Templates section ──
+        contentEl.createEl('h3', { text: 'Beat sheet templates' });
+        contentEl.createEl('p', {
+            cls: 'setting-item-description',
+            text: 'Apply a template to pre-populate your act/chapter structure with named beats.'
+        });
+
+        const templateGrid = contentEl.createDiv('beat-sheet-list');
+        for (const template of BUILTIN_BEAT_SHEETS) {
+            const row = templateGrid.createDiv('beat-sheet-row');
+
+            const textWrap = row.createDiv('beat-sheet-row-text');
+            const headerLine = textWrap.createDiv('beat-sheet-row-header');
+            headerLine.createSpan({ cls: 'beat-sheet-row-name', text: template.name });
+            const info = headerLine.createSpan({ cls: 'beat-sheet-row-info' });
+            const parts = [`${template.beats.length} beats`, `${template.acts.length} acts`];
+            if (template.chapters.length > 0) parts.push(`${template.chapters.length} chapters`);
+            info.textContent = parts.join(' · ');
+            textWrap.createDiv({ cls: 'beat-sheet-row-summary', text: template.summary });
+
+            // Expandable beat preview
+            const beatList = row.createDiv('beat-sheet-beats-preview');
+            for (const beat of template.beats) {
+                const beatItem = beatList.createDiv('beat-sheet-beat-item');
+                beatItem.createSpan({ cls: 'beat-sheet-beat-act', text: `A${beat.act}` });
+                beatItem.createSpan({ cls: 'beat-sheet-beat-label', text: beat.label });
+                beatItem.createSpan({ cls: 'beat-sheet-beat-desc', text: beat.description });
+            }
+
+            const expandBtn = row.createEl('button', { cls: 'beat-sheet-expand-btn clickable-icon', attr: { 'aria-label': 'Show beats' } });
+            expandBtn.textContent = '▸';
+            expandBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = row.hasClass('is-expanded');
+                // Close all others
+                templateGrid.querySelectorAll('.beat-sheet-row.is-expanded').forEach(r => {
+                    r.removeClass('is-expanded');
+                    (r.querySelector('.beat-sheet-expand-btn') as HTMLElement).textContent = '▸';
+                });
+                if (!isOpen) {
+                    row.addClass('is-expanded');
+                    expandBtn.textContent = '▾';
+                }
+            });
+
+            const applyBtn = row.createEl('button', { text: 'Apply', cls: 'mod-cta beat-sheet-apply-btn' });
+            applyBtn.addEventListener('click', async () => {
+                await this.sceneManager.applyBeatSheet(template);
+                renderActsList();
+                renderChaptersList();
+                new Notice(`Applied "${template.name}" template`);
+            });
+        }
+
+        // ── Acts section ──
+        contentEl.createEl('h3', { text: 'Acts' });
+        contentEl.createEl('p', {
+            cls: 'setting-item-description',
+            text: 'Define acts for your story. Empty acts appear on the timeline even without scenes.'
+        });
+
+        const actsList = contentEl.createDiv('structure-list');
+        const scenesPerAct = new Map<number, number>();
+        for (const scene of this.sceneManager.getAllScenes()) {
+            if (scene.act !== undefined) {
+                const n = Number(scene.act);
+                scenesPerAct.set(n, (scenesPerAct.get(n) || 0) + 1);
+            }
+        }
+
+        const renderActsList = () => {
+            actsList.empty();
+            const acts = this.sceneManager.getDefinedActs();
+            const actLabels = this.sceneManager.getActLabels();
+            const actDescriptions = this.sceneManager.getActDescriptions();
+            if (acts.length === 0) {
+                actsList.createEl('p', { cls: 'structure-empty', text: 'No acts defined yet.' });
+            }
+            for (const act of acts) {
+                const count = scenesPerAct.get(act) || 0;
+                const label = actLabels[act];
+                const desc = actDescriptions[act] || '';
+                const wrapper = actsList.createDiv('structure-item-wrapper');
+                const row = wrapper.createDiv('structure-row');
+                const cleanLabel = label?.replace(/^(Act|Prologue|Epilogue)\s*\d*\s*[—:]\s*/i, '');
+                const actDisplay = getActDisplayLabel(act);
+                const labelText = cleanLabel ? `${actDisplay} — ${cleanLabel}` : actDisplay;
+                row.createSpan({ cls: 'structure-label', text: labelText });
+                row.createSpan({ cls: 'structure-count', text: `${count} scene${count !== 1 ? 's' : ''}` });
+
+                // Edit label button
+                const editBtn = row.createEl('button', {
+                    cls: 'clickable-icon structure-edit',
+                    attr: { 'aria-label': `Edit label for ${actDisplay}` }
+                });
+                editBtn.textContent = '✎';
+                editBtn.addEventListener('click', () => {
+                    const input = row.querySelector('.structure-label-input') as HTMLInputElement;
+                    if (input) { input.focus(); return; }
+                    // Create inline edit on the row, then position with insertBefore.
+                    const labelSpan = row.querySelector('.structure-label') as HTMLElement;
+                    if (!labelSpan) return;
+                    labelSpan.setCssStyles({ display: 'none' });
+                    const editInput = row.createEl('input', { type: 'text', cls: 'structure-label-input' });
+                    editInput.value = label || '';
+                    editInput.placeholder = 'E.g. Setup, confrontation???';
+                    row.insertBefore(editInput, labelSpan.nextSibling);
+                    editInput.focus();
+                    const commitEdit = async () => {
+                        await this.sceneManager.setActLabel(act, editInput.value);
+                        renderActsList();
+                    };
+                    editInput.addEventListener('blur', commitEdit);
+                    editInput.addEventListener('keydown', (e: KeyboardEvent) => {
+                        if (e.key === 'Enter') { e.preventDefault(); editInput.blur(); }
+                        if (e.key === 'Escape') { labelSpan.setCssStyles({ display: '' }); editInput.remove(); }
+                    });
+                });
+
+                const removeBtn = row.createEl('button', {
+                    cls: 'clickable-icon structure-remove',
+                    attr: { 'aria-label': `Remove Act ${act}` }
+                });
+                removeBtn.textContent = '×';
+                removeBtn.addEventListener('click', async () => {
+                    await this.sceneManager.removeAct(act);
+                    renderActsList();
+                });
+
+                // Description textarea
+                const descArea = wrapper.createEl('textarea', {
+                    cls: 'structure-description',
+                    attr: { placeholder: 'Description / notes for this act…', rows: '2' }
+                });
+                descArea.value = desc;
+                let descCommitTimer: number | null = null;
+                descArea.addEventListener('input', () => {
+                    // Auto-grow
+                    descArea.setCssStyles({ height: "auto" });
+
+                    descArea.setCssStyles({ height: descArea.scrollHeight + 'px' });
+                    // Debounced save
+                    if (descCommitTimer) window.clearTimeout(descCommitTimer);
+                    descCommitTimer = window.setTimeout(async () => {
+                        await this.sceneManager.setActDescription(act, descArea.value);
+                    }, 600);
+                });
+                // Initial auto-grow
+                window.setTimeout(() => {
+                    descArea.setCssStyles({ height: "auto" });
+
+                    descArea.setCssStyles({ height: descArea.scrollHeight + 'px' });
+                }, 0);
+            }
+        };
+        renderActsList();
+
+        const addActRow = contentEl.createDiv('structure-add-row');
+        new Setting(addActRow)
+            .setName('Add acts')
+            .setDesc('Enter act numbers (e.g. "1,2,3,4,5")')
+            .addText(text => {
+                text.setPlaceholder('1,2,3,4,5');
+                text.inputEl.addClass('structure-input');
+            })
+            .addButton(btn => {
+                btn.setButtonText('Add').setCta().onClick(async () => {
+                    const input = addActRow.querySelector('.structure-input') as HTMLInputElement;
+                    if (!input?.value) return;
+                    const nums = input.value.split(',')
+                        .map(s => parseInt(s.trim()))
+                        .filter(n => !isNaN(n) && n > 0);
+                    if (nums.length === 0) {
+                        new Notice('Enter valid act numbers (e.g. 1,2,3)');
+                        return;
+                    }
+                    await this.sceneManager.addActs(nums);
+                    input.value = '';
+                    renderActsList();
+                    new Notice(`Added ${nums.length} act(s)`);
+                });
+            });
+
+        // ── Chapters section ──
+        contentEl.createEl('h3', { text: 'Chapters' });
+        contentEl.createEl('p', {
+            cls: 'setting-item-description',
+            text: 'Define chapters. Empty chapters appear when grouping by chapter.'
+        });
+
+        const chaptersList = contentEl.createDiv('structure-list');
+
+        const renderChaptersList = () => {
+            chaptersList.empty();
+            // Recompute the scene-per-chapter counts each render so they
+            // stay accurate after `removeChapter()` shifts scenes down.
+            const scenesPerChapter = new Map<number, number>();
+            for (const scene of this.sceneManager.getAllScenes()) {
+                if (scene.chapter !== undefined) {
+                    const n = Number(scene.chapter);
+                    scenesPerChapter.set(n, (scenesPerChapter.get(n) || 0) + 1);
+                }
+            }
+            const chapters = this.sceneManager.getDefinedChapters();
+            const chapterLabels = this.sceneManager.getChapterLabels();
+            const chapterDescriptions = this.sceneManager.getChapterDescriptions();
+            if (chapters.length === 0) {
+                chaptersList.createEl('p', { cls: 'structure-empty', text: 'No chapters defined yet.' });
+            }
+            for (const ch of chapters) {
+                const count = scenesPerChapter.get(ch) || 0;
+                const label = chapterLabels[ch];
+                const desc = chapterDescriptions[ch] || '';
+                const wrapper = chaptersList.createDiv('structure-item-wrapper');
+                const row = wrapper.createDiv('structure-row');
+                const labelText = label ? `Chapter ${ch} — ${label}` : `Chapter ${ch}`;
+                row.createSpan({ cls: 'structure-label', text: labelText });
+                row.createSpan({ cls: 'structure-count', text: `${count} scene${count !== 1 ? 's' : ''}` });
+
+                // Edit label button
+                const editBtn = row.createEl('button', {
+                    cls: 'clickable-icon structure-edit',
+                    attr: { 'aria-label': `Edit label for Chapter ${ch}` }
+                });
+                editBtn.textContent = '✎';
+                editBtn.addEventListener('click', () => {
+                    const input = row.querySelector('.structure-label-input') as HTMLInputElement;
+                    if (input) { input.focus(); return; }
+                    const labelSpan = row.querySelector('.structure-label') as HTMLElement;
+                    if (!labelSpan) return;
+                    labelSpan.setCssStyles({ display: 'none' });
+                    const editInput = row.createEl('input', { type: 'text', cls: 'structure-label-input' });
+                    editInput.value = label || '';
+                    editInput.placeholder = 'E.g. The journey begins???';
+                    row.insertBefore(editInput, labelSpan.nextSibling);
+                    editInput.focus();
+                    const commitEdit = async () => {
+                        await this.sceneManager.setChapterLabel(ch, editInput.value);
+                        renderChaptersList();
+                    };
+                    editInput.addEventListener('blur', commitEdit);
+                    editInput.addEventListener('keydown', (e: KeyboardEvent) => {
+                        if (e.key === 'Enter') { e.preventDefault(); editInput.blur(); }
+                        if (e.key === 'Escape') { labelSpan.setCssStyles({ display: '' }); editInput.remove(); }
+                    });
+                });
+
+                const removeBtn = row.createEl('button', {
+                    cls: 'clickable-icon structure-remove',
+                    attr: { 'aria-label': `Remove Chapter ${ch}` }
+                });
+                removeBtn.textContent = '×';
+                removeBtn.addEventListener('click', async () => {
+                    await this.sceneManager.removeChapter(ch);
+                    await this.sceneManager.initialize();
+                    renderChaptersList();
+                });
+
+                // Description textarea
+                const descArea = wrapper.createEl('textarea', {
+                    cls: 'structure-description',
+                    attr: { placeholder: 'Description / notes for this chapter…', rows: '2' }
+                });
+                descArea.value = desc;
+                let descCommitTimer: number | null = null;
+                descArea.addEventListener('input', () => {
+                    descArea.setCssStyles({ height: "auto" });
+
+                    descArea.setCssStyles({ height: descArea.scrollHeight + 'px' });
+                    if (descCommitTimer) window.clearTimeout(descCommitTimer);
+                    descCommitTimer = window.setTimeout(async () => {
+                        await this.sceneManager.setChapterDescription(ch, descArea.value);
+                    }, 600);
+                });
+                window.setTimeout(() => {
+                    descArea.setCssStyles({ height: "auto" });
+
+                    descArea.setCssStyles({ height: descArea.scrollHeight + 'px' });
+                }, 0);
+            }
+        };
+        renderChaptersList();
+
+        const addChapterRow = contentEl.createDiv('structure-add-row');
+        let createScenesForChapters = false;
+        new Setting(addChapterRow)
+            .setName('Add chapters')
+            .setDesc('Enter chapter numbers (e.g. "1-10" or "1,2,3")')
+            .addText(text => {
+                text.setPlaceholder('1-10');
+                text.inputEl.addClass('structure-input');
+            })
+            .addButton(btn => {
+                btn.setButtonText('Add').setCta().onClick(async () => {
+                    const input = addChapterRow.querySelector('.structure-input') as HTMLInputElement;
+                    if (!input?.value) return;
+                    let nums: number[] = [];
+                    const val = input.value.trim();
+                    const rangeMatch = val.match(/^(\d+)\s*-\s*(\d+)$/);
+                    if (rangeMatch) {
+                        const start = parseInt(rangeMatch[1]);
+                        const end = parseInt(rangeMatch[2]);
+                        for (let i = start; i <= end; i++) nums.push(i);
+                    } else {
+                        nums = val.split(',')
+                            .map(s => parseInt(s.trim()))
+                            .filter(n => !isNaN(n) && n > 0);
+                    }
+                    if (nums.length === 0) {
+                        new Notice('Enter valid chapter numbers (e.g. 1-10 or 1,2,3)');
+                        return;
+                    }
+                    await this.sceneManager.addChapters(nums);
+
+                    // Optionally create one empty scene per chapter
+                    if (createScenesForChapters) {
+                        const chapterLabels = this.sceneManager.getChapterLabels();
+                        for (const ch of nums) {
+                            const label = chapterLabels[ch];
+                            const title = label ? `Chapter ${ch} — ${label}` : `Chapter ${ch}`;
+                            await this.sceneManager.createScene({
+                                title,
+                                chapter: ch,
+                                sequence: ch,
+                                status: 'idea' as SceneStatus,
+                            });
+                        }
+                    }
+
+                    input.value = '';
+                    renderChaptersList();
+                    const msg = createScenesForChapters
+                        ? `Added ${nums.length} chapter(s) with empty scenes — visible in all views.`
+                        : `Added ${nums.length} chapter(s). Switch to Board view → Kanban → Group by Chapter to see them.`;
+                    new Notice(msg);
+                });
+            });
+
+        new Setting(addChapterRow)
+            .setName('Create an empty scene per chapter')
+            .setDesc('Makes new chapters immediately visible in all views.')
+            .addToggle(toggle => {
+                toggle.setValue(false);
+                toggle.onChange(v => { createScenesForChapters = v; });
+            });
+
+        // Close button
+        const closeRow = contentEl.createDiv('structure-close-row');
+        const closeBtn = closeRow.createEl('button', { text: 'Done', cls: 'mod-cta' });
+        closeBtn.addEventListener('click', () => {
+            modal.close();
+            this.refresh();
+        });
+
+        modal.open();
+    }
+
+    /**
+     * Modal to edit storyDate, storyTime, timeline, and chronological order for a scene
+     */
+    private openTimeEditModal(scene: Scene): void {
+        const modal = new Modal(this.app);
+        modal.titleEl.setText(`Time & Order — ${scene.title || 'Untitled'}`);
+
+        let storyDate = scene.storyDate || '';
+        let storyTime = scene.storyTime || '';
+        let timeline = scene.timeline || '';
+        let chronoOrder = scene.chronologicalOrder !== undefined ? String(scene.chronologicalOrder) : '';
+        let timelineMode: TimelineMode = scene.timeline_mode || 'linear';
+        let timelineStrand = scene.timeline_strand || '';
+
+        // Date field (free text: "2026-02-17", "Day 1", "Monday", etc.)
+        new Setting(modal.contentEl)
+            .setName('Date / day')
+            .setDesc('E.g. 2026-02-17, day 1, monday, chapter 3???')
+            .addText((text: TextComponent) => {
+                text.setValue(storyDate)
+                    .setPlaceholder('E.g. Day 1')
+                    .onChange((v: string) => (storyDate = v));
+            });
+
+        // Time field
+        new Setting(modal.contentEl)
+            .setName('Time')
+            .setDesc('E.g. 14:00, morning, evening, night…')
+            .addText((text: TextComponent) => {
+                text.setValue(storyTime)
+                    .setPlaceholder('E.g. Evening')
+                    .onChange((v: string) => (storyTime = v));
+            });
+
+        // Legacy timeline field
+        new Setting(modal.contentEl)
+            .setName('Timeline note')
+            .setDesc('Free-form note about when this happens in the story')
+            .addText((text: TextComponent) => {
+                text.setValue(timeline)
+                    .setPlaceholder('E.g. After the party')
+                    .onChange((v: string) => (timeline = v));
+            });
+
+        // Chronological order field
+        new Setting(modal.contentEl)
+            .setName('Chronological order')
+            .setDesc('The order this event happens in story time (for non-linear narratives)')
+            .addText((text: TextComponent) => {
+                text.setValue(chronoOrder)
+                    .setPlaceholder('E.g. 5')
+                    .onChange((v: string) => (chronoOrder = v));
+                text.inputEl.type = 'number';
+                text.inputEl.min = '1';
+            });
+
+        // ── Timeline Mode dropdown ──
+        const modeSection = modal.contentEl.createDiv('time-edit-mode-section');
+        new Setting(modeSection)
+            .setName('Timeline mode')
+            .setDesc('How the plugin handles this scene\'s temporal position')
+            .addDropdown((dd: DropdownComponent) => {
+                for (const m of TIMELINE_MODES) {
+                    dd.addOption(m, TIMELINE_MODE_LABELS[m]);
+                }
+                dd.setValue(timelineMode);
+                dd.onChange((v: string) => {
+                    timelineMode = v as TimelineMode;
+                    // Show/hide strand field based on mode
+                    strandSetting.settingEl.setCssStyles({ display: (v === 'parallel' || v === 'frame') ? '' : 'none' });
+                });
+            });
+
+        // ── Timeline Strand field (only for parallel/frame) ──
+        const strandSetting = new Setting(modeSection)
+            .setName('Timeline strand')
+            .setDesc('Name for this timeline strand (e.g. "1943", "outer frame", "sarah\'s past")')
+            .addText((text: TextComponent) => {
+                text.setValue(timelineStrand)
+                    .setPlaceholder('E.g. 1943')
+                    .onChange((v: string) => (timelineStrand = v));
+            });
+        // Only show strand field for parallel/frame modes
+        strandSetting.settingEl.setCssStyles({ display: (timelineMode === 'parallel' || timelineMode === 'frame') ? '' : 'none' });
+
+        new Setting(modal.contentEl)
+            .addButton((btn: ButtonComponent) => {
+                btn.setButtonText('Save').setCta().onClick(async () => {
+                    const updates: Partial<Scene> = {};
+                    updates.storyDate = storyDate.trim() || undefined;
+                    updates.storyTime = storyTime.trim() || undefined;
+                    updates.timeline = timeline.trim() || undefined;
+                    const chronoNum = parseInt(chronoOrder.trim(), 10);
+                    updates.chronologicalOrder = !isNaN(chronoNum) && chronoNum > 0 ? chronoNum : undefined;
+                    updates.timeline_mode = timelineMode !== 'linear' ? timelineMode : undefined;
+                    updates.timeline_strand = timelineStrand.trim() || undefined;
+                    await this.sceneManager.updateScene(scene.filePath, updates);
+                    this.refresh();
+                    modal.close();
+                });
+            });
+
+        modal.open();
+    }
+
+    /**
+     * Issue #237 — Open the bulk date/time shift modal for the currently
+     * selected scenes. Resolves each selected file path to its latest
+     * Scene snapshot (so we don't shift stale values) and filters out
+     * any that no longer exist.
+     */
+    private openShiftDatesModal(): void {
+        const scenes: Scene[] = [];
+        for (const fp of this.selectedScenes) {
+            const scene = this.sceneManager.getScene(fp);
+            if (scene) scenes.push(scene);
+        }
+        if (scenes.length < 2) {
+            new Notice('Select at least two scenes (ctrl/cmd-click) to shift dates.');
+            return;
+        }
+        const modal = new ShiftDatesModal(this.app, this.sceneManager, scenes);
+        modal.onClose = () => {
+            this.refresh();
+        };
+        modal.open();
+    }
+
+    private async openScene(scene: Scene): Promise<void> {
+        const file = this.app.vault.getAbstractFileByPath(scene.filePath);
+        if (file instanceof TFile) {
+            // #224 — Reuse an existing tab that already shows this file instead of opening a duplicate.
+            const existing = this.app.workspace.getLeavesOfType('markdown')
+                .find(leaf => leaf.getViewState()?.state?.file === scene.filePath);
+            if (existing) {
+                this.app.workspace.setActiveLeaf(existing, { focus: true });
+                return;
+            }
+            const leaf = this.app.workspace.getLeaf('tab');
+            await leaf.openFile(file, { state: { mode: 'source', source: false } });
+        } else {
+            new Notice(`Could not find file: ${scene.filePath}`);
+        }
+    }
+
+    private refreshTimeline(container: HTMLElement): void {
+        this.renderView(container);
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Multi-book timeline
+    // ────────────────────────────────────────────────────────────
+
+    /**
+     * Check if we are in multi-book mode (at least one book explicitly selected).
+     */
+    private isMultiBookMode(): boolean {
+        return this.selectedBookIds.size > 0;
+    }
+
+    /**
+     * Render the compact book selector button in the toolbar.
+     * Uses a popover dropdown instead of inline toolbar sprawl.
+     */
+    private renderBookSelector(controls: HTMLElement): void {
+        const allProjects = this.sceneManager.getProjects();
+        if (allProjects.length <= 1) return;
+
+        const wrapper = controls.createDiv('story-line-book-selector');
+
+        // Compact button that opens a popover
+        const btn = wrapper.createEl('button', {
+            cls: 'story-line-book-selector-btn',
+            attr: { 'aria-haspopup': 'true', 'aria-expanded': 'false' }
+        });
+        this.bookSelectorButton = btn;
+        this.updateBookSelectorButton(btn);
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleBookSelectorPopover(btn);
+        });
+
+    }
+
+    /**
+     * Update the book selector button text to show selection count.
+     */
+    private updateBookSelectorButton(btn: HTMLElement): void {
+        if (this.selectedBookIds.size === 0) {
+            btn.textContent = '📚 Active Book';
+        } else {
+            btn.textContent = `📚 ${this.selectedBookIds.size} book${this.selectedBookIds.size > 1 ? 's' : ''}`;
+        }
+    }
+
+    /**
+     * Toggle the book selector popover dropdown.
+     */
+    private toggleBookSelectorPopover(btn: HTMLElement): void {
+        if (this.bookSelectorPopover) {
+            this.closeBookSelectorPopover();
+            return;
+        }
+
+        // Create popover
+        const popover = document.createElement('div');
+        popover.className = 'story-line-book-selector-popover';
+        popover.style.position = 'absolute';
+        popover.style.zIndex = '1000';
+
+        // Position below the button
+        const rect = btn.getBoundingClientRect();
+        popover.style.top = `${rect.bottom + 4}px`;
+        popover.style.left = `${rect.left}px`;
+        popover.style.minWidth = '250px';
+        popover.style.maxHeight = '400px';
+        popover.style.overflowY = 'auto';
+
+        // "Active Book only" reset button
+        const resetBtn = popover.createEl('button', {
+            cls: 'story-line-book-active-only',
+            text: 'Active Book only'
+        });
+        resetBtn.style.width = '100%';
+        resetBtn.style.marginBottom = '8px';
+        resetBtn.addEventListener('click', () => {
+            this.selectedBookIds.clear();
+            this.updateBookSelectorButton(this.bookSelectorButton!);
+            this.closeBookSelectorPopover();
+            this.refresh();
+        });
+
+        // Build hierarchy tree
+        this.populateBookSelectorPopover(popover);
+        document.body.appendChild(popover);
+        this.bookSelectorPopover = popover;
+        btn.setAttribute('aria-expanded', 'true');
+    }
+
+    /**
+     * Close the book selector popover.
+     */
+    private closeBookSelectorPopover(): void {
+        if (this.bookSelectorPopover) {
+            this.bookSelectorPopover.remove();
+            this.bookSelectorPopover = null;
+        }
+        if (this.bookSelectorButton) {
+            this.bookSelectorButton.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    /**
+     * Populate the popover with hierarchy-grouped book checkboxes.
+     * Filters to only show books in the active project's Universe.
+     * Pre-selects the active book by default.
+     */
+    private populateBookSelectorPopover(popover: HTMLElement): void {
+        const activeProject = this.sceneManager.activeProject;
+        const activeBookId = activeProject?.bookId;
+        if (!activeBookId) return;
+
+        // An empty selection means "active Book only"; the checkbox is
+        // visually selected without changing the saved Timeline mode.
+        // Materialize the active ID only when the user adds another Book.
+        // Filter and populate async (universe resolution is async)
+        this.populateBookSelectorPopoverAsync(popover, this.sceneManager.getProjects(), activeBookId);
+    }
+
+    /**
+     * Resolve the universe ID for a project, checking both direct universeId
+     * and the series' universe membership.
+     */
+    private resolveProjectUniverseId(project: StoryLineProject): string | null {
+        if (project.universeId) return project.universeId;
+        // Check if the series belongs to a universe (sync fallback using cached series)
+        if (project.seriesUuid) {
+            // Use the series manager's cached series list if available
+            const allSeries = this.plugin.seriesManager.discoverSeries();
+            // Since discoverSeries is async, we can't await here in a sync context.
+            // Fall back to checking if the project has a direct universeId.
+            // The async version in populateBookSelectorPopoverAsync handles this properly.
+        }
+        return null;
+    }
+
+    /**
+     * Async version that also checks series membership for universe resolution.
+     */
+    private async resolveProjectUniverseIdAsync(project: StoryLineProject): Promise<string | null> {
+        if (project.universeId) return project.universeId;
+        if (project.seriesUuid) {
+            try {
+                const seriesMeta = await this.plugin.seriesManager.getSeriesByUuid(project.seriesUuid);
+                if (seriesMeta?.meta?.universeId) return seriesMeta.meta.universeId;
+            } catch { /* no universe */ }
+        }
+        return null;
+    }
+
+    /**
+     * Resolve the active project's universe ID.
+     */
+    private resolveActiveUniverseId(project: StoryLineProject): string | null {
+        return this.resolveProjectUniverseId(project);
+    }
+
+    /**
+     * Async version that resolves universe/series names and filters by active universe.
+     */
+    private async populateBookSelectorPopoverAsync(popover: HTMLElement, allProjects: StoryLineProject[], activeBookId: string | undefined): Promise<void> {
+        const activeProject = this.sceneManager.activeProject;
+        if (!activeProject) return;
+
+        // Resolve the active project's universe ID (async, checks series membership)
+        const activeUniverseId = await this.resolveProjectUniverseIdAsync(activeProject);
+
+        // Filter projects to only those in the same universe (or standalone if no universe)
+        const filteredProjects: StoryLineProject[] = [];
+        const resolvedUniverseIds = new Map<string, string | null>();
+        for (const project of allProjects) {
+            const projectUniverseId = await this.resolveProjectUniverseIdAsync(project);
+            resolvedUniverseIds.set(project.filePath, projectUniverseId);
+            if (activeUniverseId && projectUniverseId === activeUniverseId) {
+                filteredProjects.push(project);
+            } else if (!activeUniverseId && !projectUniverseId) {
+                filteredProjects.push(project);
+            }
+        }
+
+        // Build hierarchy: Universe → Series → Books
+        const universeMap = new Map<string, { name: string; series: Map<string, { name: string; books: StoryLineProject[] }> }>();
+        const standaloneSeries = new Map<string, { name: string; books: StoryLineProject[] }>();
+        const standaloneBooks: StoryLineProject[] = [];
+
+        // Resolve universe names
+        const universeNames = new Map<string, string>();
+        try {
+            const universes = await this.plugin.universeManager.getAllUniverses();
+            for (const u of universes) {
+                universeNames.set(u.id, u.name);
+            }
+        } catch { /* fallback to UUID */ }
+
+        // Resolve series names
+        const seriesNames = new Map<string, string>();
+        try {
+            const seriesList = await this.plugin.seriesManager.discoverSeries();
+            for (const { meta } of seriesList) {
+                if (meta.seriesUuid) seriesNames.set(meta.seriesUuid, meta.name);
+            }
+        } catch { /* fallback to UUID */ }
+
+        for (const project of filteredProjects) {
+            // Series membership can supply the Universe even when a Book's
+            // own frontmatter has no direct universeId.
+            const uniId = resolvedUniverseIds.get(project.filePath) ?? null;
+            const serUuid = project.seriesUuid;
+
+            if (uniId) {
+                let uni = universeMap.get(uniId);
+                if (!uni) {
+                    uni = { name: universeNames.get(uniId) || uniId, series: new Map() };
+                    universeMap.set(uniId, uni);
+                }
+                if (serUuid) {
+                    let ser = uni.series.get(serUuid);
+                    if (!ser) {
+                        ser = { name: seriesNames.get(serUuid) || serUuid, books: [] };
+                        uni.series.set(serUuid, ser);
+                    }
+                    ser.books.push(project);
+                } else {
+                    // Direct universe book
+                    let ser = uni.series.get('__direct__');
+                    if (!ser) {
+                        ser = { name: '(Direct)', books: [] };
+                        uni.series.set('__direct__', ser);
+                    }
+                    ser.books.push(project);
+                }
+            } else if (serUuid) {
+                let ser = standaloneSeries.get(serUuid);
+                if (!ser) {
+                    ser = { name: seriesNames.get(serUuid) || serUuid, books: [] };
+                    standaloneSeries.set(serUuid, ser);
+                }
+                ser.books.push(project);
+            } else {
+                standaloneBooks.push(project);
+            }
+        }
+
+        // A refresh/close can remove this body-level popover while names load.
+        // Never resurrect or repopulate a stale detached popover.
+        if (this.bookSelectorPopover !== popover || !popover.isConnected) return;
+
+        // Clear loading state
+        popover.empty();
+
+        // "Active Book only" reset button
+        const resetBtn = popover.createEl('button', {
+            cls: 'story-line-book-active-only',
+            text: 'Active Book only'
+        });
+        resetBtn.style.width = '100%';
+        resetBtn.style.marginBottom = '8px';
+        resetBtn.addEventListener('click', () => {
+            this.selectedBookIds.clear();
+            this.updateBookSelectorButton(this.bookSelectorButton!);
+            this.closeBookSelectorPopover();
+            this.refresh();
+        });
+
+        const renderBooks = (books: StoryLineProject[]) => {
+            for (const book of books) {
+                this.renderBookCheckboxInPopover(popover, book, activeBookId);
+            }
+        };
+
+        // Render universes
+        for (const [, uni] of universeMap) {
+            const uniHeader = popover.createDiv({ cls: 'story-line-book-universe', text: uni.name });
+            for (const [, ser] of uni.series) {
+                if (ser.name !== '(Direct)') {
+                    const serHeader = popover.createDiv({ cls: 'story-line-book-series', text: ser.name });
+                }
+                renderBooks(ser.books);
+            }
+        }
+
+        // Standalone series
+        for (const [, ser] of standaloneSeries) {
+            const serHeader = popover.createDiv({ cls: 'story-line-book-series', text: ser.name });
+            renderBooks(ser.books);
+        }
+
+        // Standalone books
+        if (standaloneBooks.length > 0) {
+            const label = popover.createDiv({ cls: 'story-line-book-group', text: 'Standalone' });
+            renderBooks(standaloneBooks);
+        }
+    }
+
+    /**
+     * Render a single book checkbox inside the popover.
+     */
+    private renderBookCheckboxInPopover(container: HTMLElement, project: StoryLineProject, activeBookId?: string | null): void {
+        const row = container.createDiv('story-line-book-row');
+        const isActive = project.bookId === activeBookId;
+        const isSelected = this.selectedBookIds.size === 0
+            ? isActive
+            : this.selectedBookIds.has(project.bookId!);
+
+        const checkbox = row.createEl('input', { type: 'checkbox' });
+        checkbox.checked = isSelected;
+        checkbox.addEventListener('change', () => {
+            // The implicit active-only selection is initially represented by
+            // an empty Set. Materialize it before modifying the selection.
+            if (this.selectedBookIds.size === 0 && activeBookId) {
+                this.selectedBookIds.add(activeBookId);
+            }
+            if (checkbox.checked) {
+                this.selectedBookIds.add(project.bookId!);
+            } else {
+                // Prevent deselecting the last selected Book.
+                if (this.selectedBookIds.size <= 1 && this.selectedBookIds.has(project.bookId!)) {
+                    checkbox.checked = true;
+                    new Notice('At least one book must be selected. Use "Active Book only" to reset.');
+                    return;
+                }
+                this.selectedBookIds.delete(project.bookId!);
+            }
+            this.updateBookSelectorButton(this.bookSelectorButton!);
+            this.refresh();
+        });
+
+        const label = row.createSpan({
+            cls: 'story-line-book-label',
+            text: project.title || 'Untitled'
+        });
+        if (isActive) {
+            label.addClass('is-active');
+        }
+    }
+
+    /**
+     * Get all scenes for the currently selected books.
+     * If no books are selected, returns the active project's scenes.
+     * 
+     * Fix: Does NOT force-include active book — respects user selection.
+     * The active book is pre-selected in populateBookSelectorPopover, so
+     * selectedBookIds will contain at least the active book by default.
+     */
+    private async getTimelineScenes(): Promise<Scene[]> {
+        const activeProject = this.sceneManager.activeProject;
+        if (!activeProject) return [];
+
+        // Single-book mode: no explicit selection, use cached scenes
+        if (this.selectedBookIds.size === 0) {
+            return this.sceneManager.queryService.getFilteredScenes(
+                undefined,
+                { field: this.timelineOrder === 'chronological' ? 'chronologicalOrder' : 'chapter', direction: 'asc' }
+            ).filter(s => !this.isNoteScene(s));
+        }
+
+        // Multi-book mode: load scenes ONLY for explicitly selected books
+        const bookIds = Array.from(this.selectedBookIds);
+        const scenesMap = await this.sceneManager.loadScenesForBooks(bookIds);
+        const allScenes: Scene[] = [];
+        for (const scenes of scenesMap.values()) {
+            allScenes.push(...scenes.filter(s => !this.isNoteScene(s)));
+        }
+
+        // Sort by the appropriate field
+        if (this.timelineOrder === 'chronological') {
+            // Will be sorted by buildChronologicalTimelineItems
+            return allScenes;
+        } else {
+            // Reading order — sort by chapter, then sequence
+            allScenes.sort((a, b) => {
+                const aCh = (typeof a.chapter === 'number') ? a.chapter : ((typeof a.chapter === 'string') ? parseInt(a.chapter, 10) || 0 : 0);
+                const bCh = (typeof b.chapter === 'number') ? b.chapter : ((typeof b.chapter === 'string') ? parseInt(b.chapter, 10) || 0 : 0);
+                if (aCh !== bCh) return aCh - bCh;
+                return (a.sequence ?? 0) - (b.sequence ?? 0);
+            });
+            return allScenes;
+        }
+    }
+
+    /**
+     * Get all canonical events for the shared universe of selected books.
+     * Uses universe-wide event discovery to include sibling book/series events.
+     * Deduplicates by event ID.
+     * 
+     * Fix: Loads ALL events in the universe, not just active book's inherited events.
+     */
+    private async getTimelineEvents(): Promise<Event[]> {
+        const activeProject = this.sceneManager.activeProject;
+        if (!activeProject) return [];
+
+        // Determine the universe ID for the active project
+        let universeId: string | null = null;
+        if (activeProject.universeId) {
+            universeId = activeProject.universeId;
+        } else if (activeProject.seriesUuid) {
+            try {
+                const uniForSeries = await this.plugin.universeManager.getUniverseForSeries(activeProject.seriesUuid);
+                universeId = uniForSeries;
+            } catch { /* no universe */ }
+        }
+
+        // If the project belongs to a universe, load ALL universe events
+        if (universeId) {
+            try {
+                const allFolders = await this.plugin.universeManager.getAllUniverseEventFolders(universeId);
+                if (allFolders.length > 0) {
+                    return await this.plugin.eventManager.loadEventsFromFolders(allFolders);
+                }
+            } catch { /* fallback to cached events */ }
+        }
+
+        // Fallback: use cached events (for standalone books or errors)
+        return this.plugin.eventManager.getAllEvents();
+    }
+
+    /**
+     * Get the book title for a scene's originating book.
+     */
+    private getSceneBookProject(scene: Scene): StoryLineProject | null {
+        // Book identity comes from a boundary-aware source path, never from
+        // a Scene path passed to getProjectById() (which expects a Book UUID).
+        for (const project of this.sceneManager.getProjects()) {
+            const sceneFolder = deriveProjectFoldersFromFilePath(project.filePath).sceneFolder;
+            if (scene.filePath.startsWith(`${sceneFolder}/`)) {
+                return project;
+            }
+        }
+        return null;
+    }
+
+    private getSceneBookTitle(scene: Scene): string | null {
+        return this.getSceneBookProject(scene)?.title ?? null;
+    }
+
+    // ── Filters ──
+
+    /**
+     * Build the filter context from current state.
+     */
+    private buildFilterContext(): import('../services/TimelineFilterService').TimelineContext {
+        const activeProject = this.sceneManager.activeProject;
+        const activeBookId = activeProject?.bookId ?? '';
+        const universeId = activeProject?.universeId ?? null;
+        const seriesId = activeProject?.seriesUuid ?? null;
+        return {
+            activeBookId,
+            selectedBookIds: this.selectedBookIds,
+            universeId,
+            seriesId,
+            projects: this.sceneManager.getProjects(),
+        };
+    }
+
+    /**
+     * Open the filter menu.
+     */
+    // eslint-disable-next-line max-lines-per-function -- filter menu needs multiple menu items
+    private async openFilterMenu(_button: HTMLElement, event: MouseEvent): Promise<void> {
+        const menu = new Menu();
+
+        // Entity type filter
+        menu.addItem(item =>
+            item
+                .setTitle('Show: Both scenes and events')
+                .setIcon('layers')
+                .setDisabled(this.filterConfig.entityType === 'both' || !this.filterConfig.entityType)
+                .onClick(() => {
+                    this.filterConfig.entityType = 'both';
+                    this.refresh();
+                })
+        );
+        menu.addItem(item =>
+            item
+                .setTitle('Show: Scenes only')
+                .setIcon('file')
+                .setDisabled(this.filterConfig.entityType === 'scenes')
+                .onClick(() => {
+                    this.filterConfig.entityType = 'scenes';
+                    this.refresh();
+                })
+        );
+        menu.addItem(item =>
+            item
+                .setTitle('Show: Events only')
+                .setIcon('calendar')
+                .setDisabled(this.filterConfig.entityType === 'events')
+                .onClick(() => {
+                    this.filterConfig.entityType = 'events';
+                    this.refresh();
+                })
+        );
+
+        menu.addSeparator();
+
+        // Tag filter
+        menu.addItem(item =>
+            item
+                .setTitle('Filter by tags…')
+                .setIcon('tag')
+                .onClick(() => this.openTagFilterModal())
+        );
+
+        // Time range filter
+        menu.addItem(item =>
+            item
+                .setTitle('Filter by time range…')
+                .setIcon('calendar')
+                .onClick(() => this.openTimeRangeFilterModal())
+        );
+
+        menu.addSeparator();
+
+        // Clear all filters
+        menu.addItem(item =>
+            item
+                .setTitle('Clear all filters')
+                .setIcon('x')
+                .setDisabled(!this.filterService.isFilterActive(this.filterConfig))
+                .onClick(() => {
+                    this.filterConfig = {};
+                    this.refresh();
+                })
+        );
+
+        menu.showAtMouseEvent(event);
+    }
+
+    /**
+     * Open modal to select tags for filtering.
+     */
+    private openTagFilterModal(): void {
+        const modal = new Modal(this.plugin.app);
+        modal.titleEl.setText('Filter by tags');
+
+        // Collect available tags from current scenes and events
+        const allProjects = this.sceneManager.getProjects();
+        const allScenes = this.sceneManager.queryService.getFilteredScenes();
+        const allEvents = this.plugin.eventManager.getAllEvents();
+        const availableTags = this.filterService.collectAvailableTags(allScenes, allEvents);
+
+        if (availableTags.length === 0) {
+            modal.contentEl.createEl('p', { text: 'No tags found in your scenes or events.' });
+        } else {
+            const selectedTags = new Set(this.filterConfig.tags ?? []);
+            for (const tag of availableTags) {
+                const cb = new Setting(modal.contentEl.createDiv())
+                    .addToggle(toggle =>
+                        toggle
+                            .setValue(selectedTags.has(tag))
+                            .onChange(async (value) => {
+                                if (value) {
+                                    selectedTags.add(tag);
+                                } else {
+                                    selectedTags.delete(tag);
+                                }
+                                this.filterConfig.tags = Array.from(selectedTags);
+                                this.refresh();
+                            })
+                    )
+                    .setName(tag);
+            }
+        }
+
+        modal.onOpen = () => {
+            // Focus first input if any
+        };
+        modal.open();
+    }
+
+    /**
+     * Open modal to set time range filter.
+     */
+    // eslint-disable-next-line max-lines-per-function -- time range modal needs inputs and validation
+    private openTimeRangeFilterModal(): void {
+        const modal = new Modal(this.plugin.app);
+        modal.titleEl.setText('Filter by time range');
+
+        const startInput = new TextComponent(modal.contentEl.createDiv());
+        startInput.setPlaceholder('Start date (e.g. 2024-01-01)');
+        startInput.inputEl.value = this.filterConfig.timeRange?.start ? this.formatTimeSpanForInput(this.filterConfig.timeRange.start) : '';
+
+        const endInput = new TextComponent(modal.contentEl.createDiv());
+        endInput.setPlaceholder('End date (e.g. 2024-12-31)');
+        endInput.inputEl.value = this.filterConfig.timeRange?.end ? this.formatTimeSpanForInput(this.filterConfig.timeRange.end) : '';
+
+        modal.contentEl.createEl('p', {
+            text: 'Enter dates in yyyy-mm-dd format. Leave empty to remove that boundary.',
+            attr: { style: 'font-size:12px;color:var(--text-muted);margin-bottom:12px;' }
+        });
+
+        modal.onOpen = () => {
+            startInput.inputEl.focus();
+        };
+        modal.open();
+
+        new Setting(modal.contentEl)
+            .addButton(btn =>
+                btn
+                    .setButtonText('Apply')
+                    .setCta()
+                    .onClick(() => {
+                        const startStr = startInput.getValue().trim();
+                        const endStr = endInput.getValue().trim();
+                        const timeRange: import('../services/TimelineFilterService').TimeRangeFilter = {};
+                        if (startStr) {
+                            const parsed = this.plugin.timeSpanService.parse(startStr);
+                            if (parsed && parsed.kind !== 'unknown') {
+                                timeRange.start = parsed;
+                            }
+                        }
+                        if (endStr) {
+                            const parsed = this.plugin.timeSpanService.parse(endStr);
+                            if (parsed && parsed.kind !== 'unknown') {
+                                timeRange.end = parsed;
+                            }
+                        }
+                        if (timeRange.start || timeRange.end) {
+                            this.filterConfig.timeRange = timeRange;
+                        } else {
+                            delete this.filterConfig.timeRange;
+                        }
+                        modal.close();
+                        this.refresh();
+                    })
+            )
+            .addButton(btn =>
+                btn
+                    .setButtonText('Cancel')
+                    .onClick(() => modal.close())
+            );
+    }
+
+    /**
+     * Format a TimeSpan for display in an input field.
+     */
+    private formatTimeSpanForInput(ts: import('../models/TimeSpan').TimeSpan): string {
+        const point = this.plugin.timeSpanService.getEarliestPoint(ts);
+        if (!point) return '';
+        const adapter = this.plugin.timeSpanService.getCalendar('gregorian');
+        if (adapter) {
+            return adapter.format(point);
+        }
+        return String(point.year);
+    }
+
+    // ── Saved Views ──
+
+    /**
+     * Capture the current Timeline configuration as a SavedViewConfig.
+     */
+    private captureCurrentConfig(): Omit<SavedViewConfig, 'version' | 'id' | 'created' | 'name'> {
+        return {
+            timelineOrder: this.timelineOrder,
+            swimlaneMode: this.swimlaneMode,
+            swimlaneGroupBy: this.swimlaneGroupBy,
+            selectedBookIds: Array.from(this.selectedBookIds),
+            zoomLevel: this.zoomLevel,
+            filterEntityType: this.filterConfig.entityType,
+            filterTags: this.filterConfig.tags,
+            filterTimeRangeStart: this.filterConfig.timeRange?.start,
+            filterTimeRangeEnd: this.filterConfig.timeRange?.end,
+        };
+    }
+
+    /**
+     * Apply a SavedViewConfig to the current Timeline pane.
+     */
+    // eslint-disable-next-line complexity -- config apply checks many optional fields
+    private applyConfig(config: SavedViewConfig): void {
+        if (config.timelineOrder) {
+            this.timelineOrder = config.timelineOrder;
+        }
+        if (config.swimlaneMode !== undefined) {
+            this.swimlaneMode = config.swimlaneMode;
+        }
+        if (config.swimlaneGroupBy) {
+            this.swimlaneGroupBy = config.swimlaneGroupBy;
+        }
+        if (config.selectedBookIds) {
+            this.selectedBookIds = new Set(config.selectedBookIds);
+        }
+        if (config.zoomLevel) {
+            this.zoomLevel = config.zoomLevel;
+        }
+        // Apply filter config (new in v2)
+        this.filterConfig = {};
+        if (config.filterEntityType) {
+            this.filterConfig.entityType = config.filterEntityType;
+        }
+        if (config.filterTags && config.filterTags.length > 0) {
+            this.filterConfig.tags = config.filterTags;
+        }
+        if (config.filterTimeRangeStart || config.filterTimeRangeEnd) {
+            this.filterConfig.timeRange = {
+                start: config.filterTimeRangeStart,
+                end: config.filterTimeRangeEnd,
+            };
+        }
+        this.refresh();
+    }
+
+    /**
+     * Open the Saved Views context menu.
+     */
+    private async openSavedViewsMenu(_button: HTMLElement, event: MouseEvent): Promise<void> {
+        const menu = new Menu();
+
+        menu.addItem(item =>
+            item
+                .setTitle('Save current view…')
+                .setIcon('save')
+                .onClick(() => this.openSaveViewModal())
+        );
+
+        menu.addSeparator();
+
+        // Load existing views
+        {
+            const views = await this.plugin.savedViewService.listSavedViews();
+            if (views.length === 0) {
+                menu.addItem(item =>
+                    item
+                        .setTitle('No saved views')
+                        .setDisabled(true)
+                );
+            }
+            for (const view of views) {
+                menu.addItem(item =>
+                    item
+                        .setTitle(view.name)
+                        .setIcon('list')
+                        .onClick(async () => {
+                            const config = await this.plugin.savedViewService.loadSavedView(view.id);
+                            if (config) {
+                                this.applyConfig(config);
+                            }
+                        })
+                );
+            }
+        }
+
+        menu.addSeparator();
+
+        menu.addItem(item =>
+            item
+                .setTitle('Manage saved views…')
+                .setIcon('settings')
+                .onClick(() => this.openManageViewsModal())
+        );
+
+        menu.showAtMouseEvent(event);
+    }
+
+    /**
+     * Open modal to save current view configuration.
+     */
+    private openSaveViewModal(): void {
+        const modal = new Modal(this.plugin.app);
+        modal.titleEl.setText('Save timeline view');
+
+        const nameInput = new TextComponent(modal.contentEl.createDiv());
+        nameInput.setPlaceholder('View name');
+        nameInput.inputEl.focus();
+
+        const descInput = new TextComponent(modal.contentEl.createDiv());
+        descInput.setPlaceholder('Description (optional)');
+
+        modal.contentEl.createEl('p', {
+            text: 'This saves the current timeline configuration (order, swimlanes, book selection, zoom).',
+            attr: { style: 'font-size:12px;color:var(--text-muted);margin-bottom:12px;' }
+        });
+
+        modal.onOpen = () => {
+            nameInput.inputEl.focus();
+        };
+
+        modal.open();
+
+        new Setting(modal.contentEl)
+            .addButton(btn =>
+                btn
+                    .setButtonText('Save')
+                    .setCta()
+                    .onClick(async () => {
+                        const name = nameInput.getValue().trim();
+                        if (!name) {
+                            new Notice('Please enter a view name.');
+                            return;
+                        }
+                        const config = this.captureCurrentConfig();
+                        await this.plugin.savedViewService.createSavedView(name, {
+                            ...config,
+                            description: descInput.getValue().trim() || undefined,
+                        });
+                        modal.close();
+                        new Notice(`Saved view "${name}"`);
+                    })
+            )
+            .addButton(btn =>
+                btn
+                    .setButtonText('Cancel')
+                    .onClick(() => modal.close())
+            );
+    }
+
+    /**
+     * Open modal to manage (rename/delete) saved views.
+     */
+    private openManageViewsModal(): void {
+        const modal = new Modal(this.plugin.app);
+        modal.titleEl.setText('Manage saved views');
+
+        const listContainer = modal.contentEl.createDiv({
+            attr: { style: 'max-height:300px;overflow-y:auto;' }
+        });
+
+        modal.onOpen = () => {
+            this.populateManageList(listContainer);
+        };
+
+        modal.open();
+
+        new Setting(modal.contentEl)
+            .addButton(btn =>
+                btn
+                    .setButtonText('Close')
+                    .onClick(() => modal.close())
+            );
+    }
+
+    /**
+     * Populate the manage views list.
+     */
+    private async populateManageList(container: HTMLElement): Promise<void> {
+        container.empty();
+        const views = await this.plugin.savedViewService.listSavedViews();
+
+        if (views.length === 0) {
+            container.createEl('p', { text: 'No saved views yet.' });
+            return;
+        }
+
+        for (const view of views) {
+            const row = container.createDiv({
+                attr: { style: 'display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--background-modifier-border);' }
+            });
+
+            const nameSpan = row.createSpan({
+                text: view.name,
+                attr: { style: 'flex:1;font-weight:500;' }
+            });
+
+            if (view.description) {
+                row.createSpan({
+                    text: view.description,
+                    attr: { style: 'font-size:12px;color:var(--text-muted);' }
+                });
+            }
+
+            const renameBtn = row.createEl('button', {
+                cls: 'clickable-icon',
+                text: '✎'
+            });
+            attachTooltip(renameBtn, 'Rename');
+            renameBtn.addEventListener('click', () => this.renameView(view, nameSpan));
+
+            const deleteBtn = row.createEl('button', {
+                cls: 'clickable-icon',
+                text: '✕'
+            });
+            attachTooltip(deleteBtn, 'Delete');
+            deleteBtn.addEventListener('click', async () => {
+                await this.plugin.savedViewService.deleteSavedView(view.id);
+                new Notice(`Deleted view "${view.name}"`);
+                this.populateManageList(container);
+            });
+        }
+    }
+
+    /**
+     * Rename a saved view inline.
+     */
+    private async renameView(view: SavedViewMeta, nameSpan: HTMLElement): Promise<void> {
+        const newName = prompt('Rename view:', view.name);
+        if (newName && newName.trim() && newName.trim() !== view.name) {
+            await this.plugin.savedViewService.renameSavedView(view.id, newName.trim());
+            nameSpan.setText(newName.trim());
+            new Notice(`Renamed to "${newName.trim()}"`);
+        }
+    }
+
+    /**
+     * Public refresh called by the plugin on file changes
+     */
+    refresh(): void {
+        if (!this.rootContainer) return;
+        // Coalesce rapid calls into a single rAF, but never skip —
+        // data may have changed again since the last queued render.
+        if (this._pendingRefresh) {
+            cancelAnimationFrame(this._pendingRefresh);
+        }
+        this._pendingRefresh = window.requestAnimationFrame(() => {
+            this._pendingRefresh = null;
+            if (!this.rootContainer) return;
+            this._lastCacheVersion = this.sceneManager.cacheVersion;
+            // Save scroll position before re-render
+            const scrollEl = this.rootContainer.querySelector('.story-line-main-area');
+            const savedScroll = scrollEl
+                ? { top: (scrollEl as HTMLElement).scrollTop, left: (scrollEl as HTMLElement).scrollLeft }
+                : null;
+            const prevSelectedPath = this.selectedScene?.filePath ?? null;
+            this.renderView(this.rootContainer);
+            // Restore scroll position after re-render. With 100+ scenes the
+            // rebuilt DOM may not have its final height within a single
+            // animation frame, so we restore immediately, then again on the
+            // next frame, then once more after a short timeout — whichever
+            // runs after layout completes wins. Without this, the browser
+            // resets scroll to 0 once the full content height is realised.
+            if (savedScroll) {
+                const restore = () => {
+                    const newScrollEl = this.rootContainer?.querySelector('.story-line-main-area') as HTMLElement | null;
+                    if (newScrollEl) {
+                        newScrollEl.scrollTop = savedScroll.top;
+                        newScrollEl.scrollLeft = savedScroll.left;
+                    }
+                };
+                restore();
+                window.requestAnimationFrame(restore);
+                window.setTimeout(restore, 50);
+            }
+            if (prevSelectedPath) {
+                const updated = this.sceneManager.getScene(prevSelectedPath);
+                if (updated) {
+                    this.selectedScene = updated;
+                    if (!this.plugin.isSceneInspectorOpen()) {
+                        this.inspectorComponent?.show(updated);
+                    }
+                }
+            }
+            // Re-apply multi-selection highlight after re-render. Stale
+            // paths (deleted scenes) are silently dropped from the set.
+            if (this.selectedScenes.size > 0) {
+                const stale: string[] = [];
+                for (const fp of this.selectedScenes) {
+                    if (!this.sceneManager.getScene(fp)) {
+                        stale.push(fp);
+                        continue;
+                    }
+                    const entry = this.rootContainer?.querySelector(`[data-path="${CSS.escape(fp)}"]`);
+                    if (entry) entry.addClass('selected');
+                }
+                for (const fp of stale) this.selectedScenes.delete(fp);
+            }
+        });
+    }
+}
+/* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unused-vars -- end of file-wide suppression block opened at line 1 */

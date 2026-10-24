@@ -1,0 +1,1555 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-24T15:57:04.111Z",
+  "totalErrors": 951,
+  "diagnostics": [
+    {
+      "file": "src/commands/registerEvents.ts",
+      "code": "TS2345",
+      "message": "Argument of type '(evt: KeyboardEvent) => void' is not assignable to parameter of type '(...args: unknown[]) => void'.",
+      "count": 1
+    },
+    {
+      "file": "src/commands/scrivener-import.ts",
+      "code": "TS18048",
+      "message": "'scrivPath' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/AddFieldModal.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/AddFieldModal.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/AddFieldModal.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/AddFieldModal.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/CodexVisualGroupManager.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'CodexVisualGroup | undefined' is not assignable to parameter of type 'CodexVisualGroup'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/CreateProjectFields.ts",
+      "code": "TS2345",
+      "message": "Argument of type '(v: ProjectType) => void' is not assignable to parameter of type '(value: string) => any'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/CreateProjectModal.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/CustomSectionsRenderer.ts",
+      "code": "TS18048",
+      "message": "'bucket' is possibly 'undefined'.",
+      "count": 5
+    },
+    {
+      "file": "src/components/CustomSectionsRenderer.ts",
+      "code": "TS18048",
+      "message": "'lastBucket' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/CustomSectionsRenderer.ts",
+      "code": "TS2322",
+      "message": "Type 'CustomFieldEntry | undefined' is not assignable to type 'CustomFieldEntry'.",
+      "count": 4
+    },
+    {
+      "file": "src/components/CustomSectionsRenderer.ts",
+      "code": "TS2322",
+      "message": "Type 'CustomFieldValue | undefined' is not assignable to type 'CustomFieldValue'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/CustomSectionsRenderer.ts",
+      "code": "TS2322",
+      "message": "Type 'CustomSection | undefined' is not assignable to type 'CustomSection'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/CustomSectionsRenderer.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'CustomFieldEntry | undefined' is not assignable to parameter of type 'CustomFieldEntry'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/CustomSectionsRenderer.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'CustomSection | undefined' is not assignable to parameter of type 'CustomSection'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/CustomSectionsRenderer.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 3
+    },
+    {
+      "file": "src/components/CustomSectionsRenderer.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/EventModal.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 4
+    },
+    {
+      "file": "src/components/ExportModal.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/ImagePicker.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/ImagePicker.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'FuzzySuggestModal<TFile>'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/ImagePicker.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/InfoPanel.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 5
+    },
+    {
+      "file": "src/components/InlineSuggest.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/InlineSuggest.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 6
+    },
+    {
+      "file": "src/components/Inspector.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 4
+    },
+    {
+      "file": "src/components/Inspector.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/MobileAdapter.ts",
+      "code": "TS18048",
+      "message": "'touch' is possibly 'undefined'.",
+      "count": 12
+    },
+    {
+      "file": "src/components/QuickAddModal.ts",
+      "code": "TS2322",
+      "message": "Type 'SceneTemplate | undefined' is not assignable to type 'SceneTemplate | null'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/QuickAddModal.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/RelationshipMap.ts",
+      "code": "TS18048",
+      "message": "'a' is possibly 'undefined'.",
+      "count": 4
+    },
+    {
+      "file": "src/components/RelationshipMap.ts",
+      "code": "TS18048",
+      "message": "'b' is possibly 'undefined'.",
+      "count": 4
+    },
+    {
+      "file": "src/components/RelationshipMap.ts",
+      "code": "TS18048",
+      "message": "'inner' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/RelationshipMap.ts",
+      "code": "TS18048",
+      "message": "'target' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/RelationshipMap.ts",
+      "code": "TS18048",
+      "message": "'targetName' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/RelationshipMap.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/RelationshipMap.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/RenameConfirmModal.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/SceneCard.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/SceneCard.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/SceneCard.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/SceneFilenameSyncModal.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/ShiftDatesModal.ts",
+      "code": "TS18048",
+      "message": "'anchor' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/ShiftDatesModal.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 4
+    },
+    {
+      "file": "src/components/ShiftDatesModal.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/SplitMergeModals.ts",
+      "code": "TS18048",
+      "message": "'primary' is possibly 'undefined'.",
+      "count": 3
+    },
+    {
+      "file": "src/components/SplitMergeModals.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 4
+    },
+    {
+      "file": "src/components/StoryGraph.ts",
+      "code": "TS18048",
+      "message": "'a' is possibly 'undefined'.",
+      "count": 8
+    },
+    {
+      "file": "src/components/StoryGraph.ts",
+      "code": "TS18048",
+      "message": "'b' is possibly 'undefined'.",
+      "count": 8
+    },
+    {
+      "file": "src/components/StoryGraph.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'StoryGraphNode | undefined' is not assignable to parameter of type 'StoryGraphNode'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/StoryGraph.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/UniverseSelector.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/UniverseSelector.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 4
+    },
+    {
+      "file": "src/components/ViewSnapshotModal.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/VirtualScroller.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'T | undefined' is not assignable to parameter of type 'T'.",
+      "count": 2
+    },
+    {
+      "file": "src/components/WikilinkSuggest.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string | null'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/WikilinkSuggest.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/WikilinkSuggest.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/components/WikilinkSuggest.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 3
+    },
+    {
+      "file": "src/main.ts",
+      "code": "TS18048",
+      "message": "'cell' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/main.ts",
+      "code": "TS18048",
+      "message": "'existingLeaf' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/main.ts",
+      "code": "TS18048",
+      "message": "'leaf' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/main.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string | null'.",
+      "count": 1
+    },
+    {
+      "file": "src/main.ts",
+      "code": "TS2322",
+      "message": "Type 'WorkspaceLeaf | undefined' is not assignable to type 'WorkspaceLeaf | null'.",
+      "count": 1
+    },
+    {
+      "file": "src/main.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | null' is not assignable to parameter of type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/main.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 6
+    },
+    {
+      "file": "src/main.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'WorkspaceLeaf | undefined' is not assignable to parameter of type 'WorkspaceLeaf'.",
+      "count": 9
+    },
+    {
+      "file": "src/main.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 13
+    },
+    {
+      "file": "src/main.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 2
+    },
+    {
+      "file": "src/main.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Plugin'.",
+      "count": 3
+    },
+    {
+      "file": "src/models/Character.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 4
+    },
+    {
+      "file": "src/models/Character.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 4
+    },
+    {
+      "file": "src/models/EntityIdentity.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/CharacterManager.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/CharacterManager.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/CodexManager.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string | string[]'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/CodexManager.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/CodexManager.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/DocxConverter.ts",
+      "code": "TS18048",
+      "message": "'colors' is possibly 'undefined'.",
+      "count": 6
+    },
+    {
+      "file": "src/services/DocxConverter.ts",
+      "code": "TS18048",
+      "message": "'currentLine' is possibly 'undefined'.",
+      "count": 3
+    },
+    {
+      "file": "src/services/DocxConverter.ts",
+      "code": "TS18048",
+      "message": "'fileName' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/DocxConverter.ts",
+      "code": "TS18048",
+      "message": "'fullPath' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/DocxConverter.ts",
+      "code": "TS18048",
+      "message": "'line' is possibly 'undefined'.",
+      "count": 12
+    },
+    {
+      "file": "src/services/DocxConverter.ts",
+      "code": "TS18048",
+      "message": "'marker' is possibly 'undefined'.",
+      "count": 8
+    },
+    {
+      "file": "src/services/DocxConverter.ts",
+      "code": "TS18048",
+      "message": "'row' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/DocxConverter.ts",
+      "code": "TS18048",
+      "message": "'type' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/DocxConverter.ts",
+      "code": "TS18048",
+      "message": "'url' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/DocxConverter.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/DocxConverter.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 19
+    },
+    {
+      "file": "src/services/DocxConverter.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 23
+    },
+    {
+      "file": "src/services/EventManager.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/EventManager.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/ExportService.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'Uint8Array<ArrayBufferLike>' is not assignable to parameter of type 'ArrayBuffer'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/ExportService.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 5
+    },
+    {
+      "file": "src/services/FieldTemplateService.ts",
+      "code": "TS18048",
+      "message": "'inner' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/FieldTemplateService.ts",
+      "code": "TS18048",
+      "message": "'next' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/FieldTemplateService.ts",
+      "code": "TS18048",
+      "message": "'prev' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/FieldTemplateService.ts",
+      "code": "TS2322",
+      "message": "Type 'SectionOrderEntry | undefined' is not assignable to type 'SectionOrderEntry'.",
+      "count": 4
+    },
+    {
+      "file": "src/services/FieldTemplateService.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'SectionOrderEntry | undefined' is not assignable to parameter of type 'SectionOrderEntry'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/FieldTemplateService.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/LinkScanner.ts",
+      "code": "TS18048",
+      "message": "'link' is possibly 'undefined'.",
+      "count": 5
+    },
+    {
+      "file": "src/services/LinkScanner.ts",
+      "code": "TS18048",
+      "message": "'scene' is possibly 'undefined'.",
+      "count": 3
+    },
+    {
+      "file": "src/services/LinkScanner.ts",
+      "code": "TS18048",
+      "message": "'tag' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/LinkScanner.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'Scene | undefined' is not assignable to parameter of type 'Scene'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/LinkScanner.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/LocationManager.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/LocationManager.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/MetadataParser.ts",
+      "code": "TS18048",
+      "message": "'inner' is possibly 'undefined'.",
+      "count": 6
+    },
+    {
+      "file": "src/services/MetadataParser.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/MetadataParser.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/MetadataParser.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 3
+    },
+    {
+      "file": "src/services/PdfConverter.ts",
+      "code": "TS18048",
+      "message": "'l' is possibly 'undefined'.",
+      "count": 4
+    },
+    {
+      "file": "src/services/PdfConverter.ts",
+      "code": "TS18048",
+      "message": "'last' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/PdfConverter.ts",
+      "code": "TS18048",
+      "message": "'line' is possibly 'undefined'.",
+      "count": 3
+    },
+    {
+      "file": "src/services/PdfConverter.ts",
+      "code": "TS18048",
+      "message": "'m' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/PdfConverter.ts",
+      "code": "TS18048",
+      "message": "'prev' is possibly 'undefined'.",
+      "count": 3
+    },
+    {
+      "file": "src/services/PdfConverter.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 3
+    },
+    {
+      "file": "src/services/PdfConverter.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/ResearchManager.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 3
+    },
+    {
+      "file": "src/services/SceneManager.ts",
+      "code": "TS18048",
+      "message": "'beat' is possibly 'undefined'.",
+      "count": 8
+    },
+    {
+      "file": "src/services/SceneManager.ts",
+      "code": "TS18048",
+      "message": "'change' is possibly 'undefined'.",
+      "count": 3
+    },
+    {
+      "file": "src/services/SceneManager.ts",
+      "code": "TS18048",
+      "message": "'primary' is possibly 'undefined'.",
+      "count": 3
+    },
+    {
+      "file": "src/services/SceneManager.ts",
+      "code": "TS2322",
+      "message": "Type 'Scene' is not assignable to type 'SceneStatus | undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/SceneManager.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/SceneManager.ts",
+      "code": "TS2345",
+      "message": "Argument of type '{ temporaryPath: string; currentPath?: string | undefined; newPath?: string | undefined; }' is not assignable to parameter of type 'SceneFilenameSyncChange & { temporaryPath: string; }'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/SceneManager.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'StoryLineProject | undefined' is not assignable to parameter of type 'StoryLineProject'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/SceneManager.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 6
+    },
+    {
+      "file": "src/services/SceneManager.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 6
+    },
+    {
+      "file": "src/services/SceneManager.ts",
+      "code": "TS2769",
+      "message": "No overload matches this call.",
+      "count": 1
+    },
+    {
+      "file": "src/services/ScrivenerImporter.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 3
+    },
+    {
+      "file": "src/services/ScrivenerImporter.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 13
+    },
+    {
+      "file": "src/services/ScrivenerImporter.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/ScrivenerImporter.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/SeriesManager.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/SnapshotManager.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/TimelineNavigationService.ts",
+      "code": "TS18048",
+      "message": "'item' is possibly 'undefined'.",
+      "count": 6
+    },
+    {
+      "file": "src/services/TimelineNavigationService.ts",
+      "code": "TS2322",
+      "message": "Type 'TimelineNavItem | undefined' is not assignable to type 'TimelineNavItem | null'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/TimelineNavigationService.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'TimelineNavItem | undefined' is not assignable to parameter of type 'TimelineNavItem'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/TimelineNavigationService.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/TimeSpanService.ts",
+      "code": "TS18048",
+      "message": "'direction' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/TimeSpanService.ts",
+      "code": "TS18048",
+      "message": "'refId' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/TimeSpanService.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 9
+    },
+    {
+      "file": "src/services/TimeSpanService.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 3
+    },
+    {
+      "file": "src/services/UniverseManager.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/services/Validator.ts",
+      "code": "TS18048",
+      "message": "'curr' is possibly 'undefined'.",
+      "count": 22
+    },
+    {
+      "file": "src/services/Validator.ts",
+      "code": "TS18048",
+      "message": "'prev' is possibly 'undefined'.",
+      "count": 22
+    },
+    {
+      "file": "src/services/Validator.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 3
+    },
+    {
+      "file": "src/services/Validator.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 18
+    },
+    {
+      "file": "src/services/WritingTracker.ts",
+      "code": "TS18048",
+      "message": "'month' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/services/WritingTracker.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'number | undefined' is not assignable to parameter of type 'number'.",
+      "count": 1
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS18048",
+      "message": "'def' is possibly 'undefined'.",
+      "count": 7
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS18048",
+      "message": "'scrivPath' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS18048",
+      "message": "'tpl' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS2322",
+      "message": "Type '{ label: \"Yellow\" | \"Gold\" | \"Orange\" | \"Coral\" | \"Pink\" | \"Rose\" | \"Lavender\" | \"Violet\" | \"Blue\" | \"Sky\" | \"Teal\" | \"Mint\" | \"Green\" | \"Sage\" | undefined; color: string; }[]' is not assignable to type '{ label: string; color: string; }[]'.",
+      "count": 1
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS2322",
+      "message": "Type 'boolean | undefined' is not assignable to type 'boolean'.",
+      "count": 2
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS2339",
+      "message": "Property 'color' does not exist on type '{ label: string; color: string; } | undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS2339",
+      "message": "Property 'label' does not exist on type '{ label: string; color: string; } | undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS2345",
+      "message": "Argument of type '{ name?: string | undefined; description?: string; defaultFields?: Partial<Pick<Scene, \"tags\" | \"status\" | \"conflict\" | \"emotion\" | \"target_wordcount\">> | undefined; bodyTemplate?: string | undefined; }' is not assignable to parameter of type 'SceneTemplate'.",
+      "count": 1
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 4
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS2538",
+      "message": "Type 'undefined' cannot be used as an index type.",
+      "count": 3
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'AbstractInputSuggest<TFolder>'.",
+      "count": 1
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 2
+    },
+    {
+      "file": "src/settings.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'PluginSettingTab'.",
+      "count": 2
+    },
+    {
+      "file": "src/utils/locale.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/utils/locale.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/utils/locale.ts",
+      "code": "TS2538",
+      "message": "Type 'undefined' cannot be used as an index type.",
+      "count": 2
+    },
+    {
+      "file": "src/views/BoardView.ts",
+      "code": "TS18048",
+      "message": "'act' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/BoardView.ts",
+      "code": "TS18048",
+      "message": "'f' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/BoardView.ts",
+      "code": "TS18048",
+      "message": "'last' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/BoardView.ts",
+      "code": "TS2322",
+      "message": "Type '[string, { x: number; y: number; z: number; h?: number | undefined; }] | undefined' is not assignable to type '[string, { x: number; y: number; z: number; h?: number | undefined; }]'.",
+      "count": 4
+    },
+    {
+      "file": "src/views/BoardView.ts",
+      "code": "TS2322",
+      "message": "Type '{ x: number; y: number; } | undefined' is not assignable to type '{ x: number; y: number; }'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/BoardView.ts",
+      "code": "TS2345",
+      "message": "Argument of type '[string, { x: number; y: number; z: number; h?: number | undefined; }] | undefined' is not assignable to parameter of type '[string, { x: number; y: number; z: number; h?: number | undefined; }]'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/BoardView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'File | undefined' is not assignable to parameter of type 'File'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/BoardView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 8
+    },
+    {
+      "file": "src/views/BoardView.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 6
+    },
+    {
+      "file": "src/views/BoardView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/CharacterView.ts",
+      "code": "TS18048",
+      "message": "'entry' is possibly 'undefined'.",
+      "count": 8
+    },
+    {
+      "file": "src/views/CharacterView.ts",
+      "code": "TS18048",
+      "message": "'relation' is possibly 'undefined'.",
+      "count": 34
+    },
+    {
+      "file": "src/views/CharacterView.ts",
+      "code": "TS2322",
+      "message": "Type 'Scene | undefined' is not assignable to type 'Scene'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/CharacterView.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/CharacterView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'Character | undefined' is not assignable to parameter of type 'Character'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/CharacterView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'CharacterFieldCategory | undefined' is not assignable to parameter of type '{ title: string; icon: string; fields: CharacterFieldDef[]; }'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/CharacterView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'CharacterFieldCategory | undefined' is not assignable to parameter of type 'CharacterFieldCategory'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/CharacterView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'CharacterRelation | undefined' is not assignable to parameter of type 'CharacterRelation'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/CharacterView.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 22
+    },
+    {
+      "file": "src/views/CharacterView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/CharacterView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/CodexView.ts",
+      "code": "TS18048",
+      "message": "'entry' is possibly 'undefined'.",
+      "count": 8
+    },
+    {
+      "file": "src/views/CodexView.ts",
+      "code": "TS18048",
+      "message": "'list' is possibly 'undefined'.",
+      "count": 5
+    },
+    {
+      "file": "src/views/CodexView.ts",
+      "code": "TS2322",
+      "message": "Type 'CodexVisualGroup[] | undefined' is not assignable to type 'CodexVisualGroup[]'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/CodexView.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/CodexView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'CodexFieldCategory | undefined' is not assignable to parameter of type 'CodexFieldCategory'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/CodexView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'CodexVisualGroup | undefined' is not assignable to parameter of type 'CodexVisualGroup'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/CodexView.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 17
+    },
+    {
+      "file": "src/views/CodexView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/CodexView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/DetailsView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/HelpView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/LocationView.ts",
+      "code": "TS18048",
+      "message": "'entry' is possibly 'undefined'.",
+      "count": 8
+    },
+    {
+      "file": "src/views/LocationView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'LocationFieldCategory | undefined' is not assignable to parameter of type 'LocationFieldCategory'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/LocationView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'StoryLocation | undefined' is not assignable to parameter of type 'StoryLocation'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/LocationView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'StoryWorld | undefined' is not assignable to parameter of type 'StoryWorld'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/LocationView.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 13
+    },
+    {
+      "file": "src/views/LocationView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/ManuscriptView.ts",
+      "code": "TS18048",
+      "message": "'match' is possibly 'undefined'.",
+      "count": 17
+    },
+    {
+      "file": "src/views/ManuscriptView.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/ManuscriptView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/NavigatorView.ts",
+      "code": "TS2322",
+      "message": "Type 'string | null | undefined' is not assignable to type 'string | null'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/NavigatorView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/NavigatorView.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/NavigatorView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/NotesView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/PlotgridView.ts",
+      "code": "TS18048",
+      "message": "'cell' is possibly 'undefined'.",
+      "count": 6
+    },
+    {
+      "file": "src/views/PlotgridView.ts",
+      "code": "TS18048",
+      "message": "'col' is possibly 'undefined'.",
+      "count": 22
+    },
+    {
+      "file": "src/views/PlotgridView.ts",
+      "code": "TS18048",
+      "message": "'colMeta' is possibly 'undefined'.",
+      "count": 4
+    },
+    {
+      "file": "src/views/PlotgridView.ts",
+      "code": "TS18048",
+      "message": "'row' is possibly 'undefined'.",
+      "count": 31
+    },
+    {
+      "file": "src/views/PlotgridView.ts",
+      "code": "TS18048",
+      "message": "'rowA' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/PlotgridView.ts",
+      "code": "TS18048",
+      "message": "'rowB' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/PlotgridView.ts",
+      "code": "TS18048",
+      "message": "'rowMeta' is possibly 'undefined'.",
+      "count": 4
+    },
+    {
+      "file": "src/views/PlotgridView.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/PlotgridView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'ColumnMeta | undefined' is not assignable to parameter of type 'ColumnMeta'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/PlotgridView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'T | undefined' is not assignable to parameter of type 'T'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/PlotgridView.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 42
+    },
+    {
+      "file": "src/views/PlotgridView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/PlotgridView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'Modal'.",
+      "count": 4
+    },
+    {
+      "file": "src/views/ResearchView.ts",
+      "code": "TS2322",
+      "message": "Type 'string | undefined' is not assignable to type 'string'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/ResearchView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/SceneInspectorView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'WorkspaceLeaf | undefined' is not assignable to parameter of type 'WorkspaceLeaf'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/SceneInspectorView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/StatsView.ts",
+      "code": "TS2322",
+      "message": "Type 'number | undefined' is not assignable to type 'number'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/StatsView.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 7
+    },
+    {
+      "file": "src/views/StatsView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/StorylineView.ts",
+      "code": "TS18048",
+      "message": "'scene' is possibly 'undefined'.",
+      "count": 10
+    },
+    {
+      "file": "src/views/StorylineView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'number | undefined' is not assignable to parameter of type 'number'.",
+      "count": 4
+    },
+    {
+      "file": "src/views/StorylineView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'Scene | undefined' is not assignable to parameter of type 'Scene'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/StorylineView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 7
+    },
+    {
+      "file": "src/views/StorylineView.ts",
+      "code": "TS2488",
+      "message": "Type '[number, number[]] | undefined' must have a '[Symbol.iterator]()' method that returns an iterator.",
+      "count": 1
+    },
+    {
+      "file": "src/views/StorylineView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/SynopsisView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS18048",
+      "message": "'curr' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS18048",
+      "message": "'currTime' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS18048",
+      "message": "'moved' is possibly 'undefined'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS18048",
+      "message": "'next' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS18048",
+      "message": "'nextTime' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS18048",
+      "message": "'prev' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS18048",
+      "message": "'prevTime' is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS18048",
+      "message": "'scene' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS2322",
+      "message": "Type 'boolean | undefined' is not assignable to type 'boolean'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS2322",
+      "message": "Type 'Scene | undefined' is not assignable to type 'Scene'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'Scene | undefined' is not assignable to parameter of type 'Scene'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'string | undefined' is not assignable to parameter of type 'string'.",
+      "count": 5
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS2345",
+      "message": "Argument of type 'TLItem | undefined' is not assignable to parameter of type 'TLItem'.",
+      "count": 2
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 1
+    },
+    {
+      "file": "src/views/TimelineView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    },
+    {
+      "file": "src/views/UniverseView.ts",
+      "code": "TS4114",
+      "message": "This member must have an 'override' modifier because it overrides a member in the base class 'ItemView'.",
+      "count": 3
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+/* ── Project Modal Advanced Section ── */
+
+.project-modal-advanced-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    margin: 8px 0 0;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-muted);
+    user-select: none;
+}
+
+.project-modal-advanced-header:hover {
+    background: var(--background-modifier-hover);
+}
+
+.project-modal-advanced-content {
+    padding: 4px 0 0 8px;
+}

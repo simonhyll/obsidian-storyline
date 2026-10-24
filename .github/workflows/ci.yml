@@ -2,7 +2,7 @@ name: Plugin CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/rework]
   pull_request:
   workflow_dispatch:
 
@@ -15,18 +15,81 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Needed to compare lint diagnostics against the previous push/PR base.
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      # Exercise the actual staged hook path without touching the runner's
+      # checkout index. Both a clean fixture and a deliberate lint regression
+      # must behave correctly under the bounded-memory implementation.
+      - name: Verify staged lint under memory limits
+        run: |
+          set -eu
+          fixture="src/lint-staged-memory-smoke.ts"
+          test_index="$(mktemp)"
+          rm -f "$test_index"
+          trap 'rm -f "$fixture" "$test_index"' EXIT
+          export GIT_INDEX_FILE="$test_index"
+          git read-tree HEAD
+          printf 'export const stagedLintSmoke = true;\n' > "$fixture"
+          git add -- "$fixture"
+          STORYLINE_LINT_DEBUG=1 pnpm lint:staged
+          printf 'export const stagedLintSmoke: any = true;\n' > "$fixture"
+          git add -- "$fixture"
+          if STORYLINE_LINT_DEBUG=1 pnpm lint:staged; then
+            echo "ERROR: staged lint accepted an explicit any on a changed line"
+            exit 1
+          fi
+          echo "Staged lint correctly rejected an intentional new violation."
+
+      - name: Reject newly introduced ESLint errors
+        env:
+          LINT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: pnpm lint:changed
+
+      - name: Architecture regression gate
+        run: pnpm lint:architecture
 
       - name: Build plugin
-        run: npm run build
+        run: pnpm build
+
+      - name: Verify feature directory layout
+        run: pnpm verify:feature-layout
+
+      - name: Run Cucumber tests
+        run: pnpm test
+
+      - name: TypeScript strict regression gate
+        run: pnpm typecheck:regression
+
+      - name: Full TypeScript debt summary
+        run: |
+          echo "=== Full TypeScript Diagnostic Summary ==="
+          pnpm exec tsc --noEmit --pretty false 2>&1 | grep ': error TS' | wc -l | xargs -I{} echo "Total historical diagnostics: {}"
+          echo "(These are pre-existing and tracked in scripts/ts-baseline.json)"
+          echo "The regression gate above ensures no new diagnostics are introduced."
+        continue-on-error: true
+
+      - name: CSS regression check
+        run: node scripts/css-regression-check.mjs
+
+      - name: Validate changelog script
+        run: node --check scripts/changelog.cjs
+
+      - name: Changelog preview (dry-run)
+        run: node scripts/changelog.cjs preview
 
       - name: Validate vault sync script
         run: node --check scripts/sync-vault.mjs
@@ -36,20 +99,21 @@ jobs:
           node <<'NODE'
           const fs = require('node:fs');
           const read = path => JSON.parse(fs.readFileSync(path, 'utf8'));
-          const manifest = read('manifest.json');
+          const manifest = read('assets/manifest.json');
+          const distManifest = read('dist/manifest.json');
           const pkg = read('package.json');
-          const lock = read('package-lock.json');
           const versions = read('versions.json');
           if (manifest.id !== 'storyline') throw new Error('Unexpected plugin ID');
-          if (manifest.version !== pkg.version ||
-              manifest.version !== lock.version ||
-              manifest.version !== lock.packages[''].version) {
-            throw new Error('Version mismatch: manifest, package or lockfile');
+          if (manifest.version !== pkg.version) {
+            throw new Error('Version mismatch: manifest vs package');
+          }
+          if (manifest.version !== distManifest.version) {
+            throw new Error('Version mismatch: assets manifest vs dist manifest');
           }
           if (versions[manifest.version] !== manifest.minAppVersion) {
             throw new Error('versions.json lacks the current compatibility entry');
           }
-          for (const file of ['main.js', 'manifest.json', 'styles.css']) {
+          for (const file of ['dist/main.js', 'dist/manifest.json', 'dist/styles.css']) {
             if (!fs.existsSync(file) || !fs.statSync(file).size) {
               throw new Error('Missing build artifact: ' + file);
             }
@@ -60,8 +124,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: storyline-plugin
-          path: |
-            main.js
-            manifest.json
-            styles.css
+          path: dist/
           if-no-files-found: error

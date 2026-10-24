@@ -1,0 +1,538 @@
+/* --- Location / World View --- */
+
+.story-line-location-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.story-line-location-content {
+    padding: 16px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.story-line-location-content > h3 {
+    margin: 0 0 12px 0;
+    font-size: 1.15em;
+}
+
+/* Add buttons */
+.location-add-btn {
+    margin-left: 6px;
+    font-size: 0.8em;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* ── Tree ────────────────────────────── */
+
+.location-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.location-tree-node {
+    border-radius: 6px;
+}
+
+.location-tree-children {
+    margin-left: 6px;
+    border-left: 2px solid var(--background-modifier-border);
+}
+
+.location-tree-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.location-tree-header:hover {
+    background: var(--background-modifier-hover);
+}
+
+/* Issue #238 feedback — drag-and-drop location reparenting highlight */
+.location-tree-header.location-tree-drop-target {
+    background: var(--background-modifier-active-hover);
+    outline: 2px dashed var(--interactive-accent);
+    outline-offset: -2px;
+}
+.location-tree-header[draggable="true"] {
+    cursor: grab;
+}
+.location-tree-header[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.location-tree-chevron {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    width: 14px;
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+
+.location-tree-icon {
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.location-world-node > .location-tree-header .location-tree-icon {
+    color: var(--interactive-accent);
+}
+
+.location-tree-name {
+    flex: 1;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.location-world-node > .location-tree-header .location-tree-name {
+    font-weight: 600;
+    font-size: 1.05em;
+}
+
+.location-tree-count {
+    font-size: 0.75em;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    background: var(--background-modifier-border);
+    padding: 1px 6px;
+    border-radius: 8px;
+}
+
+.location-type-badge,
+.location-type-badge-sm {
+    font-size: 0.7em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent, var(--sl-badge-text));
+    padding: 1px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.location-type-badge-sm {
+    font-size: 0.65em;
+    padding: 0 4px;
+}
+
+/* Unlinked locations */
+.location-unlinked-node .location-tree-name {
+    opacity: 0.65;
+    font-style: italic;
+}
+
+.location-create-profile-btn {
+    font-size: 0.7em;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent, var(--sl-badge-text));
+    border: none;
+}
+
+.location-create-profile-btn:hover {
+    filter: brightness(1.1);
+}
+
+.location-orphan-divider {
+    margin: 12px 0 4px 0;
+    font-size: 0.75em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    border-top: 1px solid var(--background-modifier-border);
+    padding-top: 8px;
+}
+
+/* ── Empty state ─────────────────────── */
+
+.location-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.location-empty-icon {
+    font-size: 2.2em;
+    margin-bottom: 10px;
+    opacity: 0.4;
+}
+
+.location-empty-state h4 {
+    margin: 0 0 6px 0;
+}
+
+.location-empty-state p {
+    margin: 0;
+    font-size: 0.9em;
+    max-width: 340px;
+}
+
+/* ── Detail view ─────────────────────── */
+
+.location-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+/* .location-back-btn — Legacy, replaced by .codex-nav-back-link */
+
+.location-detail-header-right {
+    display: flex;
+    gap: 4px;
+}
+
+.location-detail-header-right button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    color: var(--text-muted);
+}
+
+.location-detail-header-right button:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.location-delete-btn.location-delete-btn:hover {
+    color: var(--text-error);
+}
+
+.location-detail-type {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8em;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+.location-detail-layout {
+    display: flex;
+    gap: 20px;
+}
+
+.location-detail-form {
+    flex: 1;
+    min-width: 0;
+}
+
+.location-detail-side {
+    width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+@media (max-width: 700px) {
+    .location-detail-layout {
+        flex-direction: column;
+    }
+    .location-detail-side {
+        width: 100%;
+    }
+}
+
+/* ── Collapsible sections ────────────── */
+
+.location-section {
+    margin-bottom: 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.location-section-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9em;
+    background: var(--background-secondary);
+    user-select: none;
+}
+
+.location-section-header:hover {
+    background: var(--background-modifier-hover);
+}
+
+.location-section-chevron,
+.location-section-icon {
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.location-section-body {
+    padding: 8px 12px;
+}
+
+/* ── Fields ──────────────────────────── */
+
+.location-field-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 10px;
+}
+
+.location-field-label {
+    font-size: 0.8em;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.location-field-input,
+.location-field-textarea {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 0.9em;
+    font-family: inherit;
+    transition: border-color 0.15s;
+}
+
+.location-field-input:focus,
+.location-field-textarea:focus {
+    border-color: var(--interactive-accent);
+    outline: none;
+}
+
+.location-field-input::placeholder,
+.location-field-textarea::placeholder {
+    color: var(--text-faint);
+    font-style: italic;
+}
+
+.location-field-textarea {
+    resize: vertical;
+    min-height: 56px;
+}
+
+.location-field-input.dropdown {
+    cursor: pointer;
+}
+
+/* ── Custom fields ───────────────────── */
+
+.location-custom-row {
+    flex-direction: row;
+    gap: 6px;
+    align-items: center;
+}
+
+.location-custom-key {
+    flex: 0 0 35%;
+}
+
+.location-custom-value {
+    flex: 1;
+}
+
+.location-custom-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.location-custom-remove:hover {
+    color: var(--text-error);
+    background: var(--background-modifier-hover);
+}
+
+.location-custom-add-row {
+    margin-top: 4px;
+}
+
+.location-custom-add-btn {
+    font-size: 0.8em;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    background: none;
+    border: 1px dashed var(--background-modifier-border);
+    color: var(--text-muted);
+}
+
+.location-custom-add-btn:hover {
+    border-color: var(--interactive-accent);
+    color: var(--interactive-accent);
+}
+
+/* ── Side panel ──────────────────────── */
+
+.location-side-stats {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.location-side-stats h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.location-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+}
+
+.location-stat-item {
+    text-align: center;
+    background: var(--background-secondary);
+    border-radius: 6px;
+    padding: 8px 4px;
+}
+
+.location-stat-value {
+    font-size: 1.6em;
+    font-weight: 700;
+    color: var(--interactive-accent);
+}
+
+.location-stat-label {
+    font-size: 0.7em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.location-side-world-info,
+.location-side-parent-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85em;
+    margin-bottom: 6px;
+    color: var(--text-muted);
+}
+
+.location-side-list,
+.location-side-scenes,
+.location-side-chars {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.location-side-list h4,
+.location-side-scenes h4,
+.location-side-chars h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.location-side-item,
+.location-side-scene-item,
+.location-side-char-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background 0.15s;
+}
+
+.location-side-item:hover,
+.location-side-scene-item:hover {
+    background: var(--background-modifier-hover);
+}
+
+.location-side-item-icon {
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+}
+
+.location-side-scene-item .scene-id {
+    font-size: 0.8em;
+    font-weight: 600;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.location-side-scene-item .scene-title {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.location-side-scene-item .scene-status-badge {
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.location-side-char-count {
+    margin-left: auto;
+    font-size: 0.8em;
+    color: var(--text-muted);
+    background: var(--background-modifier-border);
+    padding: 0 5px;
+    border-radius: 8px;
+}
+
+.location-add-to-world-btn {
+    width: 100%;
+    padding: 8px;
+    font-size: 0.8em;
+    border: 1px dashed var(--background-modifier-border);
+    background: none;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+.location-add-to-world-btn:hover {
+    border-color: var(--interactive-accent);
+    color: var(--interactive-accent);
+}
