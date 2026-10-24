@@ -45,10 +45,10 @@ jobs:
           git read-tree HEAD
           printf 'export const stagedLintSmoke = true;\n' > "$fixture"
           git add -- "$fixture"
-          pnpm lint:staged
+          STORYLINE_LINT_DEBUG=1 pnpm lint:staged
           printf 'export const stagedLintSmoke: any = true;\n' > "$fixture"
           git add -- "$fixture"
-          if pnpm lint:staged; then
+          if STORYLINE_LINT_DEBUG=1 pnpm lint:staged; then
             echo "ERROR: staged lint accepted an explicit any on a changed line"
             exit 1
           fi
