@@ -3,7 +3,7 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-24 (Step 6C.4b.4a.3 — Real cancellation button clicks and CI repair)
+> Updated: 2026-10-24 (independent audit correction: bootstrap checks ≠ Gherkin scenario execution)
 > Total scenarios: 62
 > Total steps: 276
 
@@ -16,7 +16,7 @@ Step 6C.4b.4a.3 repaired CI, added real Cancel button click tests, and fixed ver
 3. **Real Cancel button click tests** — `ButtonComponent` mock now creates a real DOM `<button>` element with click listeners. `Setting.addButton()` appends the button to the control element. Headless tests for `CreateProjectModal` and `EventModal` find and click the actual Cancel button by text content, verifying the production handler resolves the promise to null.
 4. **QuickAddModal limitation** — `QuickAddModal.onOpen()` creates `InlineSuggest` which requires extensive Obsidian APIs not available in the headless mock. Cancel is tested via `close()` only.
 5. **Architecture** — Reduced from 1,170 to 1,169 violations (-1) by extracting `createMockElement()` helper in `obsidian-mock.ts`.
-6. **Cancellation classification** — CreateProjectModal and EventModal cancellation now exercise real Cancel button click handlers. QuickAddModal cancellation tests `close()` only. Both Gherkin cancellation scenarios remain classified as partially production-backed: the headless tests run at bootstrap (BeforeAll) and verify the real modal classes, but the Gherkin steps themselves verify the safety property (no persistence operations) rather than directly instantiating modals.
+6. **Cancellation classification (corrected)** — Separate jsdom BeforeAll tests click the production Cancel buttons for CreateProjectModal and EventModal; QuickAddModal is close-only. Both Gherkin When steps still set flags without invoking production, so the Gherkin cancellation scenarios remain **simulated**.
 
 ## 6C.4b.4a Historical Summary (Corrected)
 
@@ -180,12 +180,12 @@ Step 6C.3b resolved the CI failure from Step 6C.3:
 | 4 | Book in existing series | `projectCreation.ts` | **Yes** — `executeCreation` | **Yes** — series UUID in log | Production-backed | Low |
 | 5 | Create series | `projectCreation.ts` | **Yes** — `executeCreation` | **Yes** — series name in log | Production-backed | Low |
 | 6 | Create universe | `projectCreation.ts` | **Yes** — `executeCreation` | **Yes** — universe name in log | Production-backed | Low |
-| 7 | Cancel creation | `CreateProjectModal.ts` | **Yes** — `close()` triggers real `onClose()` → `settle(null)` via headless-modal-tests.cjs | **Yes** — checks no creation ops in mockDepsLog | Production-backed | Low |
+| 7 | Cancel creation | `CreateProjectModal.ts` (separate bootstrap test) | **No** — scenario When only sets `cancelled = true` | **No** — no modal invoked within scenario | Simulated | Medium |
 | 8 | Double-click create | `creationGuard.ts` | **Yes** — `CreationConcurrencyGuard.tryStart()` | **Yes** — asserts second blocked | Production-backed | Low |
 | 9 | Async dropdown race | `CreateProjectDropdowns.ts` | **Yes** — `updateSeriesDropdownInPlace` | **Yes** — checks HTMLSelectElement | Production-backed | Low |
 
-**Summary:** 9 production-backed, 0 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
-**Action:** All scenarios hardened. Scenario 7 (cancellation) uses headless-modal-tests.cjs which instantiates the real CreateProjectModal with jsdom and triggers the real `close()` → `onClose()` → `settle(null)` path. The Cucumber step verifies the safety property (no creation operations in mockDepsLog). The `CreationConcurrencyGuard` is tested via `concurrency-guard-test.cjs`.
+**Summary:** 8 production-backed, 0 partially backed, 0 fixture-only, 1 simulated, 0 no-op.
+**Action:** The standalone `headless-modal-tests.ts` clicks CreateProjectModal's real Cancel button, but the Gherkin cancellation scenario does not call that test or modal. The production CreationConcurrencyGuard is exercised separately in `concurrency-guard-test.ts`. Do not promote until Gherkin invokes real cancellation.
 
 ---
 
@@ -295,10 +295,10 @@ loads settings from a persisted snapshot, and verifies scene files survive the r
 |---|---|---|---|---|---|---|
 | 1 | Canonical Event persistence | `EventManager.ts` | **Yes** — `createEventFile()` | **Yes** — checks UUID, TimeSpan, ownership, persisted YAML | Production-backed | Low |
 | 2 | Scene creation safety | `SceneManager.ts` | **Yes** — `createScene()` with production ownership guard | **Yes** — checks ownership, path prefix | Production-backed | Low |
-| 3 | Cancellation | `EventModal.ts`, `QuickAddModal.ts` | **Yes** — `close()` triggers real `onClose()` via headless-modal-tests.cjs | **Partial** — vault snapshot comparison, no EventManager ops | Production-backed | Low |
+| 3 | Cancellation | `EventModal.ts`, `QuickAddModal.ts` (separate bootstrap tests) | **No** — scenario When sets flag only | **No** — no production action between vault snapshots | Simulated | Medium |
 
-**Summary:** 3 production-backed, 0 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
-**Action:** All scenarios hardened. Scenario 3 (Cancellation) uses headless-modal-tests.cjs which instantiates the real EventModal and QuickAddModal with jsdom and triggers the real `close()` → `onClose()` path. The Cucumber step takes vault snapshots and verifies no files created, deleted, or modified.
+**Summary:** 2 production-backed, 0 partially backed, 0 fixture-only, 1 simulated, 0 no-op.
+**Action:** Gherkin cancellation remains simulated. Bootstrap tests click EventModal Cancel but only close QuickAddModal programmatically; neither is wired into the scenario. Implement actual cancellation within the Gherkin execution before promotion.
 
 ---
 
@@ -321,14 +321,14 @@ loads settings from a persisted snapshot, and verifies scene files survive the r
 
 Scenario inventory: 62 scenarios across 9 feature files, 276 steps.
 
-Per-feature production-backed count: changelog(6) + creation(9) + navigation(8) + timespan(11) + scenes(5) + hierarchy(8) + management(7) + ownership(3) + export(0) = **57 production-backed**.
+Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) + timespan(11) + scenes(5) + hierarchy(8) + management(7) + ownership(2) + export(0) = **55 production-backed**.
 
 | Coverage Level | Count | Percentage |
 |---|---|---|
-| Production-backed | 57 | 92% |
+| Production-backed | 55 | 89% |
 | Partially backed | 1 | 2% |
 | Fixture-only | 0 | 0% |
-| Simulated | 2 | 3% |
+| Simulated | 4 | 6% |
 | No-op | 2 | 3% |
 | **Total** | **62** | **100%** |
 
@@ -384,14 +384,14 @@ Per-feature production-backed count: changelog(6) + creation(9) + navigation(8) 
 | Feature | Scenarios | Status |
 |---|---|---|
 | `changelog.feature` | 7 | 6 production-backed, 1 partial (tag protection) |
-| `creation.feature` | 9 | All production-backed |
+| `creation.feature` | 9 | 8 production-backed, 1 simulated cancellation |
 | `navigation.feature` | 8 | All production-backed |
 | `timespan.feature` | 11 | All production-backed |
 | `scenes.feature` | 5 | All production-backed (new in 6C.4b.2) |
 | `hierarchy.feature` | 8 | 8 production-backed (6 in 6C.4b.3a.1, 2 in 6C.4b.3b) |
 | `management.feature` | 7 | All production-backed (new in 6C.4b.1) |
-| `ownership.feature` | 3 | All production-backed |
-| **Total hardened** | **57** | — |
+| `ownership.feature` | 3 | 2 production-backed, 1 simulated cancellation |
+| **Total hardened** | **55** | — |
 
 ### Scenarios Deferred to Step 6C.4b
 
@@ -399,7 +399,8 @@ Per-feature production-backed count: changelog(6) + creation(9) + navigation(8) 
 |---|---|---|
 | `export.feature` | 4 | All simulated or no-op |
 | `changelog.feature` | 1 | Tag protection simulates CLI error |
-| **Total deferred** | **5** | — |
+| `creation.feature` + `ownership.feature` | 2 | Cancellation still simulated at Gherkin level |
+| **Total deferred** | **7** | — |
 
 ### Vault Harness Regression Tests
 
@@ -429,14 +430,14 @@ against real production `buildSettingsPayload()`:
 
 ### Cancellation Safety Tests
 
-The `runCancellationTests()` function runs at test bootstrap and verifies real modal cancellation:
+The `runHeadlessModalTests()` function runs at bootstrap; these are not Cucumber scenarios. Project and Event Cancel buttons are clicked; QuickAdd is close-only:
 - `CreateProjectModal`: cancel resolves to null, no executeCreation called
 - `CreateProjectModal`: programmatic close resolves to null
 - `CreateProjectModal`: settle idempotence (multiple calls only resolve once)
 - `EventModal`: cancel resolves to null, no EventManager operations
 - `EventModal`: programmatic close resolves to null
-- `QuickAddModal`: cancel does not call onSubmit
-- `QuickAddModal`: programmatic close does not call onSubmit
+- `QuickAddModal`: close-only check; does not click actual Cancel button
+- `QuickAddModal`: second close-only check; no distinct button-click coverage
 
 ### Configuration Resolution
 
