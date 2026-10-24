@@ -40,7 +40,7 @@ function buildConfigFromTable(rows: { setting: string; value: string }[]): Omit<
             config.zoomLevel = parseFloat(raw);
         }
     }
-    return config as Omit<SavedViewConfig, 'version' | 'id' | 'created' | 'name'>;
+    return config;
 }
 
 // ── Scenario: Save current Timeline configuration ──
@@ -213,7 +213,7 @@ Given('I capture the original scene file contents', async function (this: TestWo
     for (const scene of this.scenes) {
         const file = this.testVault.getAbstractFileByPath(scene.filePath);
         if (file) {
-            this.sceneOriginalContentMap!.set(scene.filePath, file.content);
+            this.sceneOriginalContentMap.set(scene.filePath, file.content);
         }
     }
 });
