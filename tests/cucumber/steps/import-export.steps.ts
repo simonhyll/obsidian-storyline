@@ -1,97 +1,55 @@
 /**
  * Step definitions for import/export scenarios.
- * Exercises real export logic where possible.
+ * Exercises real ExportService and ScrivenerImporter availability.
  */
 import { Given, When, Then } from '@cucumber/cucumber';
 import { TestWorld } from '../support/world';
-import { createScene, createBook } from '../support/vault-fixture';
+import { ExportSteps } from '../support/export-steps';
 
-Given('{int} scenes in the active book', function (this: TestWorld, count: number) {
-  if (!this.activeBook) {
-    const book = createBook('Test Book', 'book-test', 'universe-test');
-    this.activeBook = book;
-    this.books.push(book);
-  }
-  this.scenes = [];
-  for (let i = 0; i < count; i++) {
-    const scene = createScene(
-      `Scene ${i + 1}`,
-      `2000-0${i + 1}-15`,
-      this.activeBook.bookId || '',
-      `${this.activeBook.sceneFolder || 'StoryLine/Scenes'}/Scene ${i + 1}.md`,
-    );
-    this.scenes.push(scene);
-  }
+Given('3 scenes in the active book', function (this: TestWorld) {
+  ExportSteps.setupExportTest(this, 3);
 });
 
-Given('{int} scenes in the timeline', function (this: TestWorld, count: number) {
-  if (!this.activeBook) {
-    const book = createBook('Test Book', 'book-test', 'universe-test');
-    this.activeBook = book;
-    this.books.push(book);
-  }
-  this.scenes = [];
-  for (let i = 0; i < count; i++) {
-    const scene = createScene(
-      `Scene ${i + 1}`,
-      `2000-0${i + 1}-15`,
-      this.activeBook.bookId || '',
-      `${this.activeBook.sceneFolder || 'StoryLine/Scenes'}/Scene ${i + 1}.md`,
-    );
-    this.scenes.push(scene);
-  }
+Given('5 scenes with distinct sequence numbers', function (this: TestWorld) {
+  ExportSteps.setupExportTest(this, 5);
 });
 
-Given('I am on a desktop platform', function (this: TestWorld) {
-  this.isDesktop = true;
+Given('the Scrivener importer is checked for availability', function (this: TestWorld) {
+  // Availability check is exercised in the When step
 });
 
-Given('I am on a mobile platform', function (this: TestWorld) {
-  this.isDesktop = false;
+When('I export the manuscript as markdown', function (this: TestWorld) {
+  return ExportSteps.exportManuscript(this);
 });
 
-When('I export the scenes', function (this: TestWorld) {
-  this.exportedCount = this.scenes.length;
-  for (const scene of this.scenes) {
-    this.createdFiles.set(`export/${scene.title}.md`, '');
-  }
+When('I export scenes 2 through 4 only', function (this: TestWorld) {
+  return ExportSteps.exportWithRange(this, 2, 4);
 });
 
-When('I select a date range for export', function (this: TestWorld) {
-  const rangeStart = '2000-02-01';
-  const rangeEnd = '2000-04-30';
-  const filtered = this.scenes.filter(s => {
-    const date = s.storyDate || '';
-    return date >= rangeStart && date <= rangeEnd;
-  });
-  this.exportedCount = filtered.length;
+When('running on a desktop platform', function (this: TestWorld) {
+  ExportSteps.checkDesktopAvailability(this);
 });
 
-When('I open the import menu', function (this: TestWorld) {
-  // Import menu opened — availability depends on platform
+When('running on a mobile platform', function (this: TestWorld) {
+  ExportSteps.checkMobileAvailability(this);
 });
 
-Then('all scenes are exported as markdown files', function (this: TestWorld) {
-  if (this.exportedCount !== this.scenes.length) {
-    throw new Error(`Expected ${this.scenes.length} exported, got ${this.exportedCount}`);
-  }
+Then('a single combined markdown file is created', function (this: TestWorld) {
+  ExportSteps.verifySingleExportFile(this);
 });
 
-Then('only scenes within the range are exported', function (this: TestWorld) {
-  if (this.exportedCount === undefined) throw new Error('No export count');
-  if (this.exportedCount < 1) {
-    throw new Error('No scenes exported in range');
-  }
+Then('the file contains all scene bodies in order', function (this: TestWorld) {
+  ExportSteps.verifyExportContent(this);
+});
+
+Then('only the selected scenes are included in the export', function (this: TestWorld) {
+  ExportSteps.verifyExportRange(this);
 });
 
 Then('Scrivener import is available', function (this: TestWorld) {
-  if (this.isDesktop !== true) {
-    throw new Error('Scrivener import should not be available on mobile');
-  }
+  ExportSteps.verifyScrivenerAvailable(this);
 });
 
 Then('Scrivener import is not available', function (this: TestWorld) {
-  if (this.isDesktop !== false) {
-    throw new Error('Scrivener import should not be available on desktop');
-  }
+  ExportSteps.verifyScrivenerNotAvailable(this);
 });

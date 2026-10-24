@@ -4,22 +4,23 @@ Feature: Import and export
   I want to import and export my manuscript,
   so that I can backup and migrate my work.
 
-  Scenario: Exporting scenes to markdown
+  Scenario: Export manuscript as combined markdown
     Given 3 scenes in the active book
-    When I export the scenes
-    Then all scenes are exported as markdown files
+    When I export the manuscript as markdown
+    Then a single combined markdown file is created
+    And the file contains all scene bodies in order
 
-  Scenario: Export range selection
-    Given 5 scenes in the timeline
-    When I select a date range for export
-    Then only scenes within the range are exported
+  Scenario: Export range selection by sequence
+    Given 5 scenes with distinct sequence numbers
+    When I export scenes 2 through 4 only
+    Then only the selected scenes are included in the export
 
-  Scenario: Import from Scrivener is available on desktop
-    Given I am on a desktop platform
-    When I open the import menu
+  Scenario: Scrivener import is available on desktop
+    Given the Scrivener importer is checked for availability
+    When running on a desktop platform
     Then Scrivener import is available
 
-  Scenario: Import from Scrivener is hidden on mobile
-    Given I am on a mobile platform
-    When I open the import menu
+  Scenario: Scrivener import is hidden on mobile
+    Given the Scrivener importer is checked for availability
+    When running on a mobile platform
     Then Scrivener import is not available
