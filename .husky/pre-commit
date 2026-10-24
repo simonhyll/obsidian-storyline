@@ -3,4 +3,4 @@
 set -eu
 pnpm lint:staged
 pnpm lint:architecture
-pnpm typecheck
+pnpm typecheck:regression

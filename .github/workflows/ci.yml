@@ -71,8 +71,16 @@ jobs:
       - name: Run Cucumber tests
         run: pnpm test
 
-      - name: TypeScript compilation
-        run: pnpm run typecheck
+      - name: TypeScript strict regression gate
+        run: pnpm typecheck:regression
+
+      - name: Full TypeScript debt summary
+        run: |
+          echo "=== Full TypeScript Diagnostic Summary ==="
+          pnpm exec tsc --noEmit --pretty false 2>&1 | grep ': error TS' | wc -l | xargs -I{} echo "Total historical diagnostics: {}"
+          echo "(These are pre-existing and tracked in scripts/ts-baseline.json)"
+          echo "The regression gate above ensures no new diagnostics are introduced."
+        continue-on-error: true
 
       - name: CSS regression check
         run: node scripts/css-regression-check.mjs

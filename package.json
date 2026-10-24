@@ -9,6 +9,7 @@
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
     "typecheck": "tsc --noEmit",
+    "typecheck:regression": "node scripts/typecheck-regression.mjs",
     "test": "cucumber-js",
     "test:rerun": "cucumber-js -p rerun",
     "verify:feature-layout": "node scripts/verify-feature-layout.mjs",
