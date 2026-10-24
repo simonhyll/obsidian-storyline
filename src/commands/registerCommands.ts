@@ -7,7 +7,7 @@
  * a small composition root. Preserves existing command IDs and behavior.
  */
 
-import { App, FuzzySuggestModal, Notice } from 'obsidian';
+import { App, FuzzySuggestModal, Notice, Platform } from 'obsidian';
 import {
     BOARD_VIEW_TYPE, TIMELINE_VIEW_TYPE, PLOTGRID_VIEW_TYPE,
     STORYLINE_VIEW_TYPE, CHARACTER_VIEW_TYPE, STATS_VIEW_TYPE,
@@ -186,6 +186,15 @@ function registerEventCommands(p: PluginTarget): void {
     });
 }
 
+/** Hide Scrivener's desktop-only import from Obsidian's mobile command palette. */
+function canImportScrivener(p: PluginTarget, checking: boolean): boolean {
+    if (Platform.isMobile) return false;
+    if (!checking) {
+        void import('../commands/scrivener-import').then(m => m.importScrivener(p));
+    }
+    return true;
+}
+
 /** Miscellaneous commands: snapshots, Scrivener import, convert note. */
 function registerMiscCommands(p: PluginTarget): void {
     p.addCommand({
@@ -197,7 +206,7 @@ function registerMiscCommands(p: PluginTarget): void {
     });
     p.addCommand({
         id: 'import-scrivener', name: 'Import Scrivener project',
-        callback: async () => { await import('../commands/scrivener-import').then(m => m.importScrivener(p)); },
+        checkCallback: (checking: boolean) => canImportScrivener(p, checking),
     });
     p.addCommand({
         id: 'convert-note-to-scene', name: 'Convert note to scene',
