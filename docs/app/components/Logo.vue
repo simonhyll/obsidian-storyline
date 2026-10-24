@@ -1,4 +1,5 @@
 <script setup lang="ts">
+defineOptions({ name: 'StorylineLogo' })
 const { app } = useRuntimeConfig()
 const logoSrc = `${app.baseURL}logo.png`
 </script>
