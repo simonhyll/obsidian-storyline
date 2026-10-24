@@ -139,17 +139,17 @@ export class TimelineFilterService {
         if (!ts || ts.kind === 'unknown') return false;
         const point = this.timeSpanService.getEarliestPoint(ts);
         if (!point) return false;
-        if (start && !this.timestampInRange(point, start, end)) return false;
-        return true;
+        return this.timestampInRange(point, start, end);
     }
 
-    private timestampInRange(point: import('../models/TimeSpan').Timestamp, start: TimeSpan, end?: TimeSpan): boolean {
-        const sp = this.timeSpanService.getEarliestPoint(start);
-        if (!sp) return true;
-        if (this.timeSpanService.compareTimestamps(point, sp) < 0) return false;
+    private timestampInRange(point: Timestamp, start?: TimeSpan, end?: TimeSpan): boolean {
+        if (start) {
+            const startPoint = this.timeSpanService.getEarliestPoint(start);
+            if (!startPoint || this.timeSpanService.compareTimestamps(point, startPoint) < 0) return false;
+        }
         if (end) {
-            const ep = this.timeSpanService.getEarliestPoint(end);
-            if (ep && this.timeSpanService.compareTimestamps(point, ep) > 0) return false;
+            const endPoint = this.timeSpanService.getEarliestPoint(end);
+            if (!endPoint || this.timeSpanService.compareTimestamps(point, endPoint) > 0) return false;
         }
         return true;
     }
