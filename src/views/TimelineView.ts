@@ -2993,7 +2993,6 @@ export class TimelineView extends ItemView {
                         .setTitle('No saved views')
                         .setDisabled(true)
                 );
-                return;
             }
             for (const view of views) {
                 menu.addItem(item =>
