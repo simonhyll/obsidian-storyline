@@ -230,7 +230,7 @@ export function parseFrontmatter(
 
   let fm: Record<string, unknown>;
   try {
-    fm = parseYaml(match[1]) as Record<string, unknown>;
+    fm = parseYaml(match[1] ?? '') as Record<string, unknown>;
   } catch {
     fm = {};
   }

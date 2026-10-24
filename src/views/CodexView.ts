@@ -1,5 +1,9 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { App, ItemView, WorkspaceLeaf, Modal, Setting, Notice } from 'obsidian';
+;
+;
+;
+;
 import * as obsidian from 'obsidian';
 import type SceneCardsPlugin from '../main';
 import type { CodexVisualGroup } from '../settings';
@@ -7,7 +11,15 @@ import { isSectionCollapsed, rememberSectionState } from '../settings';
 import { coerceString } from '../utils/narrow';
 import { SceneManager } from '../services/SceneManager';
 import { CodexManager } from '../services/CodexManager';
-import { CodexEntry, CodexCategoryDef, CodexFieldCategory, CodexFieldDef, BUILTIN_CODEX_CATEGORIES, makeCustomCodexCategory, CODEX_ICON_OPTIONS } from '../models/Codex';
+import type { CodexFieldCategory } from '../models/Codex';
+import type { CodexFieldDef } from '../models/Codex';
+import type { CodexEntry } from '../models/Codex';
+import type { CodexCategoryDef } from '../models/Codex';
+import { BUILTIN_CODEX_CATEGORIES, makeCustomCodexCategory, CODEX_ICON_OPTIONS } from '../models/Codex';
+;
+;
+;
+;
 import { CODEX_VIEW_TYPE, CHARACTER_VIEW_TYPE, LOCATION_VIEW_TYPE } from '../constants';
 import { renderViewSwitcher } from '../components/ViewSwitcher';
 import { applyMobileClass } from '../components/MobileAdapter';

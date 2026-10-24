@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises -- Obsidian's API surface forces dynamic dispatch; floating promises are intentional in DOM/event handlers */
-import { EventRef, ItemView, MarkdownView, TFile, WorkspaceLeaf } from 'obsidian';
+import type { EventRef } from 'obsidian';
+import { ItemView, MarkdownView, TFile, WorkspaceLeaf } from 'obsidian';
+;
 import type SceneCardsPlugin from '../main';
 import { SceneManager } from '../services/SceneManager';
 import { InspectorComponent } from '../components/Inspector';

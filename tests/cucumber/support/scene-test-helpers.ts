@@ -6,7 +6,8 @@
  */
 
 import { SceneManager } from '../../../src/services/SceneManager';
-import { StoryLineProject, deriveProjectFolders } from '../../../src/models/StoryLineProject';
+import { deriveProjectFolders } from '../../../src/models/StoryLineProject';
+import type { StoryLineProject } from '../../../src/models/StoryLineProject';
 import type { SceneCardsSettings } from '../../../src/settings';
 import type SceneCardsPlugin from '../../../src/main';
 import { createInMemoryVault, createAppMock, type TestVault, type AppMock } from './in-memory-vault';

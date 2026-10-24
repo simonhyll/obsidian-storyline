@@ -5,7 +5,7 @@
  * Series ↔ Universe membership and Book → Series → Universe chains.
  */
 import { Given, When, Then } from '@cucumber/cucumber';
-import { TestWorld } from '../support/world';
+import type { TestWorld } from '../support/world';
 import { setupHierarchyTest } from '../support/hierarchy-test-helpers';
 
 // ── Scenario: Book belongs to a series in a universe ──

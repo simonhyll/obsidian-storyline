@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { App, Notice, normalizePath } from 'obsidian';
+;
 import type SceneCardsPlugin from '../main';
-import { SeriesMetadata, deriveProjectFoldersFromFilePath } from '../models/StoryLineProject';
+import type { SeriesMetadata } from '../models/StoryLineProject';
+import { deriveProjectFoldersFromFilePath } from '../models/StoryLineProject';
+;
 
 /**
  * Manages series — groups of book projects sharing a common codex.

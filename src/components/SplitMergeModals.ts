@@ -1,8 +1,14 @@
  
 import { Modal, Setting, Notice } from 'obsidian';
+;
+;
 import type SceneCardsPlugin from '../main';
 import { tokenizeWords, DEFAULT_STORYLINE_LOCALE } from '../utils/locale';
-import { BUILTIN_STATUS_CONFIG, Scene, SceneStatus, getStatusOrder } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import type { SceneStatus } from '../models/Scene';
+import { BUILTIN_STATUS_CONFIG, getStatusOrder } from '../models/Scene';
+;
+;
 
 // ────────────────────────────────────────────────────────
 //  Split Scene Modal

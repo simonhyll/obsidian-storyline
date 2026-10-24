@@ -6,7 +6,7 @@
  * restored after a simulated plugin restart.
  */
 import { Given, When, Then } from '@cucumber/cucumber';
-import { TestWorld } from '../support/world';
+import type { TestWorld } from '../support/world';
 import { setupHierarchyTest, createReloadedSceneManager } from '../support/hierarchy-test-helpers';
 import { createPluginDataStore } from '../support/plugin-data-store';
 import { parseFrontmatter } from '../support/in-memory-vault';

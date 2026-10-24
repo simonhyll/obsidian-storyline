@@ -1,12 +1,21 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import * as obsidian from 'obsidian';
 import { Modal, App } from 'obsidian';
+;
+;
+;
 import type SceneCardsPlugin from '../main';
 import { resolveTagColor, getPlotlineHSL, resolveStickyNoteColors, resolveStickyNoteFontColor } from '../settings';
 import type { SceneManager } from '../services/SceneManager';
 import { formatActChapterPrefix } from '../utils/actChapter';
 import { parseSceneLocations } from '../services/MetadataParser';
-import { ColorCodingMode, Scene, SceneStatus, TIMELINE_MODE_ICONS, TIMELINE_MODE_LABELS, formatSceneLength, getStatusOrder, resolveStatusCfg } from '../models/Scene';
+import type { ColorCodingMode } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import type { SceneStatus } from '../models/Scene';
+import { TIMELINE_MODE_ICONS, TIMELINE_MODE_LABELS, formatSceneLength, getStatusOrder, resolveStatusCfg } from '../models/Scene';
+;
+;
+;
 
 /**
  * Renders a single scene card element

@@ -1,5 +1,7 @@
 import { App, Modal, Notice, Setting, TextComponent, DropdownComponent } from 'obsidian';
-import { Scene } from '../models/Scene';
+;
+import type { Scene } from '../models/Scene';
+;
 import { SceneManager } from '../services/SceneManager';
 
 /**

@@ -1,10 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { App, TFile } from 'obsidian';
+;
+;
 import { CharacterManager } from './CharacterManager';
 import { LocationManager } from './LocationManager';
 import { SceneManager } from './SceneManager';
-import { Scene } from '../models/Scene';
-import { CharacterRelation } from '../models/Character';
+import type { Scene } from '../models/Scene';
+;
+import type { CharacterRelation } from '../models/Character';
+;
 import { parseSceneLocations } from './MetadataParser';
 import { MetadataParser } from './MetadataParser';
 

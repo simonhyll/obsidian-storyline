@@ -3,7 +3,7 @@
  * Exercises real TimeSpanService and TimeSpan model.
  */
 import { Given, When, Then } from '@cucumber/cucumber';
-import { TestWorld } from '../support/world';
+import type { TestWorld } from '../support/world';
 import { TimeSpanService } from '../../../src/services/TimeSpanService';
 import type { TimeSpan } from '../../../src/models/TimeSpan';
 

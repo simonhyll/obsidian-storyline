@@ -6,7 +6,7 @@
  * Runs vault harness regression tests at bootstrap time.
  */
 import { Before, BeforeAll } from '@cucumber/cucumber';
-import { TestWorld } from './world';
+import type { TestWorld } from './world';
 import { runVaultHarnessTests } from './vault-harness-tests';
 import { runMigrationIntegrationTests } from './migration-integration-tests';
 import { runSettingsPayloadTests } from './settings-payload-tests';

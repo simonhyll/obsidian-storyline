@@ -1,4 +1,5 @@
 import * as yaml from 'js-yaml';
+export { App, moment } from './obsidian-extra-mocks';
 
 export class TFile {
     public path: string;

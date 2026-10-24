@@ -6,7 +6,7 @@
  * Mock dependencies record all calls for verification.
  */
 import { Given, When } from '@cucumber/cucumber';
-import { TestWorld } from '../support/world';
+import type { TestWorld } from '../support/world';
 import { executeCreation } from '../../../src/services/projectCreation';
 import { makeRecordingDeps } from '../support/project-creation-mock';
 import { runDropdownRaceTest } from '../support/dropdown-race-test';

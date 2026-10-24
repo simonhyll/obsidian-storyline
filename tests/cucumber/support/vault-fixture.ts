@@ -50,15 +50,16 @@ export function createScene(title: string, storyDate: string, bookId: string, fi
  * Create a test event fixture.
  */
 export function createTestEvent(name: string, ownerId: string, dateStr: string): Event {
+  const parts = dateStr.split('-');
   return createEvent(name, `StoryLine/Events/${name}.md`, {
     ownerId,
     timeSpan: {
       kind: 'instant',
       instant: {
         calendar: 'gregorian',
-        year: parseInt(dateStr.split('-')[0]),
-        month: parseInt(dateStr.split('-')[1]),
-        day: parseInt(dateStr.split('-')[2]),
+        year: parseInt(parts[0] ?? '0'),
+        month: parseInt(parts[1] ?? '0'),
+        day: parseInt(parts[2] ?? '0'),
         precision: 'day',
       },
     },

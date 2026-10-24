@@ -1,5 +1,9 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-unused-vars -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { Modal, App, Notice } from 'obsidian';
+;
+;
+;
+;
 import * as obsidian from 'obsidian';
 import { openConfirmModal } from './ConfirmModal';
 import { SplitSceneModal } from './SplitMergeModals';
@@ -9,9 +13,16 @@ import { SceneManager } from '../services/SceneManager';
 import type SceneCardsPlugin from '../main';
 import { renderTagPillInput, renderAutocompleteInput } from './InlineSuggest';
 import { AddFieldModal } from './AddFieldModal';
-import { UniversalFieldTemplate } from '../services/FieldTemplateService';
+import type { UniversalFieldTemplate } from '../services/FieldTemplateService';
+;
 import { parseActChapterInput, actChapterHasIllegalPathChars, isPrologueAct, isEpilogueAct, PROLOGUE_ACT, EPILOGUE_ACT } from '../utils/actChapter';
-import { Scene, SceneStatus, TIMELINE_MODES, TIMELINE_MODE_LABELS, TimelineMode, getStatusOrder, resolveStatusCfg } from '../models/Scene';
+import type { TimelineMode } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import type { SceneStatus } from '../models/Scene';
+import { TIMELINE_MODES, TIMELINE_MODE_LABELS, getStatusOrder, resolveStatusCfg } from '../models/Scene';
+;
+;
+;
 import { parseSceneLocations } from '../services/MetadataParser';
 
 /**

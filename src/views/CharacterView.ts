@@ -1,6 +1,14 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unused-vars -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import * as obsidian from 'obsidian';
 import { SceneManager } from '../services/SceneManager';
+;
+;
+;
+;
+;
+;
+;
+;
 import { CharacterManager } from '../services/CharacterManager';
 import { renderViewSwitcher } from '../components/ViewSwitcher';
 import { RelationshipMap } from '../components/RelationshipMap';
@@ -28,9 +36,25 @@ import { attachCodexVisualGroupReorder, getCodexVisualGroups, openCodexVisualGro
 import type { CodexVisualGroup } from '../settings';
 import { isSectionCollapsed, rememberSectionState } from '../settings';
 import { ItemView, Modal, Notice, Setting, TFile, WorkspaceLeaf } from 'obsidian';
-import { CHARACTER_CATEGORIES, CHARACTER_ROLES, Character, CharacterFieldDef, CharacterRelation, CharacterRelationCategory, RELATION_CATEGORIES, RELATION_TYPES_BY_CATEGORY, RelationHistoryEntry, RoleEntry, TagType, computeReciprocalUpdates, extractCharacterLocationTags, extractCharacterProps, getPrimaryRole, getRoleDisplay, getRoleList, normalizeCharacterRelations, normalizeRelationHistory } from '../models/Character';
+import type { Character } from '../models/Character';
+import type { RoleEntry } from '../models/Character';
+import type { TagType } from '../models/Character';
+import type { CharacterFieldDef } from '../models/Character';
+import type { CharacterRelation } from '../models/Character';
+import type { CharacterRelationCategory } from '../models/Character';
+import type { RelationHistoryEntry } from '../models/Character';
+import { CHARACTER_CATEGORIES, CHARACTER_ROLES, RELATION_CATEGORIES, RELATION_TYPES_BY_CATEGORY, computeReciprocalUpdates, extractCharacterLocationTags, extractCharacterProps, getPrimaryRole, getRoleDisplay, getRoleList, normalizeCharacterRelations, normalizeRelationHistory } from '../models/Character';
+;
+;
+;
+;
+;
+;
+;
 import { CHARACTER_VIEW_TYPE } from '../constants';
-import { Scene, isWrittenLikeStatus, resolveStatusCfg } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import { isWrittenLikeStatus, resolveStatusCfg } from '../models/Scene';
+;
 
 /**
  * Character View - rich character cards with full profile editing.

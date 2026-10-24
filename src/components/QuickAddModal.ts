@@ -1,5 +1,11 @@
 /* eslint-disable @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
-import { Scene, SceneStatus, SceneTemplate, BUILTIN_SCENE_TEMPLATES, getStatusOrder, getStatusConfig } from '../models/Scene';
+import type { SceneStatus } from '../models/Scene';
+import type { SceneTemplate } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import { BUILTIN_SCENE_TEMPLATES, getStatusOrder, getStatusConfig } from '../models/Scene';
+;
+;
+;
 import { SceneManager } from '../services/SceneManager';
 import type SceneCardsPlugin from '../main';
 import { renderAutocompleteInput, renderTagPillInput } from './InlineSuggest';

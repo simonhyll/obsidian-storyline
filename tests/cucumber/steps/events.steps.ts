@@ -8,7 +8,7 @@
  * the actual Obsidian Modal cancel handler cannot be tested in Node.js).
  */
 import { Given, When, Then } from '@cucumber/cucumber';
-import { TestWorld } from '../support/world';
+import type { TestWorld } from '../support/world';
 import { EventManager } from '../../../src/services/EventManager';
 import { TimeSpanService } from '../../../src/services/TimeSpanService';
 import { createInMemoryVault, createAppMock } from '../support/in-memory-vault';

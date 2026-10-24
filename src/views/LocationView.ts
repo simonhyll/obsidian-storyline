@@ -1,14 +1,28 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unused-vars -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { ButtonComponent, ItemView, Modal, Notice, Setting, TFile, TextComponent, WorkspaceLeaf } from 'obsidian';
+;
+;
+;
+;
+;
+;
 import * as obsidian from 'obsidian';
 import { LOCATION_VIEW_TYPE } from '../constants';
-import { Scene, resolveStatusCfg } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import { resolveStatusCfg } from '../models/Scene';
+;
 import { coerceString } from '../utils/narrow';
-import {
-    StoryWorld, StoryLocation, WorldOrLocation,
-    WORLD_CATEGORIES, LOCATION_CATEGORIES, LOCATION_TYPES,
-    LocationFieldCategory, LocationFieldDef,
-} from '../models/Location';
+import type { LocationFieldDef } from '../models/Location';
+import type { StoryWorld } from '../models/Location';
+import type { LocationFieldCategory } from '../models/Location';
+import type { WorldOrLocation } from '../models/Location';
+import type { StoryLocation } from '../models/Location';
+import { WORLD_CATEGORIES, LOCATION_CATEGORIES, LOCATION_TYPES,  } from '../models/Location';
+;
+;
+;
+;
+;
 import { SceneManager } from '../services/SceneManager';
 import { LocationManager } from '../services/LocationManager';
 import { renderViewSwitcher } from '../components/ViewSwitcher';

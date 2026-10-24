@@ -1,13 +1,36 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unnecessary-type-assertion -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; matching enable at end of file */
-import { StoryLineProject, deriveProjectFolders, deriveProjectFoldersFromFilePath } from '../models/StoryLineProject';
+import type { StoryLineProject } from '../models/StoryLineProject';
+import { deriveProjectFolders, deriveProjectFoldersFromFilePath } from '../models/StoryLineProject';
+;
+;
+;
+;
+;
+;
+;
+;
 import { MetadataParser, setWordcountLocale, setSceneTitleToStemMap } from './MetadataParser';
 import { normalizeStoryLineLocale, resolveLocale, DEFAULT_STORYLINE_LOCALE, AUTO_DETECT_LOCALE, type StoryLineLocale } from '../utils/locale';
 import { UndoManager } from './UndoManager';
-import { SceneQueryService, ISceneStore } from './SceneQueryService';
+import type { ISceneStore } from './SceneQueryService';
+import { SceneQueryService } from './SceneQueryService';
+;
 import { formatActChapterPrefix, sanitizeActChapterForPath, compareActChapter } from '../utils/actChapter';
 import type SceneCardsPlugin from '../main';
 import { App, Notice, TFile, TFolder, normalizePath, parseYaml, stringifyYaml } from 'obsidian';
-import { BeatSheetTemplate, FilterPreset, Scene, SceneFilter, SceneStatus, SortConfig, getStatusOrder } from '../models/Scene';
+import type { SceneFilter } from '../models/Scene';
+import type { SortConfig } from '../models/Scene';
+import type { BeatSheetTemplate } from '../models/Scene';
+import type { SceneStatus } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import type { FilterPreset } from '../models/Scene';
+import { getStatusOrder } from '../models/Scene';
+;
+;
+;
+;
+;
+;
 import { getVaultMarkdownFiles } from '../utils/vault';
 
 /**

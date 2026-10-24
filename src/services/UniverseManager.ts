@@ -1,16 +1,20 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { App, Notice, normalizePath } from 'obsidian';
+;
+;
+;
+;
 import type SceneCardsPlugin from '../main';
 import type { SeriesMetadata, StoryLineProject } from '../models/StoryLineProject';
-import {
-    UniverseMetadata,
-    ContainerEntity,
-    HierarchyPath,
-    InheritedCollectionResult,
-    UNIVERSE_JSON,
-    UNIVERSE_CODEX_FOLDER,
-    buildHierarchyPath,
-} from '../models/Universe';
+import type { HierarchyPath } from '../models/Universe';
+import type { ContainerEntity } from '../models/Universe';
+import type { UniverseMetadata } from '../models/Universe';
+import type { InheritedCollectionResult } from '../models/Universe';
+import { UNIVERSE_JSON, UNIVERSE_CODEX_FOLDER, buildHierarchyPath,  } from '../models/Universe';
+;
+;
+;
+;
 
 /**
  * Manages the Universe → Series → Book hierarchy.

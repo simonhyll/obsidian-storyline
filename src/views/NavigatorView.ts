@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { ItemView, WorkspaceLeaf, Menu, TFile, setIcon } from 'obsidian';
+;
 import type SceneCardsPlugin from '../main';
 import { ManuscriptView } from './ManuscriptView';
 import { resolveTagColor, getPlotlineHSL } from '../settings';
@@ -8,7 +9,9 @@ import { SceneCardComponent } from '../components/SceneCard';
 import { compareActChapter, getActDisplayLabel } from '../utils/actChapter';
 import { SceneManager } from '../services/SceneManager';
 import { MANUSCRIPT_VIEW_TYPE, NAVIGATOR_VIEW_TYPE } from '../constants';
-import { Scene, getStatusOrder, resolveStatusCfg } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import { getStatusOrder, resolveStatusCfg } from '../models/Scene';
+;
 
 /**
  * Sort modes available in the navigator.

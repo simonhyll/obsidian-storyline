@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises -- floating promises are intentional in DOM/event handlers */
-import { EventRef, ItemView, MarkdownView, TFile, WorkspaceLeaf, WorkspaceSplit, setIcon } from 'obsidian';
+import type { EventRef } from 'obsidian';
+import { ItemView, MarkdownView, TFile, WorkspaceLeaf, WorkspaceSplit, setIcon } from 'obsidian';
+;
 import type SceneCardsPlugin from '../main';
 import type { Scene } from '../models/Scene';
 import { SceneManager } from '../services/SceneManager';

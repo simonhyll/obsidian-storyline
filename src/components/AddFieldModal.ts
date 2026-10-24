@@ -1,6 +1,12 @@
  
 import { App, Modal, Notice, Setting } from 'obsidian';
-import { UniversalFieldTemplate, UniversalFieldType, generateId, suggestTopLevelKey, isReservedTopLevelKey } from '../services/FieldTemplateService';
+;
+;
+import type { UniversalFieldType } from '../services/FieldTemplateService';
+import type { UniversalFieldTemplate } from '../services/FieldTemplateService';
+import { generateId, suggestTopLevelKey, isReservedTopLevelKey } from '../services/FieldTemplateService';
+;
+;
 import { CHARACTER_CATEGORIES } from '../models/Character';
 
 // ═══════════════════════════════════════════════════════

@@ -3,7 +3,7 @@
  * Exercises real ExportService and ScrivenerImporter availability.
  */
 import { Given, When, Then } from '@cucumber/cucumber';
-import { TestWorld } from '../support/world';
+import type { TestWorld } from '../support/world';
 import { ExportSteps } from '../support/export-steps';
 
 Given('3 scenes in the active book', function (this: TestWorld) {

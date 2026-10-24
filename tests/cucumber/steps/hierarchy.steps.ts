@@ -6,7 +6,7 @@
  * remain simulated and are deferred to Step 6C.4b.3b.
  */
 import { Given, When, Then } from '@cucumber/cucumber';
-import { TestWorld } from '../support/world';
+import type { TestWorld } from '../support/world';
 import {
   setupHierarchyTest,
   createReloadedUniverseManager,

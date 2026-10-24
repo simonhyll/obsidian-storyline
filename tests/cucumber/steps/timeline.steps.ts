@@ -3,7 +3,7 @@
  * Exercises real TimelineNavigationService and TimeSpanService.
  */
 import { Given, When, Then } from '@cucumber/cucumber';
-import { TestWorld } from '../support/world';
+import type { TestWorld } from '../support/world';
 import { TimeSpanService } from '../../../src/services/TimeSpanService';
 import { TimelineNavigationService } from '../../../src/services/TimelineNavigationService';
 import type { Scene } from '../../../src/models/Scene';

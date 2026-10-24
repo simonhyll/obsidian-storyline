@@ -1,5 +1,7 @@
  
-import { EventRef, ItemView, MarkdownView, WorkspaceLeaf } from 'obsidian';
+import type { EventRef } from 'obsidian';
+import { ItemView, MarkdownView, WorkspaceLeaf } from 'obsidian';
+;
 import type SceneCardsPlugin from '../main';
 import { SceneManager } from '../services/SceneManager';
 import { InfoPanelComponent } from '../components/InfoPanel';

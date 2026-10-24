@@ -80,14 +80,16 @@ export class ExportSteps {
   static verifySingleExportFile(world: TestWorld): void {
     const vault = (world as any)._vault;
     if (!vault) throw new Error('No vault available');
-    const exportFiles = Array.from(vault.files.keys()).filter(
+    const exportFiles = Array.from(vault.files.keys(), (p: string) => p).filter(
       (p: string) => p.includes('/Exports/') && p.endsWith('.md'),
     );
     if (exportFiles.length === 0) throw new Error('No export file was created');
     if (exportFiles.length > 1) {
       throw new Error(`Expected 1 export file, found ${exportFiles.length}`);
     }
-    (world as any)._exportFilePath = exportFiles[0];
+    const firstExport = exportFiles[0];
+    if (!firstExport) throw new Error('Export file missing');
+    (world as any)._exportFilePath = firstExport;
   }
 
   static verifyExportContent(world: TestWorld): void {
@@ -98,12 +100,7 @@ export class ExportSteps {
         throw new Error(`Export missing body for "${scene.title}"`);
       }
     }
-    const positions = world.scenes.map((s) => content.indexOf(s.body));
-    for (let i = 1; i < positions.length; i++) {
-      if (positions[i] <= positions[i - 1]) {
-        throw new Error(`Scene order incorrect: "${world.scenes[i].title}"`);
-      }
-    }
+    verifySceneOrder(world, content);
     if (!content.includes(`# ${world.activeBook?.title}`)) {
       throw new Error('Export file missing book title header');
     }
@@ -143,6 +140,20 @@ export class ExportSteps {
     if (result === undefined) throw new Error('Scrivener availability was not checked');
     if (result !== false) {
       throw new Error(`Scrivener import should not be available on mobile, but canImportScrivener returned ${result}`);
+    }
+  }
+}
+
+function verifySceneOrder(world: TestWorld, content: string): void {
+  const positions = world.scenes.map((s) => content.indexOf(s.body ?? ''));
+  for (let i = 1; i < positions.length; i++) {
+    const prevPos = positions[i - 1];
+    const currPos = positions[i];
+    if (prevPos === undefined || currPos === undefined) continue;
+    if (currPos <= prevPos) {
+      const scene = world.scenes[i];
+      if (!scene) continue;
+      throw new Error(`Scene order incorrect: "${scene.title}"`);
     }
   }
 }

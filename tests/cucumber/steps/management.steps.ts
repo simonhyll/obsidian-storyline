@@ -6,7 +6,7 @@
  * through production EventManager methods.
  */
 import { Given, When, Then } from '@cucumber/cucumber';
-import { TestWorld } from '../support/world';
+import type { TestWorld } from '../support/world';
 import { EventManager } from '../../../src/services/EventManager';
 import { TimeSpanService } from '../../../src/services/TimeSpanService';
 import { createInMemoryVault, createAppMock } from '../support/in-memory-vault';

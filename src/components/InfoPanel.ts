@@ -2,7 +2,10 @@
 import * as obsidian from 'obsidian';
 import type SceneCardsPlugin from '../main';
 import { SceneManager } from '../services/SceneManager';
-import { Scene, getStatusOrder, resolveStatusCfg } from '../models/Scene';
+;
+import type { Scene } from '../models/Scene';
+import { getStatusOrder, resolveStatusCfg } from '../models/Scene';
+;
 import { renderAutocompleteInput, renderTagPillInput } from './InlineSuggest';
 import { parseSceneLocations } from '../services/MetadataParser';
 

@@ -4,7 +4,7 @@
  * Extracted from scenes.steps.ts to keep file sizes under budget.
  */
 
-import { TestWorld } from '../support/world';
+import type { TestWorld } from '../support/world';
 import { TimeSpanService } from '../../../src/services/TimeSpanService';
 import { MetadataParser } from '../../../src/services/MetadataParser';
 import { isValidUUID } from '../support/scene-test-helpers';
@@ -36,6 +36,7 @@ export function assertSceneHasValidUUID(world: TestWorld): void {
 export function assertSceneBelongsToBook(world: TestWorld, bookTitle: string): void {
   if (!world.scenes.length) throw new Error('No scenes to check');
   const scene = world.scenes[0];
+  if (!scene) throw new Error('First scene missing');
   if (!scene.ownerId) {
     throw new Error('Scene has no ownerId');
   }
@@ -70,6 +71,7 @@ export function assertNoSceneCreated(world: TestWorld): void {
 export function assertSceneDatePreserved(world: TestWorld): void {
   if (!world.scenes.length) throw new Error('No scene to check');
   const scene = world.scenes[0];
+  if (!scene) throw new Error('First scene missing');
   if (!world.sceneDate) throw new Error('No expected date');
   const tss = new TimeSpanService();
   if (scene.timeSpan) {
@@ -110,6 +112,7 @@ export function assertScenesInCorrectOrder(world: TestWorld): void {
   for (let i = 0; i < world.scenes.length && i < expectedDates.length; i++) {
     const scene = world.scenes[i];
     const expectedDate = expectedDates[i];
+    if (!scene) throw new Error(`Scene at index ${i} is missing`);
     if (!scene.storyDate) {
       throw new Error(`Scene at index ${i} has no storyDate for comparison`);
     }
@@ -119,13 +122,15 @@ export function assertScenesInCorrectOrder(world: TestWorld): void {
       );
     }
   }
-  // Verify every expected scene appears exactly once
-  if (world.sceneUuidsInOrder && world.sceneUuidsInOrder.length === world.scenes.length) {
-    const returnedUuids = world.scenes.map(s => s.id);
-    for (const uuid of world.sceneUuidsInOrder) {
-      if (!returnedUuids.includes(uuid)) {
-        throw new Error(`Expected scene UUID ${uuid} not found in sorted results`);
-      }
+  verifySceneUuids(world);
+}
+
+function verifySceneUuids(world: TestWorld): void {
+  if (!world.sceneUuidsInOrder || world.sceneUuidsInOrder.length !== world.scenes.length) return;
+  const returnedUuids = world.scenes.map(s => s.id);
+  for (const uuid of world.sceneUuidsInOrder) {
+    if (!returnedUuids.includes(uuid)) {
+      throw new Error(`Expected scene UUID ${uuid} not found in sorted results`);
     }
   }
 }

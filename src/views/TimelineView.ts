@@ -1,5 +1,8 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unused-vars -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { openConfirmModal } from '../components/ConfirmModal';
+;
+;
+;
 import { SceneManager } from '../services/SceneManager';
 import { SceneCardComponent } from '../components/SceneCard';
 import { InspectorComponent } from '../components/Inspector';
@@ -15,7 +18,13 @@ import { attachTooltip } from '../components/Tooltip';
 import type { SavedViewConfig, SavedViewMeta } from '../services/SavedViewService';
 import { ButtonComponent, DropdownComponent, ItemView, Menu, Modal, Notice, Setting, TFile, TextComponent, WorkspaceLeaf } from 'obsidian';
 import * as obsidian from 'obsidian';
-import { BUILTIN_BEAT_SHEETS, Scene, SceneStatus, TIMELINE_MODES, TIMELINE_MODE_ICONS, TIMELINE_MODE_LABELS, TimelineMode, formatSceneLength, getStatusOrder, resolveStatusCfg } from '../models/Scene';
+import type { TimelineMode } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import type { SceneStatus } from '../models/Scene';
+import { BUILTIN_BEAT_SHEETS, TIMELINE_MODES, TIMELINE_MODE_ICONS, TIMELINE_MODE_LABELS, formatSceneLength, getStatusOrder, resolveStatusCfg } from '../models/Scene';
+;
+;
+;
 import { getActDisplayLabel } from '../utils/actChapter';
 import { parseSceneLocations } from '../services/MetadataParser';
 import { deriveProjectFoldersFromFilePath, type StoryLineProject } from '../models/StoryLineProject';

@@ -6,7 +6,7 @@
  * UUID stability through production SceneManager methods.
  */
 import { Given, When, Then } from '@cucumber/cucumber';
-import { TestWorld } from '../support/world';
+import type { TestWorld } from '../support/world';
 import { MetadataParser } from '../../../src/services/MetadataParser';
 import { TimeSpanService } from '../../../src/services/TimeSpanService';
 import { setupSceneManager } from '../support/scene-test-helpers';

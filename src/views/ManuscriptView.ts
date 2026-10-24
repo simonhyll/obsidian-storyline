@@ -1,9 +1,17 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unused-vars -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { ItemView, WorkspaceLeaf, WorkspaceSplit, MarkdownRenderer, TFile, setIcon, Notice } from 'obsidian';
+;
+;
+;
 import { EditorView, Decoration } from '@codemirror/view';
 import { RangeSetBuilder, StateEffect, Compartment, EditorSelection } from '@codemirror/state';
 import { syntaxTree } from '@codemirror/language';
-import { Scene, SceneFilter, SortConfig } from '../models/Scene';
+import type { SceneFilter } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import type { SortConfig } from '../models/Scene';
+;
+;
+;
 import { SceneManager } from '../services/SceneManager';
 import { renderViewSwitcher } from '../components/ViewSwitcher';
 import { cloneSceneFilter, FiltersComponent } from '../components/Filters';

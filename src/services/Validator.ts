@@ -1,5 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
-import { Scene, TimelineMode } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import type { TimelineMode } from '../models/Scene';
+;
+;
 
 /**
  * Severity levels for plot hole warnings

@@ -1,6 +1,8 @@
  
 import { Modal, App, Setting } from 'obsidian';
-import { RenamePreview } from '../services/CascadeRenameService';
+;
+import type { RenamePreview } from '../services/CascadeRenameService';
+;
 
 /**
  * Modal that shows the user what a rename will affect and asks for confirmation.

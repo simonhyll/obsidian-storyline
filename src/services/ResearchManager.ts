@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { App, TFile, TFolder, normalizePath, parseYaml, stringifyYaml } from 'obsidian';
-import { ResearchPost, ResearchType } from '../models/Research';
+;
+;
+import type { ResearchType } from '../models/Research';
+import type { ResearchPost } from '../models/Research';
+;
+;
 import type SceneCardsPlugin from '../main';
 import { tokenizeWords, DEFAULT_STORYLINE_LOCALE } from '../utils/locale';
 

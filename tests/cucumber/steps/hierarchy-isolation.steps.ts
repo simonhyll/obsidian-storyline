@@ -5,7 +5,7 @@
  * that Books and Scenes from different universes are correctly isolated.
  */
 import { Given, When, Then } from '@cucumber/cucumber';
-import { TestWorld } from '../support/world';
+import type { TestWorld } from '../support/world';
 import { setupHierarchyTest } from '../support/hierarchy-test-helpers';
 import { parseFrontmatter } from '../support/in-memory-vault';
 import type { Scene } from '../../../src/models/Scene';

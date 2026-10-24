@@ -111,7 +111,9 @@ Then('the renamed view preserves the original configuration', async function (th
     // The renamed view should have the same config values
     const views = await this.savedViewService.listSavedViews();
     if (views.length === 0) throw new Error('No views found after rename');
-    const config = await this.savedViewService.loadSavedView(views[0].id);
+    const firstView = views[0];
+    if (!firstView) throw new Error('No views found after rename');
+    const config = await this.savedViewService.loadSavedView(firstView.id);
     if (!config) throw new Error('Could not load renamed view');
 
     if (config.timelineOrder !== this.savedViewOriginalConfig.timelineOrder) {

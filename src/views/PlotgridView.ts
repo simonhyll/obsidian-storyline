@@ -1,7 +1,18 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unused-vars -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { App, ItemView, WorkspaceLeaf, Menu, Modal, TFile, Notice, MarkdownRenderer, Component } from 'obsidian';
+;
+;
+;
+;
 import * as obsidian from 'obsidian';
-import { CellData, ColumnMeta, RowMeta, PlotGridData } from '../models/PlotGridData';
+import type { ColumnMeta } from '../models/PlotGridData';
+import type { PlotGridData } from '../models/PlotGridData';
+import type { RowMeta } from '../models/PlotGridData';
+import type { CellData } from '../models/PlotGridData';
+;
+;
+;
+;
 import { LocationManager } from '../services/LocationManager';
 import type { SceneFilter, SortConfig } from '../models/Scene';
 import { SceneManager } from '../services/SceneManager';
@@ -21,7 +32,9 @@ import { resolveTagColor, getPlotlineHSL, resolveStickyNoteColors, contrastTextC
 import { compareActChapter, getActDisplayLabel } from '../utils/actChapter';
 import { attachTooltip } from '../components/Tooltip';
 import type SceneCardsPlugin from '../main';
-import { Scene, getStatusOrder, resolveStatusCfg } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import { getStatusOrder, resolveStatusCfg } from '../models/Scene';
+;
 import { openConfirmModal } from '../components/ConfirmModal';
 import { getVaultMarkdownFiles } from '../utils/vault';
 

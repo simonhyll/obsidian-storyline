@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-unused-vars, no-useless-escape -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { SceneManager } from '../services/SceneManager';
+;
+;
 import { renderViewSwitcher } from '../components/ViewSwitcher';
 import * as obsidian from 'obsidian';
 import type SceneCardsPlugin from '../main';
@@ -9,9 +11,13 @@ import { STATS_VIEW_TYPE } from '../constants';
 import { applyMobileClass } from '../components/MobileAdapter';
 import { isSectionCollapsed, rememberSectionState } from '../settings';
 import { ItemView, WorkspaceLeaf } from 'obsidian';
-import { Scene, getStatusOrder, resolveStatusCfg } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import { getStatusOrder, resolveStatusCfg } from '../models/Scene';
+;
 import { getActDisplayLabel } from '../utils/actChapter';
-import { PlotWarning, Validator } from '../services/Validator';
+import type { PlotWarning } from '../services/Validator';
+import { Validator } from '../services/Validator';
+;
 import {
     tokenizeWords,
     splitSentences,

@@ -1,9 +1,15 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { ItemView, WorkspaceLeaf, TFile, Notice, Modal, Setting, FuzzySuggestModal } from 'obsidian';
+;
+;
 import * as obsidian from 'obsidian';
 import type SceneCardsPlugin from '../main';
 import { ResearchManager } from '../services/ResearchManager';
-import { ResearchPost, ResearchType, RESEARCH_TYPE_CONFIG } from '../models/Research';
+import type { ResearchType } from '../models/Research';
+import type { ResearchPost } from '../models/Research';
+import { RESEARCH_TYPE_CONFIG } from '../models/Research';
+;
+;
 import { RESEARCH_VIEW_TYPE } from '../constants';
 import { attachTooltip } from '../components/Tooltip';
 import { pickImage, resolveImagePath } from '../components/ImagePicker';

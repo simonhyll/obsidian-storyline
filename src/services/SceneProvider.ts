@@ -27,7 +27,8 @@
 // view code through it incrementally without behaviour changes.
 
 import type SceneCardsPlugin from '../main';
-import { Scene } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+;
 
 /** Virtual per-scene book metadata, never persisted to YAML. */
 export interface BookContext {

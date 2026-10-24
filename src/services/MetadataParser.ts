@@ -1,7 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unnecessary-type-assertion -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { hydrateUniversalFieldsFromTopLevel, mirrorUniversalFieldsToTopLevel } from './FieldTemplateService';
+;
+;
+;
 import { App, TFile, parseYaml, stringifyYaml } from 'obsidian';
-import { Scene, SceneStatus, TIMELINE_MODES, TimelineMode } from '../models/Scene';
+import type { TimelineMode } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import type { SceneStatus } from '../models/Scene';
+import { TIMELINE_MODES } from '../models/Scene';
+;
+;
+;
 import type { TimeSpan } from '../models/TimeSpan';
 import { coerceString } from '../utils/narrow';
 import { tokenizeWords, DEFAULT_STORYLINE_LOCALE, resolveLocale, type StoryLineLocale } from '../utils/locale';

@@ -1,15 +1,29 @@
 /* eslint-disable @typescript-eslint/no-misused-promises, @typescript-eslint/no-unnecessary-type-assertion, no-useless-escape -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
-import { StoryLineProject } from '../models/StoryLineProject';
+import type { StoryLineProject } from '../models/StoryLineProject';
+;
+;
 import { SceneManager } from './SceneManager';
+;
+;
+;
+;
 import { compareActChapter, getActDisplayLabel } from '../utils/actChapter';
 import { CharacterManager } from './CharacterManager';
 import { LocationManager } from './LocationManager';
-import { SLMarkdownToDocxConverter, SLDocxSettings, SLObsidianFontSettings } from './DocxConverter';
-import { SLPdfSettings } from './PdfConverter';
+import type { SLDocxSettings } from './DocxConverter';
+import type { SLObsidianFontSettings } from './DocxConverter';
+import { SLMarkdownToDocxConverter } from './DocxConverter';
+;
+;
+import type { SLPdfSettings } from './PdfConverter';
+;
 import { App, Notice, TFile } from 'obsidian';
-import { Scene, resolveStatusCfg } from '../models/Scene';
+import type { Scene } from '../models/Scene';
+import { resolveStatusCfg } from '../models/Scene';
+;
 import { getRoleDisplay, relationDisplayLabel } from '../models/Character';
-import { StoryLocation } from '../models/Location';
+import type { StoryLocation } from '../models/Location';
+;
 
 export type ExportFormat = 'md' | 'json' | 'html' | 'csv' | 'docx' | 'pdf';
 export type ExportScope = 'manuscript' | 'outline';

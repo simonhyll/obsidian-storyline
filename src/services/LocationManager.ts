@@ -1,10 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unnecessary-type-assertion -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { App, TFile, normalizePath, parseYaml, stringifyYaml } from 'obsidian';
+;
+;
+;
 import { coerceString } from '../utils/narrow';
-import {
-    StoryWorld, StoryLocation, WorldOrLocation,
-    WORLD_FIELD_KEYS, LOCATION_FIELD_KEYS,
-} from '../models/Location';
+import type { WorldOrLocation } from '../models/Location';
+import type { StoryWorld } from '../models/Location';
+import type { StoryLocation } from '../models/Location';
+import { WORLD_FIELD_KEYS, LOCATION_FIELD_KEYS,  } from '../models/Location';
+;
+;
+;
 import { hydrateUniversalFieldsFromTopLevel, mirrorUniversalFieldsToTopLevel } from './FieldTemplateService';
 import { MetadataParser, toWikilink } from './MetadataParser';
 

@@ -1,6 +1,15 @@
 /* eslint-disable @typescript-eslint/no-misused-promises -- Obsidian's API surface and several untyped third-party libraries force dynamic dispatch; floating promises are intentional in DOM/event handlers; matching enable at end of file */
 import { Modal, Setting, Notice, DropdownComponent, ToggleComponent } from 'obsidian';
-import { ExportService, ExportFormat, ExportRange, ExportScope } from '../services/ExportService';
+;
+;
+;
+import type { ExportFormat } from '../services/ExportService';
+import type { ExportRange } from '../services/ExportService';
+import type { ExportScope } from '../services/ExportService';
+import { ExportService } from '../services/ExportService';
+;
+;
+;
 import type SceneCardsPlugin from '../main';
 
 type ExportContent = ExportScope | 'scenes' | 'chapters';
