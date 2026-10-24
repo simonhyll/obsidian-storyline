@@ -1,30 +1,44 @@
 {
   "compilerOptions": {
-    // Environment setup & latest features
-    "lib": ["ESNext"],
-    "target": "ESNext",
-    "module": "Preserve",
-    "moduleDetection": "force",
-    "jsx": "react-jsx",
-    "allowJs": true,
-
-    // Bundler mode
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "noEmit": true,
-
-    // Best practices
-    "strict": true,
     "skipLibCheck": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-
-    // Some stricter flags (disabled by default)
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
+    "baseUrl": ".",
+    "inlineSourceMap": true,
+    "inlineSources": true,
+    "module": "ESNext",
+    "target": "ES6",
+    "allowJs": true,
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "importHelpers": true,
+    "isolatedModules": true,
+    "strictNullChecks": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": [
+      "DOM",
+      "ES5",
+      "ES6",
+      "ES7",
+      "ES2020",
+      "ES2022.Intl"
+    ],
+    "outDir": "./dist",
+    "paths": {
+      "models/*": [
+        "src/models/*"
+      ],
+      "views/*": [
+        "src/views/*"
+      ],
+      "components/*": [
+        "src/components/*"
+      ],
+      "services/*": [
+        "src/services/*"
+      ],
+      "utils/*": [
+        "src/utils/*"
+      ]
+    }
   },
   "include": [
     "src/**/*.ts",
