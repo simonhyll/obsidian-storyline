@@ -40,7 +40,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build docs
-        run: pnpm --filter docs build
+        run: pnpm --filter docs build --prerender
         env:
           NUXT_APP_BASE_URL: /obsidian-storyline/
 
@@ -51,7 +51,7 @@ jobs:
 
   deploy:
     needs: build
-    # if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

@@ -17,11 +17,6 @@ export default defineNuxtConfig({
 
   ssr: false,
 
-  nuxtProgress: {
-    color: '#f59e0b',
-    includeCSS: true
-  },
-
   devtools: {
     enabled: true
   },
