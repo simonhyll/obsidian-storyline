@@ -183,10 +183,9 @@ Given('an Event or Scene creation dialog is open', function (this: TestWorld) {
 });
 
 When('the author cancels', function (this: TestWorld) {
-  // In production, EventModal.cancel calls resolve(null) then close(),
-  // and QuickAddModal.cancel calls close() without calling onSubmit.
-  // The headless-modal-tests verifies these actual production paths.
-  // Here we verify the safety property: no persistence operations occurred.
+  // The headless-modal-tests (run at bootstrap via BeforeAll) exercises
+  // the real EventModal and QuickAddModal cancellation by clicking the
+  // actual Cancel buttons. Here we verify the safety property.
   this.cancelled = true;
   if (this.eventManagerOperations && this.eventManagerOperations.length > 0) {
     throw new Error(

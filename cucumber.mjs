@@ -15,7 +15,7 @@ const obsidianMockPath = pathToFileURL(
 
 registerHooks('./tests/cucumber/support/obsidian-hook.mjs', import.meta.url);
 
-const rerunFile = 'tests/cucumber/rerun.txt';
+const rerunFile = '@rerun.txt';
 
 const common = {
   import: [

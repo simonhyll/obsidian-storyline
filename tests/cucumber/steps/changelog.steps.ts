@@ -8,7 +8,6 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import { createRequire } from 'node:module';
 import { TestWorld } from '../support/world';
 const requireCjs = createRequire(import.meta.url);
-/* eslint-disable @typescript-eslint/no-require-imports -- CJS shared library */
 const {
     parseCommitMessage,
     generateEntries,
@@ -16,7 +15,6 @@ const {
     insertVersionSection,
     hasVersionSection,
 } = requireCjs('../../../scripts/changelog-lib.cjs');
-/* eslint-enable @typescript-eslint/no-require-imports -- CJS shared library */
 
 // ---------------------------------------------------------------------------
 // Step definitions — all exercise shared changelog-lib.cjs

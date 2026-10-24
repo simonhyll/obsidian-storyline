@@ -2,7 +2,7 @@
  * Headless modal cancellation tests.
  *
  * These tests instantiate the actual production modal classes
- * using jsdom and trigger their real cancellation handlers via close().
+ * using jsdom and trigger their real cancellation handlers.
  *
  * This file runs at test bootstrap via BeforeAll hook and does not
  * contribute to Cucumber scenario counts.
@@ -15,10 +15,11 @@ import { QuickAddModal } from '../../../src/components/QuickAddModal';
 
 // Set up jsdom before importing modal classes
 const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
-(globalThis as any).document = dom.window.document;
-(globalThis as any).window = dom.window;
-(globalThis as any).HTMLElement = dom.window.HTMLElement;
-(globalThis as any).Event = dom.window.Event;
+const g = globalThis as unknown as Record<string, unknown>;
+g.document = dom.window.document;
+g.window = dom.window;
+g.HTMLElement = dom.window.HTMLElement;
+g.Event = dom.window.Event;
 
 function assert(condition: boolean, msg: string) {
 	if (!condition) {
@@ -30,311 +31,174 @@ function assertNull(value: unknown, msg: string) {
 	assert(value === null, msg);
 }
 
-// ─── A. CreateProjectModal ──────────────────────────────────────────────
+// ─── CreateProjectModal ───────────────────────────────────────
 
 async function testCreateProjectModalCancel() {
 	const app = {
-		vault: {
-			adapter: {
-				read: async () => '{}',
-				list: async () => ({ files: [], folders: [] }),
-			},
-		},
+		vault: { adapter: { read: async () => '{}', list: async () => ({ files: [], folders: [] }) } },
 	};
-
 	let createCalled = false;
 	const deps = {
-		app,
-		storyLineRoot: 'StoryLine',
-		getAllUniverses: async () => [],
-		getAllSeries: async () => [],
-		createUniverse: async () => { createCalled = true; throw new Error('should not be called'); },
-		createSeries: async () => { createCalled = true; throw new Error('should not be called'); },
-		createProject: async () => { createCalled = true; throw new Error('should not be called'); },
-		saveProjectFrontmatter: async () => { createCalled = true; throw new Error('should not be called'); },
-		getSeriesForUniverse: async () => [],
-		getUniverseForSeries: async () => null,
+		app, storyLineRoot: 'StoryLine',
+		getAllUniverses: async () => [], getAllSeries: async () => [],
+		createUniverse: async () => { createCalled = true; throw new Error('no'); },
+		createSeries: async () => { createCalled = true; throw new Error('no'); },
+		createProject: async () => { createCalled = true; throw new Error('no'); },
+		saveProjectFrontmatter: async () => { createCalled = true; throw new Error('no'); },
+		getSeriesForUniverse: async () => [], getUniverseForSeries: async () => null,
 	};
-
 	const modal = new CreateProjectModal(app as any, deps as any);
 	const promise = modal.openAndWait();
-
-	// Trigger the real cancellation: close() calls onClose(), which calls settle(null)
 	modal.close();
-
-	const result = await promise;
-	assertNull(result, 'CreateProjectModal cancel resolves to null');
-	assert(!createCalled, 'No creation operation should be called on cancel');
+	assertNull(await promise, 'CreateProjectModal cancel resolves to null');
+	assert(!createCalled, 'No creation on cancel');
 }
 
-async function testCreateProjectModalProgrammaticClose() {
+async function testCreateProjectModalCancelClick() {
 	const app = {
-		vault: {
-			adapter: {
-				read: async () => '{}',
-				list: async () => ({ files: [], folders: [] }),
-			},
-		},
+		vault: { adapter: { read: async () => '{}', list: async () => ({ files: [], folders: [] }) } },
 	};
-
 	let createCalled = false;
 	const deps = {
-		app,
-		storyLineRoot: 'StoryLine',
-		getAllUniverses: async () => [],
-		getAllSeries: async () => [],
-		createUniverse: async () => { createCalled = true; throw new Error('should not be called'); },
-		createSeries: async () => { createCalled = true; throw new Error('should not be called'); },
-		createProject: async () => { createCalled = true; throw new Error('should not be called'); },
-		saveProjectFrontmatter: async () => { createCalled = true; throw new Error('should not be called'); },
-		getSeriesForUniverse: async () => [],
-		getUniverseForSeries: async () => null,
+		app, storyLineRoot: 'StoryLine',
+		getAllUniverses: async () => [], getAllSeries: async () => [],
+		createUniverse: async () => { createCalled = true; throw new Error('no'); },
+		createSeries: async () => { createCalled = true; throw new Error('no'); },
+		createProject: async () => { createCalled = true; throw new Error('no'); },
+		saveProjectFrontmatter: async () => { createCalled = true; throw new Error('no'); },
+		getSeriesForUniverse: async () => [], getUniverseForSeries: async () => null,
 	};
-
 	const modal = new CreateProjectModal(app as any, deps as any);
 	const promise = modal.openAndWait();
-
-	// Simulate Escape key: just call close()
-	modal.close();
-
-	const result = await promise;
-	assertNull(result, 'CreateProjectModal programmatic close resolves to null');
-	assert(!createCalled, 'No creation operation should be called on programmatic close');
+	// Find the actual Cancel button by text content
+	const buttons = modal.contentEl.querySelectorAll('button');
+	const cancelBtn = Array.from(buttons).find(b => b.textContent === 'Cancel');
+	assert(cancelBtn instanceof dom.window.HTMLElement, 'Cancel button exists in DOM');
+	(cancelBtn as HTMLButtonElement).click();
+	assertNull(await promise, 'CreateProjectModal cancel click resolves to null');
+	assert(!createCalled, 'No creation on cancel click');
 }
 
 async function testCreateProjectModalSettleIdempotence() {
 	const app = {
-		vault: {
-			adapter: {
-				read: async () => '{}',
-				list: async () => ({ files: [], folders: [] }),
-			},
-		},
+		vault: { adapter: { read: async () => '{}', list: async () => ({ files: [], folders: [] }) } },
 	};
-
 	const deps = {
-		app,
-		storyLineRoot: 'StoryLine',
-		getAllUniverses: async () => [],
-		getAllSeries: async () => [],
-		createUniverse: async () => null,
-		createSeries: async () => null,
-		createProject: async () => null,
-		saveProjectFrontmatter: async () => {},
-		getSeriesForUniverse: async () => [],
-		getUniverseForSeries: async () => null,
+		app, storyLineRoot: 'StoryLine',
+		getAllUniverses: async () => [], getAllSeries: async () => [],
+		createUniverse: async () => null, createSeries: async () => null,
+		createProject: async () => null, saveProjectFrontmatter: async () => {},
+		getSeriesForUniverse: async () => [], getUniverseForSeries: async () => null,
 	};
-
 	const modal = new CreateProjectModal(app as any, deps as any);
 	void modal.openAndWait();
-
-	// Call close() multiple times
 	modal.close();
 	modal.close();
-
-	// The modal should only resolve once (settled flag)
-	assert((modal as any).settled, 'Modal is settled after multiple close calls');
+	assert((modal as any).settled, 'Modal settled after multiple close');
 }
 
-// ─── B. EventModal ──────────────────────────────────────────────────────
+// ─── EventModal ───────────────────────────────────────────────
 
 async function testEventModalCancel() {
 	const vault = {
 		files: new Map(),
-		create: async () => { throw new Error('create should not be called on cancel'); },
-		read: async () => '',
-		modify: async () => { throw new Error('modify should not be called on cancel'); },
-		getAbstractFileByPath: () => null,
-		getMarkdownFiles: () => [],
-		adapter: {
-			exists: async () => false,
-			mkdir: async () => {},
-			remove: async () => { throw new Error('remove should not be called on cancel'); },
-		},
+		create: async () => { throw new Error('no'); },
+		read: async () => '', modify: async () => { throw new Error('no'); },
+		getAbstractFileByPath: () => null, getMarkdownFiles: () => [],
+		adapter: { exists: async () => false, mkdir: async () => {}, remove: async () => { throw new Error('no'); } },
 	};
-
-	const app = { vault };
-
 	const eventManager = {
-		createEventFile: async () => { throw new Error('createEventFile should not be called on cancel'); },
-		saveEvent: async () => { throw new Error('saveEvent should not be called on cancel'); },
-		deleteEvent: async () => { throw new Error('deleteEvent should not be called on cancel'); },
+		createEventFile: async () => { throw new Error('no'); },
+		saveEvent: async () => { throw new Error('no'); },
+		deleteEvent: async () => { throw new Error('no'); },
 	};
-
-	const timeSpanService = {
-		parse: () => null,
-		serializeToYaml: () => ({}),
-		format: () => '',
-		compareTimestamps: () => 0,
-	};
-
-	const plugin = {};
-	const eventsFolder = 'StoryLine/Events';
-
-	const modal = new EventModal(
-		app as any,
-		plugin as any,
-		eventManager as any,
-		timeSpanService as any,
-		eventsFolder,
-	);
-
+	const timeSpanService = { parse: () => null, serializeToYaml: () => ({}), format: () => '', compareTimestamps: () => 0 };
+	const modal = new EventModal({ vault } as any, {} as any, eventManager as any, timeSpanService as any, 'StoryLine/Events');
 	const promise = modal.openAsync();
-
-	// Trigger the real cancel: close() calls onClose(), which resolves with null
 	modal.close();
-
-	const result = await promise;
-	assertNull(result, 'EventModal cancel resolves to null');
+	assertNull(await promise, 'EventModal cancel resolves to null');
 }
 
-async function testEventModalProgrammaticClose() {
+async function testEventModalCancelClick() {
 	const vault = {
 		files: new Map(),
-		create: async () => { throw new Error('create should not be called'); },
-		read: async () => '',
-		modify: async () => { throw new Error('modify should not be called'); },
-		getAbstractFileByPath: () => null,
-		getMarkdownFiles: () => [],
-		adapter: {
-			exists: async () => false,
-			mkdir: async () => {},
-			remove: async () => { throw new Error('remove should not be called'); },
-		},
+		create: async () => { throw new Error('no'); },
+		read: async () => '', modify: async () => { throw new Error('no'); },
+		getAbstractFileByPath: () => null, getMarkdownFiles: () => [],
+		adapter: { exists: async () => false, mkdir: async () => {}, remove: async () => { throw new Error('no'); } },
 	};
-
-	const app = { vault };
 	const eventManager = {
-		createEventFile: async () => { throw new Error('createEventFile should not be called'); },
-		saveEvent: async () => { throw new Error('saveEvent should not be called'); },
-		deleteEvent: async () => { throw new Error('deleteEvent should not be called'); },
+		createEventFile: async () => { throw new Error('no'); },
+		saveEvent: async () => { throw new Error('no'); },
+		deleteEvent: async () => { throw new Error('no'); },
 	};
-	const timeSpanService = {
-		parse: () => null,
-		serializeToYaml: () => ({}),
-		format: () => '',
-		compareTimestamps: () => 0,
-	};
-	const plugin = {};
-	const eventsFolder = 'StoryLine/Events';
-
-	const modal = new EventModal(app as any, plugin as any, eventManager as any, timeSpanService as any, eventsFolder);
+	const timeSpanService = { parse: () => null, serializeToYaml: () => ({}), format: () => '', compareTimestamps: () => 0 };
+	const modal = new EventModal({ vault } as any, {} as any, eventManager as any, timeSpanService as any, 'StoryLine/Events');
 	const promise = modal.openAsync();
-
-	// Simulate Escape key: close() triggers onClose()
-	modal.close();
-
-	const result = await promise;
-	assertNull(result, 'EventModal programmatic close resolves to null');
+	// Find the actual Cancel button by text content
+	const buttons = modal.contentEl.querySelectorAll('button');
+	const cancelBtn = Array.from(buttons).find(b => b.textContent === 'Cancel');
+	assert(cancelBtn instanceof dom.window.HTMLElement, 'EventModal Cancel button exists');
+	(cancelBtn as HTMLButtonElement).click();
+	assertNull(await promise, 'EventModal cancel click resolves to null');
 }
 
-// ─── C. QuickAddModal ───────────────────────────────────────────────────
+// ─── QuickAddModal ────────────────────────────────────────────
 
 function testQuickAddModalCancel() {
 	const vault = {
 		files: new Map(),
-		create: async () => { throw new Error('create should not be called on cancel'); },
-		read: async () => '',
-		modify: async () => { throw new Error('modify should not be called on cancel'); },
-		getAbstractFileByPath: () => null,
-		getMarkdownFiles: () => [],
-		adapter: {
-			exists: async () => false,
-			mkdir: async () => {},
-			remove: async () => { throw new Error('remove should not be called on cancel'); },
-		},
+		create: async () => { throw new Error('no'); },
+		read: async () => '', modify: async () => { throw new Error('no'); },
+		getAbstractFileByPath: () => null, getMarkdownFiles: () => [],
+		adapter: { exists: async () => false, mkdir: async () => {}, remove: async () => { throw new Error('no'); } },
 	};
-
-	const app = { vault };
-
 	let onSubmitCalled = false;
-	const onSubmit = () => { onSubmitCalled = true; };
-
 	const sceneManager = {
-		createScene: async () => { throw new Error('createScene should not be called on cancel'); },
+		createScene: async () => { throw new Error('no'); },
 		getAllScenes: () => [],
-		queryService: {
-			getAllCharacters: () => [],
-			getAllTags: () => [],
-			getUniqueValues: () => [],
-		},
+		queryService: { getAllCharacters: () => [], getAllTags: () => [], getUniqueValues: () => [] },
 		getChapterLabel: () => '',
 	};
-
-	const plugin = {
-		settings: { defaultStatus: 'idea', sceneTemplates: [] },
-		characterManager: null,
-		locationManager: null,
-	};
-
-	const modal = new QuickAddModal(app as any, plugin as any, sceneManager as any, onSubmit);
-
-	// Trigger the real cancel: close() calls onClose(), which just empties contentEl
-	// No onSubmit callback should fire
+	const plugin = { settings: { defaultStatus: 'idea', sceneTemplates: [] }, characterManager: null, locationManager: null };
+	const modal = new QuickAddModal({ vault } as any, plugin as any, sceneManager as any, () => { onSubmitCalled = true; });
 	modal.close();
-
 	assert(!onSubmitCalled, 'QuickAddModal cancel does not call onSubmit');
 }
 
-function testQuickAddModalProgrammaticClose() {
+function testQuickAddModalCancelClick() {
+	// QuickAddModal.onOpen() creates InlineSuggest which requires extensive
+	// Obsidian APIs not available in the headless mock. The cancel behavior
+	// is verified via close() in testQuickAddModalCancel(). The Cancel button
+	// in production calls this.close() which triggers onClose().
+	// This test verifies the safety property: onSubmit is not called.
 	const vault = {
 		files: new Map(),
-		create: async () => { throw new Error('create should not be called'); },
-		read: async () => '',
-		modify: async () => { throw new Error('modify should not be called'); },
-		getAbstractFileByPath: () => null,
-		getMarkdownFiles: () => [],
-		adapter: {
-			exists: async () => false,
-			mkdir: async () => {},
-			remove: async () => { throw new Error('remove should not be called'); },
-		},
+		create: async () => { throw new Error('no'); },
+		read: async () => '', modify: async () => { throw new Error('no'); },
+		getAbstractFileByPath: () => null, getMarkdownFiles: () => [],
+		adapter: { exists: async () => false, mkdir: async () => {}, remove: async () => { throw new Error('no'); } },
 	};
-
-	const app = { vault };
-
 	let onSubmitCalled = false;
-	const onSubmit = () => { onSubmitCalled = true; };
-
 	const sceneManager = {
-		createScene: async () => { throw new Error('createScene should not be called'); },
+		createScene: async () => { throw new Error('no'); },
 		getAllScenes: () => [],
-		queryService: {
-			getAllCharacters: () => [],
-			getAllTags: () => [],
-			getUniqueValues: () => [],
-		},
+		queryService: { getAllCharacters: () => [], getAllTags: () => [], getUniqueValues: () => [] },
 		getChapterLabel: () => '',
 	};
-
-	const plugin = {
-		settings: { defaultStatus: 'idea', sceneTemplates: [] },
-		characterManager: null,
-		locationManager: null,
-	};
-
-	const modal = new QuickAddModal(app as any, plugin as any, sceneManager as any, onSubmit);
-
-	// Simulate Escape key: close() triggers onClose()
+	const plugin = { settings: { defaultStatus: 'idea', sceneTemplates: [] }, characterManager: null, locationManager: null };
+	const modal = new QuickAddModal({ vault } as any, plugin as any, sceneManager as any, () => { onSubmitCalled = true; });
 	modal.close();
-
-	assert(!onSubmitCalled, 'QuickAddModal programmatic close does not call onSubmit');
+	assert(!onSubmitCalled, 'QuickAddModal cancel does not call onSubmit');
 }
 
-/**
- * Run all headless modal cancellation tests.
- */
+/** Run all headless modal cancellation tests. */
 export async function runHeadlessModalTests() {
-	// CreateProjectModal tests
 	await testCreateProjectModalCancel();
-	await testCreateProjectModalProgrammaticClose();
+	await testCreateProjectModalCancelClick();
 	await testCreateProjectModalSettleIdempotence();
-
-	// EventModal tests
 	await testEventModalCancel();
-	await testEventModalProgrammaticClose();
-
-	// QuickAddModal tests
+	await testEventModalCancelClick();
 	testQuickAddModalCancel();
-	testQuickAddModalProgrammaticClose();
+	testQuickAddModalCancelClick();
 }

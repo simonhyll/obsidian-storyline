@@ -10,7 +10,7 @@
     "build": "node esbuild.config.mjs production",
     "typecheck": "tsc --noEmit",
     "test": "cucumber-js",
-    "test:failed": "cucumber-js -p rerun",
+    "test:rerun": "cucumber-js -p rerun",
     "verify:feature-layout": "node scripts/verify-feature-layout.mjs",
     "lint": "eslint \"**/*.ts\"",
     "lint:obsidian": "eslint \"**/*.ts\"",

@@ -133,13 +133,10 @@ When('I create the universe', async function (this: TestWorld) {
 });
 
 When('I cancel', async function (this: TestWorld) {
-    // Exercise the real CreateProjectModal cancellation path.
-    // The modal's onCancelClick calls settle(null) then close().
-    // The dedicated headless-modal-tests verifies this behavior
-    // with the actual production CreateProjectModal class, using jsdom.
-    // Here we verify that no executeCreation was called.
+    // The headless-modal-tests (run at bootstrap via BeforeAll) exercises
+    // the real CreateProjectModal cancellation by clicking the actual
+    // Cancel button. Here we verify the safety property: no creation occurred.
     this.cancelled = true;
-    // Verify no creation occurred
     if (this.mockDepsLog) {
         const createCalls = this.mockDepsLog.filter(
             entry => entry.action === 'createProject' || entry.action === 'createSeries' || entry.action === 'createUniverse',

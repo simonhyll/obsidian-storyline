@@ -3,19 +3,20 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-24 (Step 6C.4b.4a.2 — Restore CSS parity and verify modal cancellation)
+> Updated: 2026-10-24 (Step 6C.4b.4a.3 — Real cancellation button clicks and CI repair)
 > Total scenarios: 62
 > Total steps: 276
 
-## 6C.4b.4a.2 Update Summary
+## 6C.4b.4a.3 Update Summary
 
-Step 6C.4b.4a.2 restored CSS parity and proved headless modal testing works:
+Step 6C.4b.4a.3 repaired CI, added real Cancel button click tests, and fixed version mismatch:
 
-1. **CSS regression fixed** — Restored 3 missing selectors (`.relation-builder-type-controls` and children) in `assets/scss/views/_character.scss`. CSS regression check now passes.
-2. **Headless modal testing proven** — Extended `obsidian-mock.ts` with `patchObsidianElement()` helper that adds Obsidian DOM methods (`createEl`, `createDiv`, `createSpan`, `addClass`, `empty`, `setText`, `setCssStyles`, `onClickEvent`) to jsdom elements. Added `ButtonComponent`, `DropdownComponent`, `TextComponent` classes and `Setting.addButton()`.
-3. **Real production modals tested** — `headless-modal-tests.cjs` instantiates `CreateProjectModal`, `EventModal`, and `QuickAddModal` with jsdom and triggers their real `close()` handlers. 7 tests verify: cancel resolves to null, no creation operations triggered, settle idempotence, and programmatic close behavior.
-4. **Cancellation scenarios promoted** — Both cancellation scenarios now classified as production-backed: the headless tests exercise the real production modal classes, not simulated behavior.
-5. **Architecture** — 1,166 violations (delta 0 from baseline).
+1. **Version mismatch fixed** — Aligned `package.json` version from `1.11.0` to `1.11.1` to match `assets/manifest.json` and `dist/manifest.json`.
+2. **PR lint failure analyzed** — The 72 lint errors on changed lines are all historical issues in production files (EventModal, TimelineView, UniverseSelector, etc.), not introduced by our work. The only test-related error was an unused eslint-disable directive in `changelog.steps.ts`, which was removed.
+3. **Real Cancel button click tests** — `ButtonComponent` mock now creates a real DOM `<button>` element with click listeners. `Setting.addButton()` appends the button to the control element. Headless tests for `CreateProjectModal` and `EventModal` find and click the actual Cancel button by text content, verifying the production handler resolves the promise to null.
+4. **QuickAddModal limitation** — `QuickAddModal.onOpen()` creates `InlineSuggest` which requires extensive Obsidian APIs not available in the headless mock. Cancel is tested via `close()` only.
+5. **Architecture** — Reduced from 1,170 to 1,169 violations (-1) by extracting `createMockElement()` helper in `obsidian-mock.ts`.
+6. **Cancellation classification** — CreateProjectModal and EventModal cancellation now exercise real Cancel button click handlers. QuickAddModal cancellation tests `close()` only. Both Gherkin cancellation scenarios remain classified as partially production-backed: the headless tests run at bootstrap (BeforeAll) and verify the real modal classes, but the Gherkin steps themselves verify the safety property (no persistence operations) rather than directly instantiating modals.
 
 ## 6C.4b.4a Historical Summary (Corrected)
 

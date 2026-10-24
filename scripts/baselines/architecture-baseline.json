@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "description": "Architecture debt baseline for StoryLine Step 6A",
-  "generatedAt": "2026-10-24T00:11:27.443Z",
+  "generatedAt": "2026-10-24T01:03:11.699Z",
   "files": {
     "src/components/AddFieldModal.ts": {
       "violations": [
@@ -4979,56 +4979,40 @@
         }
       ]
     },
-    "tests/cucumber/support/hooks.ts": {
-      "violations": [
-        {
-          "rule": "max-statements",
-          "line": 38
-        }
-      ]
-    },
     "tests/cucumber/support/concurrency-guard-test.ts": {
       "violations": [
         {
           "rule": "max-lines-per-function",
-          "line": 24
+          "line": 25
         },
         {
           "rule": "max-statements",
-          "line": 24
+          "line": 25
         },
         {
           "rule": "complexity",
-          "line": 24
+          "line": 25
         }
       ]
     },
-    "tests/cucumber/support/headless-modal-tests.ts": {
+    "tests/cucumber/support/hooks.ts": {
       "violations": [
         {
-          "rule": "max-lines",
-          "line": 260
-        }
-      ]
-    },
-    "tests/cucumber/support/obsidian-mock.ts": {
-      "violations": [
-        {
-          "rule": "complexity",
-          "line": 217
+          "rule": "max-statements",
+          "line": 40
         }
       ]
     }
   },
   "summary": {
-    "totalFilesWithViolations": 83,
-    "totalViolations": 1171,
+    "totalFilesWithViolations": 81,
+    "totalViolations": 1169,
     "byRule": {
       "max-params": 48,
       "max-lines-per-function": 283,
-      "complexity": 307,
+      "complexity": 306,
       "max-statements": 227,
-      "max-lines": 65,
+      "max-lines": 64,
       "max-depth": 241
     }
   }

@@ -104,6 +104,7 @@ export class TextComponent {
     constructor() {
         const doc = typeof document !== 'undefined' ? document : null;
         this.inputEl = doc ? doc.createElement('input') : {} as unknown as HTMLElement;
+        if (doc) patchObsidianElement(this.inputEl);
     }
     setPlaceholder(_placeholder: string): this { return this; }
     setValue(_value: string): this { return this; }
@@ -125,13 +126,32 @@ export class DropdownComponent {
 }
 
 export class ButtonComponent {
+    public buttonEl: HTMLElement;
     private _onClick?: () => void;
     private _disabled = false;
-    setButtonText(_text: string): this { return this; }
+    constructor() {
+        const doc = typeof document !== 'undefined' ? document : null;
+        this.buttonEl = doc ? doc.createElement('button') : {} as unknown as HTMLElement;
+    }
+    setButtonText(text: string): this { this.buttonEl.textContent = text; return this; }
     setCta(): this { return this; }
     setDisabled(disabled: boolean): this { this._disabled = disabled; return this; }
-    onClick(fn: () => void): this { this._onClick = fn; return this; }
-    click(): void { if (!this._disabled && this._onClick) this._onClick(); }
+    onClick(fn: () => void): this {
+        this._onClick = fn;
+        this.buttonEl.addEventListener('click', () => {
+            if (!this._disabled) fn();
+        });
+        return this;
+    }
+    click(): void { this.buttonEl.dispatchEvent(new Event('click')); }
+}
+
+function createMockElement(tag: string): HTMLElement {
+    const doc = typeof document !== 'undefined' ? document : null;
+    if (!doc) return {} as unknown as HTMLElement;
+    const el = doc.createElement(tag);
+    patchObsidianElement(el);
+    return el;
 }
 
 /** Minimal Setting mock for headless modal tests. */
@@ -143,18 +163,10 @@ export class Setting {
 
     constructor(container: HTMLElement) {
         const doc = typeof document !== 'undefined' ? document : null;
-        const settingDiv = doc ? doc.createElement('div') : {} as unknown as HTMLElement;
-        if (doc) patchObsidianElement(settingDiv);
-        this.settingEl = settingDiv;
-        const controlDiv = doc ? doc.createElement('div') : {} as unknown as HTMLElement;
-        if (doc) patchObsidianElement(controlDiv);
-        this.controlEl = controlDiv;
-        const nameSpan = doc ? doc.createElement('span') : {} as unknown as HTMLElement;
-        if (doc) patchObsidianElement(nameSpan);
-        this.nameEl = nameSpan;
-        const descSpan = doc ? doc.createElement('span') : {} as unknown as HTMLElement;
-        if (doc) patchObsidianElement(descSpan);
-        this.descEl = descSpan;
+        this.settingEl = createMockElement('div');
+        this.controlEl = createMockElement('div');
+        this.nameEl = createMockElement('span');
+        this.descEl = createMockElement('span');
         if (doc) {
             container.appendChild(this.settingEl);
             this.settingEl.appendChild(this.controlEl);
@@ -187,6 +199,9 @@ export class Setting {
     addButton(cb: (btn: ButtonComponent) => void): this {
         const btn = new ButtonComponent();
         cb(btn);
+        if (btn.buttonEl && typeof document !== 'undefined') {
+            this.controlEl.appendChild(btn.buttonEl);
+        }
         return this;
     }
 }

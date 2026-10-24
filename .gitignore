@@ -10,7 +10,7 @@ coverage/
 .storyline-dev-vault/
 
 # Cucumber rerun file for failed test re-runs
-tests/cucumber/@rerun.txt
+@rerun.txt
 
 # dist/ contains generated plugin artifacts (main.js, styles.css, manifest.json).
 # The authoritative source manifest lives in assets/manifest.json.
