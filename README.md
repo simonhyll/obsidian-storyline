@@ -1,5 +1,5 @@
 <div align="center">
-<img src="https://media.githubusercontent.com/media/simonhyll/obsidian-storyline/refs/heads/feat/rework/logo.png" width="200" alt="Störyline logo">
+<img src="https://media.githubusercontent.com/media/simonhyll/obsidian-storyline/refs/heads/feat/rework/logo.png" width="250" alt="Störyline logo">
 
 **Story planning and writing tools for Obsidian.**
 
