@@ -47,12 +47,15 @@ Feature: Timeline filtering
     Given I have timeline books in the same universe
     And a universe-owned event
     And a book-owned event for the first book only
+    And an unowned event outside the selected universe
     When I view the timeline for the first book
     Then the universe-owned event is visible
     And the book-owned event is visible
+    And the outside unowned event is not visible
     When I view the timeline for the second book
     Then the universe-owned event is visible
     And the book-owned event for the first book is not visible
+    And the outside unowned event is not visible
 
   Scenario: Canonical events are deduplicated
     Given I have 2 books referencing the same event
