@@ -7,6 +7,7 @@
 [![Obsidian Plugin](https://img.shields.io/badge/Obsidian-Plugin-7C3AED?style=flat-square)](https://obsidian.md/)
 ![Status](https://img.shields.io/badge/Status-Under_Construction-FBBF24?style=flat-square)
 ![AI Skills](https://img.shields.io/badge/AI_Skills-Coming_Soon-2563EB?style=flat-square)
+[![Sponsor on GitHub](https://img.shields.io/badge/Sponsor-❤️_GitHub-F472B6?style=flat-square)](https://github.com/sponsors/simonhyll)
 
 *An open-source fork of StoryLine — currently under development.*
 </div>

@@ -29,6 +29,11 @@ export default defineAppConfig({
       'to': 'https://github.com/simonhyll/obsidian-storyline',
       'target': '_blank',
       'aria-label': 'GitHub'
+    }, {
+      'icon': 'i-lucide-heart',
+      'to': 'https://github.com/sponsors/simonhyll',
+      'target': '_blank',
+      'aria-label': 'Sponsor'
     }]
   },
   footer: {
