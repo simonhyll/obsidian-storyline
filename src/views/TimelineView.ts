@@ -3026,7 +3026,7 @@ export class TimelineView extends ItemView {
      */
     private openSaveViewModal(): void {
         const modal = new Modal(this.plugin.app);
-        modal.titleEl.setText('Save Timeline View');
+        modal.titleEl.setText('Save timeline view');
 
         const nameInput = new TextComponent(modal.contentEl.createDiv());
         nameInput.setPlaceholder('View name');
@@ -3036,7 +3036,7 @@ export class TimelineView extends ItemView {
         descInput.setPlaceholder('Description (optional)');
 
         modal.contentEl.createEl('p', {
-            text: 'This saves the current Timeline configuration (order, swimlanes, book selection, zoom).',
+            text: 'This saves the current timeline configuration (order, swimlanes, book selection, zoom).',
             attr: { style: 'font-size:12px;color:var(--text-muted);margin-bottom:12px;' }
         });
 
@@ -3078,7 +3078,7 @@ export class TimelineView extends ItemView {
      */
     private openManageViewsModal(): void {
         const modal = new Modal(this.plugin.app);
-        modal.titleEl.setText('Manage Saved Views');
+        modal.titleEl.setText('Manage saved views');
 
         const listContainer = modal.contentEl.createDiv({
             attr: { style: 'max-height:300px;overflow-y:auto;' }
