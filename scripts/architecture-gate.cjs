@@ -249,6 +249,17 @@ function compare(current, baseline, trackedFiles) {
   const baselineTotal = baseline ? baseline.summary.totalViolations : 0;
   const totalDelta = currentTotal - baselineTotal;
 
+  // Show violations in previously clean or newly tracked files, even if
+  // they are already present in Git's index (CI always checks out tracked files).
+  const newlyViolating = [...currentFileSet].filter(file => !baselineFileSet.has(file));
+  if (newlyViolating.length) {
+    messages.push("Newly violating files not present in architecture baseline:");
+    for (const file of newlyViolating) {
+      const details = current.files[file].violations;
+      messages.push(`   - ${file}: ${details.map(v => v.rule + ":" + v.line).join(", ")}`);
+    }
+  }
+
   if (totalDelta > 0 && !increasedFiles.length && !newFiles.length) {
     // This shouldn't happen normally, but catch it anyway
     ok = false;
