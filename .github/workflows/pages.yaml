@@ -41,6 +41,8 @@ jobs:
 
       - name: Build docs
         run: pnpm --filter docs build
+        env:
+          NUXT_APP_BASE_URL: /obsidian-storyline/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -49,7 +51,7 @@ jobs:
 
   deploy:
     needs: build
-    # if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
