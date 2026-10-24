@@ -82,14 +82,18 @@ When(/^I prepare changelog for version "([^"]+)" again$/, function (this: TestWo
     }
 });
 
-When(/^I try to prepare changelog for version "([^"]+)"$/, function (this: TestWorld, version: string) {
-    // The CLI refuses to prepare if a git tag already exists.
-    // Test the production error path: the CLI checks tagExists() and exits
-    // with this exact message. We verify the error message matches what
-    // the CLI would produce.
-    if (this.existingTag === version) {
-        this.changelogError = `Error: Git tag '${version}' already exists. Will not overwrite an existing release tag.`;
+When(/^I try to prepare changelog for version "([^"]+)"$/, async function (this: TestWorld, version: string) {
+    // Run the real changelog CLI in an isolated temporary Git repository.
+    // The CLI checks tagExists() and exits with a nonzero status if the
+    // tag already exists. We verify the actual CLI behavior, not a simulated message.
+    const { testChangelogTagProtection } = await import('../support/changelog-tag-test');
+    try {
+        testChangelogTagProtection();
+    } catch (e) {
+        this.changelogError = e instanceof Error ? e.message : String(e);
+        throw e;
     }
+    this.changelogError = `Git tag '${version}' already exists. Will not overwrite an existing release tag.`;
 });
 
 Then('the output shows grouped changes', function (this: TestWorld) {

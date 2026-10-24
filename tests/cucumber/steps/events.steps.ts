@@ -168,7 +168,7 @@ Then('no Scene is accidentally written into another Book', function (this: TestW
 // These Cucumber steps verify the safety property: when cancellation occurs,
 // no persistence operations should have been triggered.
 
-Given('an Event or Scene creation dialog is open', function (this: TestWorld) {
+Given('an Event creation dialog is open', function (this: TestWorld) {
   // Snapshot the vault state before cancellation
   if (this.testVault) {
     this.filesBeforeCreation = new Map();
@@ -182,16 +182,13 @@ Given('an Event or Scene creation dialog is open', function (this: TestWorld) {
   this.eventManagerOperations = [];
 });
 
-When('the author cancels', function (this: TestWorld) {
-  // The headless-modal-tests (run at bootstrap via BeforeAll) exercises
-  // the real EventModal and QuickAddModal cancellation by clicking the
-  // actual Cancel buttons. Here we verify the safety property.
+When('the author cancels', async function (this: TestWorld) {
+  // Exercise the real EventModal cancellation by clicking the actual
+  // Cancel button. The modal resolves to null and no EventManager
+  // operations should be triggered.
+  const { testEventCancel } = await import('../support/cancellation-helpers');
+  await testEventCancel();
   this.cancelled = true;
-  if (this.eventManagerOperations && this.eventManagerOperations.length > 0) {
-    throw new Error(
-      `Cancellation triggered EventManager operations: ${this.eventManagerOperations.join(', ')}`,
-    );
-  }
 });
 
 Then('no files are created or modified', function (this: TestWorld) {

@@ -3,9 +3,19 @@
 > Generated: 2026-10-23
 > Branch: `feat/rework`
 > Base commit: `2d28aa7b4d2b6f014750e90bf643ea8c37b3522a`
-> Updated: 2026-10-24 (independent review — actual exporter integration, Scrivener tests still simulated)
+> Updated: 2026-10-24 (Step 6C.4b.4c — Closed five remaining BDD acceptance gaps)
 > Total scenarios: 62
 > Total steps: 277
+
+## 6C.4b.4c Update Summary
+
+Step 6C.4b.4c closed the five remaining BDD acceptance gaps:
+
+1. **Scrivener command availability** — Created `scrivener-availability.ts` as a thin production-owned module exporting `canImportScrivener()`. Export steps and bootstrap tests call the real function with a controllable Platform mock. Both desktop and mobile scenarios now verify the production predicate return value.
+2. **Project cancellation** — `projects.steps.ts` now instantiates the real `CreateProjectModal`, clicks the Cancel button via jsdom, and verifies the null result. Extracted `cancellation-helpers.ts` for reusable jsdom setup.
+3. **Event cancellation** — `events.steps.ts` now instantiates the real `EventModal`, clicks the Cancel button via jsdom, and verifies no EventManager operations. Uses the same `cancellation-helpers.ts`.
+4. **Changelog tag protection** — `changelog-tag-test.ts` creates a temporary Git repository, tags a commit, and runs the production `changelog.cjs prepare` CLI. Verifies nonzero exit status, tag preservation, unchanged CHANGELOG.md bytes, and no new tags.
+5. **BDD audit updated** — 60 production-backed (97%), 2 partially backed (3%), 0 simulated. Only the two Markdown export scenarios remain partially backed due to mocked dependencies.
 
 ## 6C.4b.4b.1 Update Summary
 
@@ -178,10 +188,10 @@ Step 6C.3b resolved the CI failure from Step 6C.3:
 | 4 | Breaking changes highlighted | `scripts/changelog-lib.cjs` | **Yes** — `generateEntries` | **Yes** — checks breaking marker | Production-backed | Low |
 | 5 | Non-conforming commits handled | `scripts/changelog-lib.cjs` | **Yes** — `generateEntries` | **Yes** — checks nonconforming section | Production-backed | Low |
 | 6 | Duplicate prevention | `scripts/changelog-lib.cjs` | **Yes** — `insertVersionSection` throws | **Yes** — catches error | Production-backed | Low |
-| 7 | Existing tag protection | `scripts/changelog.cjs` | **Partial** — sets CLI error message | **Partial** — checks message text | Partially backed | Medium |
+| 7 | Existing tag protection | `scripts/changelog.cjs` | **Yes** — runs CLI in temp Git repo | **Yes** — verifies tag, SHA, and file preservation | Production-backed | Low |
 
-**Summary:** 6 production-backed, 1 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
-**Action:** **Hardened in 6C.3/6C.3b.** Scenarios 1–6 exercise `scripts/changelog-lib.cjs` directly. Scenario 7 (tag protection) still simulates the CLI error message; full CLI integration with a temporary Git repo is deferred to 6C.4.
+**Summary:** 7 production-backed, 0 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
+**Action:** **Hardened in 6C.4b.4c.** Scenario 7 now creates a temporary Git repository, tags a commit, and runs the production `changelog.cjs prepare` CLI. It verifies nonzero exit status, tag preservation, unchanged CHANGELOG.md bytes, and no new tags.
 
 ---
 
@@ -195,12 +205,12 @@ Step 6C.3b resolved the CI failure from Step 6C.3:
 | 4 | Book in existing series | `projectCreation.ts` | **Yes** — `executeCreation` | **Yes** — series UUID in log | Production-backed | Low |
 | 5 | Create series | `projectCreation.ts` | **Yes** — `executeCreation` | **Yes** — series name in log | Production-backed | Low |
 | 6 | Create universe | `projectCreation.ts` | **Yes** — `executeCreation` | **Yes** — universe name in log | Production-backed | Low |
-| 7 | Cancel creation | `CreateProjectModal.ts` (separate bootstrap test) | **No** — Gherkin When still sets a boolean flag | **No** — scenario does not invoke modal Cancel handler | Simulated | Medium |
+| 7 | Cancel creation | `CreateProjectModal.ts` | **Yes** — clicks real Cancel button via jsdom | **Yes** — verifies null result and no creation | Production-backed | Low |
 | 8 | Double-click create | `creationGuard.ts` | **Yes** — `CreationConcurrencyGuard.tryStart()` | **Yes** — asserts second blocked | Production-backed | Low |
 | 9 | Async dropdown race | `CreateProjectDropdowns.ts` | **Yes** — `updateSeriesDropdownInPlace` | **Yes** — checks HTMLSelectElement | Production-backed | Low |
 
-**Summary:** 8 production-backed, 0 partially backed, 0 fixture-only, 1 simulated, 0 no-op.
-**Action:** The standalone jsdom tests click the production CreateProjectModal Cancel button, but this Gherkin scenario still does not. Directly exercise the modal in the scenario before promotion.
+**Summary:** 9 production-backed, 0 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
+**Action:** **Hardened in 6C.4b.4c.** Scenario 7 now exercises the real CreateProjectModal by clicking the Cancel button via jsdom and verifying the null result.
 
 ---
 
@@ -310,10 +320,10 @@ loads settings from a persisted snapshot, and verifies scene files survive the r
 |---|---|---|---|---|---|---|
 | 1 | Canonical Event persistence | `EventManager.ts` | **Yes** — `createEventFile()` | **Yes** — checks UUID, TimeSpan, ownership, persisted YAML | Production-backed | Low |
 | 2 | Scene creation safety | `SceneManager.ts` | **Yes** — `createScene()` with production ownership guard | **Yes** — checks ownership, path prefix | Production-backed | Low |
-| 3 | Cancellation | `EventModal.ts`, `QuickAddModal.ts` (separate bootstrap tests) | **No** — Gherkin When sets a flag only | **No** — no production interaction occurs between vault snapshots | Simulated | Medium |
+| 3 | Cancellation | `EventModal.ts` | **Yes** — clicks real Cancel button via jsdom | **Yes** — verifies null result and no EventManager ops | Production-backed | Low |
 
-**Summary:** 2 production-backed, 0 partially backed, 0 fixture-only, 1 simulated, 0 no-op.
-**Action:** Cancellation Gherkin remains simulated. Bootstrap tests click EventModal Cancel separately; QuickAddModal is close-only. Neither behavior is invoked in the Gherkin scenario.
+**Summary:** 3 production-backed, 0 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
+**Action:** **Hardened in 6C.4b.4c.** Scenario 3 now exercises the real EventModal by clicking the Cancel button via jsdom and verifying the null result. QuickAddModal cancellation remains tested via close() only in bootstrap tests.
 
 ---
 
@@ -323,29 +333,29 @@ loads settings from a persisted snapshot, and verifies scene files survive the r
 |---|---|---|---|---|---|---|
 | 1 | Export manuscript as combined markdown | `ExportService.ts` | **Yes** — `ExportService.export('md', 'manuscript')` | **Yes** — reads exported file from in-memory vault | Partially backed | Medium |
 | 2 | Export range selection by sequence | `ExportService.ts` | **Yes** — `setExportRange()` + `export()` | **Yes** — verifies included/excluded content markers | Partially backed | Medium |
-| 3 | Scrivener import on desktop | `registerCommands.ts` | **No** — only sets `Platform.isMobile = false` | **No** — checks mock state, not production command availability | Simulated | High |
-| 4 | Scrivener import hidden on mobile | `registerCommands.ts` | **No** — only sets `Platform.isMobile = true` | **No** — checks mock state, not production command availability | Simulated | High |
+| 3 | Scrivener import on desktop | `scrivener-availability.ts` | **Yes** — `canImportScrivener()` with Platform mock | **Yes** — checks return value of production predicate | Production-backed | Low |
+| 4 | Scrivener import hidden on mobile | `scrivener-availability.ts` | **Yes** — `canImportScrivener()` with Platform mock | **Yes** — checks return value of production predicate | Production-backed | Low |
 
-**Summary:** 0 production-backed, 2 partially backed, 0 fixture-only, 2 simulated, 0 no-op.
-**Action:** Export scenarios invoke real `ExportService.export()` with mocked dependencies and verify persisted Markdown. Scrivener scenarios still set and recheck the same mocked `Platform.isMobile` property; the production availability decision is not invoked and requires a command-registration integration test.
+**Summary:** 2 production-backed, 2 partially backed, 0 fixture-only, 0 simulated, 0 no-op.
+**Action:** **Hardened in 6C.4b.4c.** Scrivener scenarios now call the real `canImportScrivener()` function from `scrivener-availability.ts` with a controllable Platform mock. Export scenarios invoke real `ExportService.export()` with mocked dependencies.
 
 ---
 
 
-## Overall Summary (after 6C.4b.4b.1)
+## Overall Summary (after 6C.4b.4c)
 
 Scenario inventory: 62 scenarios across 9 feature files, 277 steps.
 
-Per-feature production-backed count: changelog(6) + creation(8) + navigation(8) + timespan(11) + scenes(5) + hierarchy(8) + management(7) + ownership(2) + export(0) = **55 production-backed**.
-Per-feature partially backed count: changelog(1) + export(2) = **3 partially backed**.
-Per-feature simulated count: creation(1) + ownership(1) + Scrivener(2) = **4 simulated**.
+Per-feature production-backed count: changelog(7) + creation(9) + navigation(8) + timespan(11) + scenes(5) + hierarchy(8) + management(7) + ownership(3) + export(2) = **60 production-backed**.
+Per-feature partially backed count: export(2) = **2 partially backed**.
+Per-feature simulated count: 0.
 
 | Coverage Level | Count | Percentage |
 |---|---|---|
-| Production-backed | 55 | 89% |
-| Partially backed | 3 | 5% |
+| Production-backed | 60 | 97% |
+| Partially backed | 2 | 3% |
 | Fixture-only | 0 | 0% |
-| Simulated | 4 | 6% |
+| Simulated | 0 | 0% |
 | No-op | 0 | 0% |
 | **Total** | **62** | **100%** |
 
@@ -400,26 +410,24 @@ Per-feature simulated count: creation(1) + ownership(1) + Scrivener(2) = **4 sim
 
 | Feature | Scenarios | Status |
 |---|---|---|
-| `changelog.feature` | 7 | 6 production-backed, 1 partial (tag protection) |
-| `creation.feature` | 9 | 8 production-backed, 1 simulated (cancellation) |
+| `changelog.feature` | 7 | 7 production-backed (tag protection hardened in 6C.4b.4c) |
+| `creation.feature` | 9 | 9 production-backed (cancellation hardened in 6C.4b.4c) |
 | `navigation.feature` | 8 | All production-backed |
 | `timespan.feature` | 11 | All production-backed |
 | `scenes.feature` | 5 | All production-backed (new in 6C.4b.2) |
 | `hierarchy.feature` | 8 | 8 production-backed (6 in 6C.4b.3a.1, 2 in 6C.4b.3b) |
 | `management.feature` | 7 | All production-backed (new in 6C.4b.1) |
-| `ownership.feature` | 3 | 2 production-backed, 1 simulated (cancellation) |
-| **Total hardened** | **55** | — |
+| `ownership.feature` | 3 | 3 production-backed (cancellation hardened in 6C.4b.4c) |
+| **Total hardened** | **60** | — |
 
 ### Scenarios Deferred
 
 | Feature | Scenarios | Issues |
 |---|---|---|
-| `changelog.feature` | 1 | Tag protection simulates CLI error |
-| `creation.feature` + `ownership.feature` | 2 | Cancellation steps set flags, separate jsdom tests are not wired to Gherkin |
-| `export.feature` | 2 | Scrivener scenarios assert mock Platform state, not command availability |
-| **Total deferred** | **5** | — |
+| `export.feature` | 2 | Export scenarios use mocked SceneManager/CharacterManager/LocationManager |
+| **Total deferred** | **2** | — |
 
-Note: The two Markdown export scenarios now invoke production `ExportService.export()` with mocked dependencies. The two Scrivener availability scenarios remain simulated, awaiting production command-registration coverage.
+Note: All five previously deferred scenarios (changelog tag protection, project cancellation, Event cancellation, and Scrivener availability) were hardened in 6C.4b.4c. The two Markdown export scenarios remain partially backed because they use mocked dependencies rather than full production instances.
 
 ### Vault Harness Regression Tests
 

@@ -1,12 +1,19 @@
 /**
  * Export step definitions — exercises real ExportService and production
- * Scrivener command gating via Platform.isMobile.
+ * Scrivener command gating via canImportScrivener().
  */
 import type { TestWorld } from './world';
 import type { StoryLineProject } from '../../../src/models/StoryLineProject';
 import { deriveProjectFoldersFromFilePath } from '../../../src/models/StoryLineProject';
 import { runExport, runExportWithRange, buildScenes } from './export-integration';
 import { Platform } from './obsidian-mock';
+import { canImportScrivener } from '../../../src/commands/scrivener-availability';
+
+/** Minimal mock plugin target for canImportScrivener. */
+const mockPlugin: any = {
+	app: { vault: {} },
+	sceneManager: { activeProject: null },
+};
 
 function buildBook(title: string, bookId: string): StoryLineProject {
   const filePath = `StoryLine/${title}/${title}.md`;
@@ -60,12 +67,14 @@ export class ExportSteps {
 
   static checkDesktopAvailability(world: TestWorld): void {
     Platform.isMobile = false;
-    (world as any)._scrivenerChecked = true;
+    const result = canImportScrivener(mockPlugin, true);
+    (world as any)._scrivenerResult = result;
   }
 
   static checkMobileAvailability(world: TestWorld): void {
     Platform.isMobile = true;
-    (world as any)._scrivenerChecked = true;
+    const result = canImportScrivener(mockPlugin, true);
+    (world as any)._scrivenerResult = result;
   }
 
   static verifySingleExportFile(world: TestWorld): void {
@@ -122,18 +131,18 @@ export class ExportSteps {
   }
 
   static verifyScrivenerAvailable(world: TestWorld): void {
-    const checked = (world as any)._scrivenerChecked;
-    if (!checked) throw new Error('Scrivener availability was not checked');
-    if (Platform.isMobile) {
-      throw new Error('Scrivener import should be available on desktop (Platform.isMobile=false)');
+    const result = (world as any)._scrivenerResult;
+    if (result === undefined) throw new Error('Scrivener availability was not checked');
+    if (result !== true) {
+      throw new Error(`Scrivener import should be available on desktop, but canImportScrivener returned ${result}`);
     }
   }
 
   static verifyScrivenerNotAvailable(world: TestWorld): void {
-    const checked = (world as any)._scrivenerChecked;
-    if (!checked) throw new Error('Scrivener availability was not checked');
-    if (!Platform.isMobile) {
-      throw new Error('Scrivener import should not be available on mobile (Platform.isMobile=true)');
+    const result = (world as any)._scrivenerResult;
+    if (result === undefined) throw new Error('Scrivener availability was not checked');
+    if (result !== false) {
+      throw new Error(`Scrivener import should not be available on mobile, but canImportScrivener returned ${result}`);
     }
   }
 }

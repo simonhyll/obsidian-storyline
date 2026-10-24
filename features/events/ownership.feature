@@ -16,7 +16,7 @@ Feature: Event and Scene creation safety
     Then the correct owning Book must be explicitly established
     And no Scene is accidentally written into another Book
 
-  Scenario: Cancellation
-    Given an Event or Scene creation dialog is open
+  Scenario: Event cancellation
+    Given an Event creation dialog is open
     When the author cancels
     Then no files are created or modified

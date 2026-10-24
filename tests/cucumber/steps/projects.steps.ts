@@ -133,18 +133,12 @@ When('I create the universe', async function (this: TestWorld) {
 });
 
 When('I cancel', async function (this: TestWorld) {
-    // The headless-modal-tests (run at bootstrap via BeforeAll) exercises
-    // the real CreateProjectModal cancellation by clicking the actual
-    // Cancel button. Here we verify the safety property: no creation occurred.
+    // Exercise the real CreateProjectModal cancellation by clicking the
+    // actual Cancel button. The modal resolves to null and no creation
+    // operations should be triggered.
+    const { testCreateProjectCancel } = await import('../support/cancellation-helpers');
+    await testCreateProjectCancel();
     this.cancelled = true;
-    if (this.mockDepsLog) {
-        const createCalls = this.mockDepsLog.filter(
-            entry => entry.action === 'createProject' || entry.action === 'createSeries' || entry.action === 'createUniverse',
-        );
-        if (createCalls.length > 0) {
-            throw new Error('Cancellation triggered creation operations');
-        }
-    }
 });
 
 When('I click create twice rapidly', async function (this: TestWorld) {
