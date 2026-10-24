@@ -31,6 +31,37 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Exercise the actual staged hook path without touching the runner's
+      # checkout index. Both a clean fixture and a deliberate lint regression
+      # must behave correctly under the bounded-memory implementation.
+      - name: Verify staged lint under memory limits
+        run: |
+          set -eu
+          fixture="src/lint-staged-memory-smoke.ts"
+          test_index="$(mktemp)"
+          rm -f "$test_index"
+          trap 'rm -f "$fixture" "$test_index"' EXIT
+          export GIT_INDEX_FILE="$test_index"
+          git read-tree HEAD
+          printf 'export const stagedLintSmoke = true;\\n' > "$fixture"
+          git add -- "$fixture"
+          pnpm lint:staged
+          printf 'export const stagedLintSmoke: any = true;\\n' > "$fixture"
+          git add -- "$fixture"
+          if pnpm lint:staged; then
+            echo "ERROR: staged lint accepted an explicit any on a changed line"
+            exit 1
+          fi
+          echo "Staged lint correctly rejected an intentional new violation."
+
+      - name: Reject newly introduced ESLint errors
+        env:
+          LINT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: pnpm lint:changed
+
+      - name: Architecture regression gate
+        run: pnpm lint:architecture
+
       - name: Build plugin
         run: pnpm build
 
@@ -51,14 +82,6 @@ jobs:
 
       - name: Changelog preview (dry-run)
         run: node scripts/changelog.cjs preview
-
-      - name: Reject newly introduced ESLint errors
-        env:
-          LINT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: pnpm lint:changed
-
-      - name: Architecture regression gate
-        run: pnpm lint:architecture
 
       - name: Validate vault sync script
         run: node --check scripts/sync-vault.mjs
