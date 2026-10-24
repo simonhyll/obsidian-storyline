@@ -21,6 +21,7 @@ import { CharacterManager } from './CharacterManager';
 import { CodexManager } from './CodexManager';
 import { SnapshotManager } from './SnapshotManager';
 import { ViewSnapshotService } from './ViewSnapshotService';
+import { SavedViewService } from './SavedViewService';
 import { LinkScanner } from './LinkScanner';
 import { CascadeRenameService } from './CascadeRenameService';
 import { FieldTemplateService } from './FieldTemplateService';
@@ -61,6 +62,7 @@ export interface ServiceBag {
     codexManager: CodexManager;
     snapshotManager: SnapshotManager;
     viewSnapshotService: ViewSnapshotService;
+    savedViewService: SavedViewService;
     linkScanner: LinkScanner;
     cascadeRename: CascadeRenameService;
     fieldTemplates: FieldTemplateService;
@@ -98,6 +100,7 @@ export function createServices(plugin: ServiceInitPlugin): ServiceBag {
             ?? 'en',
     );
     const viewSnapshotService = new ViewSnapshotService(plugin as unknown as import('../main').default);
+    const savedViewService = new SavedViewService(plugin as unknown as import('../main').default);
 
     // 3. Cross-cutting services
     const linkScanner = new LinkScanner(characterManager, locationManager);
@@ -134,6 +137,7 @@ export function createServices(plugin: ServiceInitPlugin): ServiceBag {
         codexManager,
         snapshotManager,
         viewSnapshotService,
+        savedViewService,
         linkScanner,
         cascadeRename,
         fieldTemplates,

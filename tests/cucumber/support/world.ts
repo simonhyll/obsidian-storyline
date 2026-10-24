@@ -179,4 +179,16 @@ export interface TestWorld {
   sceneB?: Scene;
   /** EventManager operations called during cancellation test */
   eventManagerOperations?: string[];
+  /** SavedViewService instance for saved views tests */
+  savedViewService?: import('../../../src/services/SavedViewService').SavedViewService;
+  /** Current timeline configuration for saved views tests */
+  currentTimelineConfig?: import('../../../src/services/SavedViewService').SavedViewConfig;
+  /** Last saved view metadata */
+  lastSavedView?: import('../../../src/services/SavedViewService').SavedViewMeta;
+  /** Saved view ID for rename tests */
+  savedViewId?: string;
+  /** Original saved view config for rename verification */
+  savedViewOriginalConfig?: import('../../../src/services/SavedViewService').SavedViewConfig;
+  /** Scene original content map for saved views file integrity tests */
+  sceneOriginalContentMap?: Map<string, string>;
 }

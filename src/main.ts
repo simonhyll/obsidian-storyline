@@ -41,6 +41,7 @@ import { QuickAddModal } from './components/QuickAddModal';
 import { WritingTracker } from './services/WritingTracker';
 import type { SnapshotManager } from './services/SnapshotManager';
 import type { ViewSnapshotService } from './services/ViewSnapshotService';
+import type { SavedViewService } from './services/SavedViewService';
 import type { LinkScanner } from './services/LinkScanner';
 import type { CascadeRenameService } from './services/CascadeRenameService';
 import type { FieldTemplateService } from './services/FieldTemplateService';
@@ -102,6 +103,7 @@ export default class SceneCardsPlugin extends Plugin {
     writingTracker: WritingTracker = new WritingTracker();
     snapshotManager!: SnapshotManager;
     viewSnapshotService!: ViewSnapshotService;
+    savedViewService!: SavedViewService;
     linkScanner!: LinkScanner;
     cascadeRename!: CascadeRenameService;
     fieldTemplates!: FieldTemplateService;
@@ -205,6 +207,7 @@ export default class SceneCardsPlugin extends Plugin {
         this.codexManager = services.codexManager;
         this.snapshotManager = services.snapshotManager;
         this.viewSnapshotService = services.viewSnapshotService;
+        this.savedViewService = services.savedViewService;
         this.linkScanner = services.linkScanner;
         this.cascadeRename = services.cascadeRename;
         this.fieldTemplates = services.fieldTemplates;

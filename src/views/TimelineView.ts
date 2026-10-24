@@ -12,6 +12,7 @@ import type SceneCardsPlugin from '../main';
 import { TIMELINE_VIEW_TYPE } from '../constants';
 import { applyMobileClass } from '../components/MobileAdapter';
 import { attachTooltip } from '../components/Tooltip';
+import type { SavedViewConfig, SavedViewMeta } from '../services/SavedViewService';
 import { ButtonComponent, DropdownComponent, ItemView, Menu, Modal, Notice, Setting, TFile, TextComponent, WorkspaceLeaf } from 'obsidian';
 import * as obsidian from 'obsidian';
 import { BUILTIN_BEAT_SHEETS, Scene, SceneStatus, TIMELINE_MODES, TIMELINE_MODE_ICONS, TIMELINE_MODE_LABELS, TimelineMode, formatSceneLength, getStatusOrder, resolveStatusCfg } from '../models/Scene';
@@ -292,6 +293,16 @@ export class TimelineView extends ItemView {
 
         // Time navigation controls
         this.renderTimeNavigation(controls);
+
+        // Saved Views button
+        const savedViewsBtn = controls.createEl('button', {
+            cls: 'clickable-icon',
+        });
+        obsidian.setIcon(savedViewsBtn, 'save');
+        attachTooltip(savedViewsBtn, 'Saved Views');
+        savedViewsBtn.addEventListener('click', (e: MouseEvent) => {
+            this.openSavedViewsMenu(savedViewsBtn, e);
+        });
 
         // Refresh button
         const refreshBtn = controls.createEl('button', {
@@ -2919,6 +2930,238 @@ export class TimelineView extends ItemView {
 
     private getSceneBookTitle(scene: Scene): string | null {
         return this.getSceneBookProject(scene)?.title ?? null;
+    }
+
+    // ── Saved Views ──
+
+    /**
+     * Capture the current Timeline configuration as a SavedViewConfig.
+     */
+    private captureCurrentConfig(): Omit<SavedViewConfig, 'version' | 'id' | 'created' | 'name'> {
+        return {
+            timelineOrder: this.timelineOrder,
+            swimlaneMode: this.swimlaneMode,
+            swimlaneGroupBy: this.swimlaneGroupBy,
+            selectedBookIds: Array.from(this.selectedBookIds),
+            zoomLevel: this.zoomLevel,
+        };
+    }
+
+    /**
+     * Apply a SavedViewConfig to the current Timeline pane.
+     */
+    private applyConfig(config: SavedViewConfig): void {
+        if (config.timelineOrder) {
+            this.timelineOrder = config.timelineOrder;
+            this.plugin.settings.timelineOrder = config.timelineOrder;
+        }
+        if (config.swimlaneMode !== undefined) {
+            this.swimlaneMode = config.swimlaneMode;
+            this.plugin.settings.timelineSwimlaneMode = config.swimlaneMode;
+        }
+        if (config.swimlaneGroupBy) {
+            this.swimlaneGroupBy = config.swimlaneGroupBy;
+            this.plugin.settings.timelineSwimlaneGroupBy = config.swimlaneGroupBy;
+        }
+        if (config.selectedBookIds) {
+            this.selectedBookIds = new Set(config.selectedBookIds);
+        }
+        if (config.zoomLevel) {
+            this.zoomLevel = config.zoomLevel;
+        }
+        void this.plugin.saveSettings();
+        this.refresh();
+    }
+
+    /**
+     * Open the Saved Views context menu.
+     */
+    private openSavedViewsMenu(_button: HTMLElement, event: MouseEvent): void {
+        const menu = new Menu();
+
+        menu.addItem(item =>
+            item
+                .setTitle('Save current view…')
+                .setIcon('save')
+                .onClick(() => this.openSaveViewModal())
+        );
+
+        menu.addSeparator();
+
+        // Load existing views
+        void (async () => {
+            const views = await this.plugin.savedViewService.listSavedViews();
+            if (views.length === 0) {
+                menu.addItem(item =>
+                    item
+                        .setTitle('No saved views')
+                        .setDisabled(true)
+                );
+                return;
+            }
+            for (const view of views) {
+                menu.addItem(item =>
+                    item
+                        .setTitle(view.name)
+                        .setIcon('list')
+                        .onClick(async () => {
+                            const config = await this.plugin.savedViewService.loadSavedView(view.id);
+                            if (config) {
+                                this.applyConfig(config);
+                            }
+                        })
+                );
+            }
+        })();
+
+        menu.addSeparator();
+
+        menu.addItem(item =>
+            item
+                .setTitle('Manage saved views…')
+                .setIcon('settings')
+                .onClick(() => this.openManageViewsModal())
+        );
+
+        menu.showAtMouseEvent(event);
+    }
+
+    /**
+     * Open modal to save current view configuration.
+     */
+    private openSaveViewModal(): void {
+        const modal = new Modal(this.plugin.app);
+        modal.titleEl.setText('Save Timeline View');
+
+        const nameInput = new TextComponent(modal.contentEl.createDiv());
+        nameInput.setPlaceholder('View name');
+        nameInput.inputEl.focus();
+
+        const descInput = new TextComponent(modal.contentEl.createDiv());
+        descInput.setPlaceholder('Description (optional)');
+
+        modal.contentEl.createEl('p', {
+            text: 'This saves the current Timeline configuration (order, swimlanes, book selection, zoom).',
+            attr: { style: 'font-size:12px;color:var(--text-muted);margin-bottom:12px;' }
+        });
+
+        modal.onOpen = () => {
+            nameInput.inputEl.focus();
+        };
+
+        modal.open();
+
+        new Setting(modal.contentEl)
+            .addButton(btn =>
+                btn
+                    .setButtonText('Save')
+                    .setCta()
+                    .onClick(async () => {
+                        const name = nameInput.getValue().trim();
+                        if (!name) {
+                            new Notice('Please enter a view name.');
+                            return;
+                        }
+                        const config = this.captureCurrentConfig();
+                        await this.plugin.savedViewService.createSavedView(name, {
+                            ...config,
+                            description: descInput.getValue().trim() || undefined,
+                        });
+                        modal.close();
+                        new Notice(`Saved view "${name}"`);
+                    })
+            )
+            .addButton(btn =>
+                btn
+                    .setButtonText('Cancel')
+                    .onClick(() => modal.close())
+            );
+    }
+
+    /**
+     * Open modal to manage (rename/delete) saved views.
+     */
+    private openManageViewsModal(): void {
+        const modal = new Modal(this.plugin.app);
+        modal.titleEl.setText('Manage Saved Views');
+
+        const listContainer = modal.contentEl.createDiv({
+            attr: { style: 'max-height:300px;overflow-y:auto;' }
+        });
+
+        modal.onOpen = () => {
+            this.populateManageList(listContainer);
+        };
+
+        modal.open();
+
+        new Setting(modal.contentEl)
+            .addButton(btn =>
+                btn
+                    .setButtonText('Close')
+                    .onClick(() => modal.close())
+            );
+    }
+
+    /**
+     * Populate the manage views list.
+     */
+    private async populateManageList(container: HTMLElement): Promise<void> {
+        container.empty();
+        const views = await this.plugin.savedViewService.listSavedViews();
+
+        if (views.length === 0) {
+            container.createEl('p', { text: 'No saved views yet.' });
+            return;
+        }
+
+        for (const view of views) {
+            const row = container.createDiv({
+                attr: { style: 'display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--background-modifier-border);' }
+            });
+
+            const nameSpan = row.createSpan({
+                text: view.name,
+                attr: { style: 'flex:1;font-weight:500;' }
+            });
+
+            if (view.description) {
+                row.createSpan({
+                    text: view.description,
+                    attr: { style: 'font-size:12px;color:var(--text-muted);' }
+                });
+            }
+
+            const renameBtn = row.createEl('button', {
+                cls: 'clickable-icon',
+                text: '✎'
+            });
+            attachTooltip(renameBtn, 'Rename');
+            renameBtn.addEventListener('click', () => this.renameView(view, nameSpan));
+
+            const deleteBtn = row.createEl('button', {
+                cls: 'clickable-icon',
+                text: '✕'
+            });
+            attachTooltip(deleteBtn, 'Delete');
+            deleteBtn.addEventListener('click', async () => {
+                await this.plugin.savedViewService.deleteSavedView(view.id);
+                new Notice(`Deleted view "${view.name}"`);
+                this.populateManageList(container);
+            });
+        }
+    }
+
+    /**
+     * Rename a saved view inline.
+     */
+    private async renameView(view: SavedViewMeta, nameSpan: HTMLElement): Promise<void> {
+        const newName = prompt('Rename view:', view.name);
+        if (newName && newName.trim() && newName.trim() !== view.name) {
+            await this.plugin.savedViewService.renameSavedView(view.id, newName.trim());
+            nameSpan.setText(newName.trim());
+            new Notice(`Renamed to "${newName.trim()}"`);
+        }
     }
 
     /**
