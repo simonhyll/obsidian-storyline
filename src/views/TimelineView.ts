@@ -301,7 +301,7 @@ export class TimelineView extends ItemView {
         obsidian.setIcon(savedViewsBtn, 'save');
         attachTooltip(savedViewsBtn, 'Saved Views');
         savedViewsBtn.addEventListener('click', (e: MouseEvent) => {
-            this.openSavedViewsMenu(savedViewsBtn, e);
+            void this.openSavedViewsMenu(savedViewsBtn, e);
         });
 
         // Refresh button
@@ -2953,15 +2953,12 @@ export class TimelineView extends ItemView {
     private applyConfig(config: SavedViewConfig): void {
         if (config.timelineOrder) {
             this.timelineOrder = config.timelineOrder;
-            this.plugin.settings.timelineOrder = config.timelineOrder;
         }
         if (config.swimlaneMode !== undefined) {
             this.swimlaneMode = config.swimlaneMode;
-            this.plugin.settings.timelineSwimlaneMode = config.swimlaneMode;
         }
         if (config.swimlaneGroupBy) {
             this.swimlaneGroupBy = config.swimlaneGroupBy;
-            this.plugin.settings.timelineSwimlaneGroupBy = config.swimlaneGroupBy;
         }
         if (config.selectedBookIds) {
             this.selectedBookIds = new Set(config.selectedBookIds);
@@ -2969,14 +2966,13 @@ export class TimelineView extends ItemView {
         if (config.zoomLevel) {
             this.zoomLevel = config.zoomLevel;
         }
-        void this.plugin.saveSettings();
         this.refresh();
     }
 
     /**
      * Open the Saved Views context menu.
      */
-    private openSavedViewsMenu(_button: HTMLElement, event: MouseEvent): void {
+    private async openSavedViewsMenu(_button: HTMLElement, event: MouseEvent): Promise<void> {
         const menu = new Menu();
 
         menu.addItem(item =>
@@ -2989,7 +2985,7 @@ export class TimelineView extends ItemView {
         menu.addSeparator();
 
         // Load existing views
-        void (async () => {
+        {
             const views = await this.plugin.savedViewService.listSavedViews();
             if (views.length === 0) {
                 menu.addItem(item =>
@@ -3012,7 +3008,7 @@ export class TimelineView extends ItemView {
                         })
                 );
             }
-        })();
+        }
 
         menu.addSeparator();
 
