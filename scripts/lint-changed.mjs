@@ -168,8 +168,18 @@ let newErrors = 0;
 for (const result of results) {
     const modified = changedLines.get(resolve(result.filePath));
     totalCurrent += result.errorCount;
+    if (process.env.STORYLINE_LINT_DEBUG === '1') {
+        console.error('[lint:debug]', JSON.stringify({
+            file: result.filePath,
+            modified: modified ? [...modified] : null,
+            messages: result.messages.filter(m => m.severity === 2),
+        }));
+    }
     if (!modified) continue;
     for (const finding of result.messages) {
+        if (finding.severity === 2 && !finding.line) {
+            throw new Error(`ESLint failed without a source line for ${result.filePath}: ${finding.message}`);
+        }
         if (finding.severity !== 2 || !modified.has(finding.line) || ARCH_RULES.has(finding.ruleId)) continue;
         newErrors++;
         console.error(`${result.filePath}:${finding.line}:${finding.column}: ${finding.ruleId ?? 'ESLint'}: ${finding.message}`);
