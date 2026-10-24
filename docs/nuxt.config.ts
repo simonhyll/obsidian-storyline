@@ -15,7 +15,7 @@ export default defineNuxtConfig({
     '@nuxtjs/mcp-toolkit'
   ],
 
-  ssr: false,
+  ssr: process.env.NODE_ENV === 'production',
 
   devtools: {
     enabled: true
