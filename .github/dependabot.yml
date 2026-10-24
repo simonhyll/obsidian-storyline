@@ -9,8 +9,6 @@ updates:
       time: "06:00"
       timezone: "Europe/Stockholm"
     open-pull-requests-limit: 5
-    ignore:
-      - dependency-name: "simonhyll/obsidian-author"
     groups:
       github-actions:
         patterns:
