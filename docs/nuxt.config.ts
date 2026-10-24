@@ -11,11 +11,11 @@ export default defineNuxtConfig({
     '@nuxtjs/mcp-toolkit'
   ],
 
+  ssr: process.env.NODE_ENV === 'production',
+
   app: {
     baseURL: process.env.NUXT_APP_BASE_URL || '/'
   },
-
-  ssr: process.env.NODE_ENV === 'production',
 
   devtools: {
     enabled: true
