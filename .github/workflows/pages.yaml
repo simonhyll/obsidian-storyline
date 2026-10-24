@@ -41,6 +41,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Lint Nuxt documentation
+        run: pnpm --filter docs lint
+
       - name: Build docs
         run: pnpm --filter docs build --prerender
         env:
