@@ -60,7 +60,9 @@ export function buildEvent(filePath: string, id: string, name: string, opts?: { 
         id,
         name,
         tags: opts?.tags ?? [],
-        ownerId: opts?.ownerId,
+        // Ordinary test Events belong to the active Book. Explicit ownership
+        // is supplied for universe/series and cross-book visibility scenarios.
+        ownerId: opts?.ownerId ?? 'book-1',
         booksById: opts?.booksById,
     };
 }
