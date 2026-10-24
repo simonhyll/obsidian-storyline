@@ -42,7 +42,7 @@ Transform your Obsidian vault into a full-featured book planning tool. Organize 
 
 #default
 <div class="flex justify-center mb-6">
-  <Logo />
+  <Logo :hover="true" :animate="true" />
 </div>
 :::
 

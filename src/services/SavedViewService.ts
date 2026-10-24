@@ -9,6 +9,8 @@
 
 import { normalizePath } from 'obsidian';
 import type SceneCardsPlugin from '../main';
+import type { TimeSpan } from '../models/TimeSpan';
+import type { EntityTypeFilter } from '../services/TimelineFilterService';
 
 /**
  * Versioned schema for saved view presets.
@@ -40,6 +42,17 @@ export interface SavedViewConfig {
     selectedBookIds?: string[];
     /** Zoom level (0.5–3.0) */
     zoomLevel?: number;
+
+    // ── Filter configuration (v2) ──
+
+    /** Entity type filter: scenes, events, or both */
+    filterEntityType?: EntityTypeFilter;
+    /** Tags to filter by */
+    filterTags?: string[];
+    /** Time range filter: start boundary */
+    filterTimeRangeStart?: TimeSpan;
+    /** Time range filter: end boundary */
+    filterTimeRangeEnd?: TimeSpan;
 }
 
 /** Metadata returned by listSavedViews() */
@@ -123,7 +136,7 @@ export class SavedViewService {
         const now = new Date().toISOString();
 
         const viewConfig: SavedViewConfig = {
-            version: 1,
+            version: 2,
             id,
             name,
             created: now,

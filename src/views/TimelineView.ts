@@ -16,6 +16,7 @@ import { TIMELINE_VIEW_TYPE } from '../constants';
 import { applyMobileClass } from '../components/MobileAdapter';
 import { attachTooltip } from '../components/Tooltip';
 import type { SavedViewConfig, SavedViewMeta } from '../services/SavedViewService';
+import { TimelineFilterService, type TimelineFilterConfig, type EntityTypeFilter } from '../services/TimelineFilterService';
 import { ButtonComponent, DropdownComponent, ItemView, Menu, Modal, Notice, Setting, TFile, TextComponent, WorkspaceLeaf } from 'obsidian';
 import * as obsidian from 'obsidian';
 import type { TimelineMode } from '../models/Scene';
@@ -75,6 +76,10 @@ export class TimelineView extends ItemView {
     private selectionOwnerBookId: string | null = null;
     /** Render generation counter for async cancellation */
     private renderGeneration = 0;
+    /** Filter service for this timeline pane */
+    private readonly filterService: TimelineFilterService;
+    /** Current filter configuration (pane-local) */
+    private filterConfig: TimelineFilterConfig = {};
     /** Popover element for the book selector dropdown */
     private bookSelectorPopover: HTMLElement | null = null;
     private bookSelectorButton: HTMLElement | null = null;
@@ -92,6 +97,7 @@ export class TimelineView extends ItemView {
         this.plugin = plugin;
         this.sceneManager = sceneManager;
         this.timelineNavigationService = new TimelineNavigationService(plugin.timeSpanService);
+        this.filterService = new TimelineFilterService(plugin.timeSpanService);
         this.cardComponent = new SceneCardComponent(plugin);
         // Restore persisted filter states from settings
         this.timelineOrder = plugin.settings.timelineOrder === 'chronological' ? 'chronological' : 'reading';
@@ -313,6 +319,16 @@ export class TimelineView extends ItemView {
             void this.openSavedViewsMenu(savedViewsBtn, e);
         });
 
+        // Filter button
+        const filterBtn = controls.createEl('button', {
+            cls: `clickable-icon${this.filterService.isFilterActive(this.filterConfig) ? ' is-active' : ''}`,
+        });
+        obsidian.setIcon(filterBtn, 'filter');
+        attachTooltip(filterBtn, 'Filters');
+        filterBtn.addEventListener('click', (e: MouseEvent) => {
+            void this.openFilterMenu(filterBtn, e);
+        });
+
         // Refresh button
         const refreshBtn = controls.createEl('button', {
             cls: 'clickable-icon',
@@ -364,15 +380,19 @@ export class TimelineView extends ItemView {
         const timelineEl = container.createDiv('story-line-timeline');
 
         // Load scenes (single or multi-book)
-        const scenes = await this.getTimelineScenes();
+        const rawScenes = await this.getTimelineScenes();
 
         // Load Events — universe-wide for multi-book, cached for single-book
-        const events = await this.getTimelineEvents();
+        const rawEvents = await this.getTimelineEvents();
 
         // Cancel if a newer render started while we were loading
         if (this.renderGeneration !== generation) return;
 
-        // Update navigation service with current items
+        // Apply filters
+        const context = this.buildFilterContext();
+        const { scenes, events } = this.filterService.applyFilters(rawScenes, rawEvents, this.filterConfig, context);
+
+        // Update navigation service with filtered items
         this.timelineNavigationService.updateItems(scenes, events);
         this.updateTimeNavigationDisplay();
 
@@ -434,7 +454,18 @@ export class TimelineView extends ItemView {
 
         if (scenes.length === 0 && definedActs.length === 0 && events.length === 0) {
             const empty = timelineEl.createDiv('story-line-empty');
-            empty.createEl('p', { text: 'No scenes or events found.' });
+            if (this.filterService.isFilterActive(this.filterConfig)) {
+                empty.createEl('p', { text: 'No scenes or events match the current filters.' });
+                empty.createEl('button', {
+                    text: 'Clear filters',
+                    attr: { style: 'margin-top: 8px;' }
+                }).addEventListener('click', () => {
+                    this.filterConfig = {};
+                    this.refresh();
+                });
+            } else {
+                empty.createEl('p', { text: 'No scenes or events found.' });
+            }
             empty.createEl('p', { text: 'Click "+ new scene" to create your first scene, or "+ New Event" to add a canonical event.' });
             return;
         }
@@ -720,19 +751,34 @@ export class TimelineView extends ItemView {
         enableDragToPan(timelineEl);
 
         // Use multi-book scene/event projection, same as linear mode
-        const scenes = await this.getTimelineScenes();
-        const events = await this.getTimelineEvents();
+        const rawScenes = await this.getTimelineScenes();
+        const rawEvents = await this.getTimelineEvents();
 
         // Cancel if a newer render started while we were loading
         if (this.renderGeneration !== generation) return;
 
-        // Navigation must work in swimlane mode as well as linear mode.
+        // Apply filters
+        const context = this.buildFilterContext();
+        const { scenes, events } = this.filterService.applyFilters(rawScenes, rawEvents, this.filterConfig, context);
+
+        // Update navigation service with filtered items
         this.timelineNavigationService.updateItems(scenes, events);
         this.updateTimeNavigationDisplay();
 
         if (scenes.length === 0 && events.length === 0) {
             const empty = timelineEl.createDiv('story-line-empty');
-            empty.createEl('p', { text: 'No scenes or events found.' });
+            if (this.filterService.isFilterActive(this.filterConfig)) {
+                empty.createEl('p', { text: 'No scenes or events match the current filters.' });
+                empty.createEl('button', {
+                    text: 'Clear filters',
+                    attr: { style: 'margin-top: 8px;' }
+                }).addEventListener('click', () => {
+                    this.filterConfig = {};
+                    this.refresh();
+                });
+            } else {
+                empty.createEl('p', { text: 'No scenes or events found.' });
+            }
             empty.createEl('p', { text: 'Click "+ new scene" to create your first scene, or "+ New Event" to add a canonical event.' });
             return;
         }
@@ -2941,6 +2987,217 @@ export class TimelineView extends ItemView {
         return this.getSceneBookProject(scene)?.title ?? null;
     }
 
+    // ── Filters ──
+
+    /**
+     * Build the filter context from current state.
+     */
+    private buildFilterContext(): import('../services/TimelineFilterService').TimelineContext {
+        const activeProject = this.sceneManager.activeProject;
+        const activeBookId = activeProject?.bookId ?? '';
+        const universeId = activeProject?.universeId ?? null;
+        const seriesId = activeProject?.seriesUuid ?? null;
+        return {
+            activeBookId,
+            selectedBookIds: this.selectedBookIds,
+            universeId,
+            seriesId,
+            projects: this.sceneManager.getProjects(),
+        };
+    }
+
+    /**
+     * Open the filter menu.
+     */
+    // eslint-disable-next-line max-lines-per-function -- filter menu needs multiple menu items
+    private async openFilterMenu(_button: HTMLElement, event: MouseEvent): Promise<void> {
+        const menu = new Menu();
+
+        // Entity type filter
+        menu.addItem(item =>
+            item
+                .setTitle('Show: Both scenes and events')
+                .setIcon('layers')
+                .setDisabled(this.filterConfig.entityType === 'both' || !this.filterConfig.entityType)
+                .onClick(() => {
+                    this.filterConfig.entityType = 'both';
+                    this.refresh();
+                })
+        );
+        menu.addItem(item =>
+            item
+                .setTitle('Show: Scenes only')
+                .setIcon('file')
+                .setDisabled(this.filterConfig.entityType === 'scenes')
+                .onClick(() => {
+                    this.filterConfig.entityType = 'scenes';
+                    this.refresh();
+                })
+        );
+        menu.addItem(item =>
+            item
+                .setTitle('Show: Events only')
+                .setIcon('calendar')
+                .setDisabled(this.filterConfig.entityType === 'events')
+                .onClick(() => {
+                    this.filterConfig.entityType = 'events';
+                    this.refresh();
+                })
+        );
+
+        menu.addSeparator();
+
+        // Tag filter
+        menu.addItem(item =>
+            item
+                .setTitle('Filter by tags…')
+                .setIcon('tag')
+                .onClick(() => this.openTagFilterModal())
+        );
+
+        // Time range filter
+        menu.addItem(item =>
+            item
+                .setTitle('Filter by time range…')
+                .setIcon('calendar')
+                .onClick(() => this.openTimeRangeFilterModal())
+        );
+
+        menu.addSeparator();
+
+        // Clear all filters
+        menu.addItem(item =>
+            item
+                .setTitle('Clear all filters')
+                .setIcon('x')
+                .setDisabled(!this.filterService.isFilterActive(this.filterConfig))
+                .onClick(() => {
+                    this.filterConfig = {};
+                    this.refresh();
+                })
+        );
+
+        menu.showAtMouseEvent(event);
+    }
+
+    /**
+     * Open modal to select tags for filtering.
+     */
+    private openTagFilterModal(): void {
+        const modal = new Modal(this.plugin.app);
+        modal.titleEl.setText('Filter by tags');
+
+        // Collect available tags from current scenes and events
+        const allProjects = this.sceneManager.getProjects();
+        const allScenes = this.sceneManager.queryService.getFilteredScenes();
+        const allEvents = this.plugin.eventManager.getAllEvents();
+        const availableTags = this.filterService.collectAvailableTags(allScenes, allEvents);
+
+        if (availableTags.length === 0) {
+            modal.contentEl.createEl('p', { text: 'No tags found in your scenes or events.' });
+        } else {
+            const selectedTags = new Set(this.filterConfig.tags ?? []);
+            for (const tag of availableTags) {
+                const cb = new Setting(modal.contentEl.createDiv())
+                    .addToggle(toggle =>
+                        toggle
+                            .setValue(selectedTags.has(tag))
+                            .onChange(async (value) => {
+                                if (value) {
+                                    selectedTags.add(tag);
+                                } else {
+                                    selectedTags.delete(tag);
+                                }
+                                this.filterConfig.tags = Array.from(selectedTags);
+                                this.refresh();
+                            })
+                    )
+                    .setName(tag);
+            }
+        }
+
+        modal.onOpen = () => {
+            // Focus first input if any
+        };
+        modal.open();
+    }
+
+    /**
+     * Open modal to set time range filter.
+     */
+    // eslint-disable-next-line max-lines-per-function -- time range modal needs inputs and validation
+    private openTimeRangeFilterModal(): void {
+        const modal = new Modal(this.plugin.app);
+        modal.titleEl.setText('Filter by time range');
+
+        const startInput = new TextComponent(modal.contentEl.createDiv());
+        startInput.setPlaceholder('Start date (e.g. 2024-01-01)');
+        startInput.inputEl.value = this.filterConfig.timeRange?.start ? this.formatTimeSpanForInput(this.filterConfig.timeRange.start) : '';
+
+        const endInput = new TextComponent(modal.contentEl.createDiv());
+        endInput.setPlaceholder('End date (e.g. 2024-12-31)');
+        endInput.inputEl.value = this.filterConfig.timeRange?.end ? this.formatTimeSpanForInput(this.filterConfig.timeRange.end) : '';
+
+        modal.contentEl.createEl('p', {
+            text: 'Enter dates in yyyy-mm-dd format. Leave empty to remove that boundary.',
+            attr: { style: 'font-size:12px;color:var(--text-muted);margin-bottom:12px;' }
+        });
+
+        modal.onOpen = () => {
+            startInput.inputEl.focus();
+        };
+        modal.open();
+
+        new Setting(modal.contentEl)
+            .addButton(btn =>
+                btn
+                    .setButtonText('Apply')
+                    .setCta()
+                    .onClick(() => {
+                        const startStr = startInput.getValue().trim();
+                        const endStr = endInput.getValue().trim();
+                        const timeRange: import('../services/TimelineFilterService').TimeRangeFilter = {};
+                        if (startStr) {
+                            const parsed = this.plugin.timeSpanService.parse(startStr);
+                            if (parsed && parsed.kind !== 'unknown') {
+                                timeRange.start = parsed;
+                            }
+                        }
+                        if (endStr) {
+                            const parsed = this.plugin.timeSpanService.parse(endStr);
+                            if (parsed && parsed.kind !== 'unknown') {
+                                timeRange.end = parsed;
+                            }
+                        }
+                        if (timeRange.start || timeRange.end) {
+                            this.filterConfig.timeRange = timeRange;
+                        } else {
+                            delete this.filterConfig.timeRange;
+                        }
+                        modal.close();
+                        this.refresh();
+                    })
+            )
+            .addButton(btn =>
+                btn
+                    .setButtonText('Cancel')
+                    .onClick(() => modal.close())
+            );
+    }
+
+    /**
+     * Format a TimeSpan for display in an input field.
+     */
+    private formatTimeSpanForInput(ts: import('../models/TimeSpan').TimeSpan): string {
+        const point = this.plugin.timeSpanService.getEarliestPoint(ts);
+        if (!point) return '';
+        const adapter = this.plugin.timeSpanService.getCalendar('gregorian');
+        if (adapter) {
+            return adapter.format(point);
+        }
+        return String(point.year);
+    }
+
     // ── Saved Views ──
 
     /**
@@ -2953,12 +3210,17 @@ export class TimelineView extends ItemView {
             swimlaneGroupBy: this.swimlaneGroupBy,
             selectedBookIds: Array.from(this.selectedBookIds),
             zoomLevel: this.zoomLevel,
+            filterEntityType: this.filterConfig.entityType,
+            filterTags: this.filterConfig.tags,
+            filterTimeRangeStart: this.filterConfig.timeRange?.start,
+            filterTimeRangeEnd: this.filterConfig.timeRange?.end,
         };
     }
 
     /**
      * Apply a SavedViewConfig to the current Timeline pane.
      */
+    // eslint-disable-next-line complexity -- config apply checks many optional fields
     private applyConfig(config: SavedViewConfig): void {
         if (config.timelineOrder) {
             this.timelineOrder = config.timelineOrder;
@@ -2974,6 +3236,20 @@ export class TimelineView extends ItemView {
         }
         if (config.zoomLevel) {
             this.zoomLevel = config.zoomLevel;
+        }
+        // Apply filter config (new in v2)
+        this.filterConfig = {};
+        if (config.filterEntityType) {
+            this.filterConfig.entityType = config.filterEntityType;
+        }
+        if (config.filterTags && config.filterTags.length > 0) {
+            this.filterConfig.tags = config.filterTags;
+        }
+        if (config.filterTimeRangeStart || config.filterTimeRangeEnd) {
+            this.filterConfig.timeRange = {
+                start: config.filterTimeRangeStart,
+                end: config.filterTimeRangeEnd,
+            };
         }
         this.refresh();
     }
