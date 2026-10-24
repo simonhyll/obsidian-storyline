@@ -43,10 +43,10 @@ jobs:
           trap 'rm -f "$fixture" "$test_index"' EXIT
           export GIT_INDEX_FILE="$test_index"
           git read-tree HEAD
-          printf 'export const stagedLintSmoke = true;\\n' > "$fixture"
+          printf 'export const stagedLintSmoke = true;\n' > "$fixture"
           git add -- "$fixture"
           pnpm lint:staged
-          printf 'export const stagedLintSmoke: any = true;\\n' > "$fixture"
+          printf 'export const stagedLintSmoke: any = true;\n' > "$fixture"
           git add -- "$fixture"
           if pnpm lint:staged; then
             echo "ERROR: staged lint accepted an explicit any on a changed line"
