@@ -4979,22 +4979,6 @@
         }
       ]
     },
-    "tests/cucumber/support/concurrency-guard-test.ts": {
-      "violations": [
-        {
-          "rule": "max-lines-per-function",
-          "line": 25
-        },
-        {
-          "rule": "max-statements",
-          "line": 25
-        },
-        {
-          "rule": "complexity",
-          "line": 25
-        }
-      ]
-    },
     "tests/cucumber/support/hooks.ts": {
       "violations": [
         {
@@ -5005,13 +4989,13 @@
     }
   },
   "summary": {
-    "totalFilesWithViolations": 81,
-    "totalViolations": 1169,
+    "totalFilesWithViolations": 80,
+    "totalViolations": 1166,
     "byRule": {
       "max-params": 48,
-      "max-lines-per-function": 283,
-      "complexity": 306,
-      "max-statements": 227,
+      "max-lines-per-function": 282,
+      "complexity": 305,
+      "max-statements": 226,
       "max-lines": 64,
       "max-depth": 241
     }
